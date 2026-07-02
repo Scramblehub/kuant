@@ -4,6 +4,7 @@ from .rollbeta import rollbeta
 from .rollcorr import rollcorr
 from .rollcov import rollcov
 from .rollema import rollema
+from .rollmad import rollmad
 from .rollmean import rollmean
 from .rollminmax import rollmax, rollmin
 from .rollmoments import rollkurt, rollskew
@@ -16,7 +17,7 @@ from .zscore import zscore
 
 __all__ = [
     'rollargmax', 'rollargmin', 'rollbeta', 'rollcorr', 'rollcov',
-    'rollema', 'rollkurt', 'rollmax', 'rollmean', 'rollmedian',
-    'rollmin', 'rollpercentile', 'rollquantile', 'rollrange',
-    'rollrank', 'rollskew', 'rollstd', 'rollsum', 'zscore',
+    'rollema', 'rollkurt', 'rollmad', 'rollmax', 'rollmean',
+    'rollmedian', 'rollmin', 'rollpercentile', 'rollquantile',
+    'rollrange', 'rollrank', 'rollskew', 'rollstd', 'rollsum', 'zscore',
 ]
