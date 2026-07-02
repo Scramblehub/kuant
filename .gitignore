@@ -1,0 +1,74 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.hypothesis/
+coverage.xml
+
+# CUDA build artifacts
+*.cubin
+*.fatbin
+*.ptx
+*.cudafe*
+*.cu.o
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Data (never commit — kuant is code-only)
+*.parquet
+*.hdf5
+*.h5
+*.csv
+data/
+raw/
+
+# Docs build
+docs/_build/
+docs/_static/
+docs/_templates/
+site/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local notes / scratch
+scratch/
+notes.local.md
