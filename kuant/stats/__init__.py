@@ -1,11 +1,12 @@
 '''kuant.stats — rolling and windowed statistical primitives.'''
 from .rollcorr import rollcorr
 from .rollmean import rollmean
+from .rollminmax import rollmax, rollmin
 from .rollquantile import rollmedian, rollpercentile, rollquantile
 from .rollstd import rollstd
 from .zscore import zscore
 
 __all__ = [
-    'rollcorr', 'rollmean', 'rollmedian', 'rollpercentile',
-    'rollquantile', 'rollstd', 'zscore',
+    'rollcorr', 'rollmax', 'rollmean', 'rollmedian', 'rollmin',
+    'rollpercentile', 'rollquantile', 'rollstd', 'zscore',
 ]
