@@ -13,6 +13,11 @@ inputs. One kernel, both directions.
 
 Range: `[0, +∞)`. Peaks near ATM at longer tenors.
 
+**Units convention.** Vega here is `∂P/∂σ` with `σ` in **decimal** (e.g.
+0.20 = 20% IV). For "vega per 1% change in IV", divide by 100. Some
+libraries pre-divide by 100 — kuant does not, so callers get the
+mathematically clean derivative.
+
 ## Public API
 
 ```python
@@ -20,11 +25,45 @@ from kuant.core import bsvega
 v = bsvega(S, K, T, r, sigma, q=0.0)
 ```
 
-## Units convention
+## Design decisions
 
-Vega here is `∂P/∂σ` with `σ` in **decimal** (e.g. 0.20 = 20% IV). For
-"vega per 1% change in IV", divide by 100. Some libraries pre-divide by
-100 — kuant does not, so callers get the mathematically clean derivative.
+### 1. Uses `_bs_common.prepare_bs` for setup
+
+Shared with all BS kernels.
+
+### 2. Same put-call-symmetry pattern as bsgamma
+
+One kernel for both directions. Enforces the symmetry in code.
+
+### 3. Composition on `normpdf`, uses `d1` only
+
+Same pattern as `bsgamma`.
+
+### 4. All edges collapse to zero
+
+Vega vanishes at expiry (no future vol to matter), at zero vol (limit),
+at zero spot (no S dependence to price).
+
+## Edge cases
+
+| Condition | Vega |
+| --- | --- |
+| Normal | analytic |
+| T=0 | 0 |
+| σ=0 | 0 |
+| S=0 | 0 |
+| K=0 | 0 |
+| NaN | NaN |
+
+## Cross-check tests
+
+- `test_vega_matches_finite_difference_of_price` —
+  `bsvega ≈ (bsput(S, K, T, r, σ+h) - bsput(S, K, T, r, σ-h)) / (2h)`
+
+## Test coverage (15 tests)
+
+Golden, scipy reference, non-neg, ATM peak, FD-cross-check vs price,
+edge cases, dtype, GPU parity.
 
 ## Direct usage in kuant
 
@@ -36,36 +75,6 @@ Vega here is `∂P/∂σ` with `σ` in **decimal** (e.g. 0.20 = 20% IV). For
 
 Central to any IV surface work. Also useful for M9's vol-shock scenarios:
 `portfolio_vega × vol_move` estimates first-order P&L from an IV spike.
-
-## Design decisions
-
-### 1. Same put-call-symmetry choice as bsgamma
-
-One kernel for both directions. Enforces the symmetry in code.
-
-### 2. Composition on `normpdf`, uses `d1` only
-
-Same pattern as `bsgamma`.
-
-### 3. All edges collapse to zero
-
-| Condition | Vega |
-| --- | --- |
-| Normal | analytic |
-| T=0, σ=0, S=0, K=0 | 0 |
-| NaN | NaN |
-
-Vega vanishes at expiry (no future vol to matter), at zero vol (limit),
-at zero spot (no S dependence to price).
-
-## Cross-check test
-
-- `bsvega == d(bsput)/dσ` via central bump
-
-## Test coverage (15 tests)
-
-Golden, scipy reference, non-neg, ATM peak, FD-cross-check vs price,
-edge cases, dtype, GPU parity.
 
 ## Related kernels
 
