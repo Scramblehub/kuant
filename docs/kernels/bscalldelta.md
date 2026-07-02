@@ -66,3 +66,4 @@ monotonic in S, FD vs bscall, edge cases + dtype + GPU parity.
 - `kuant.core.bsputdelta` — parity partner
 - `kuant.core.normcdf` — called once per delta element
 - `kuant.core.bsgamma` — d(bscalldelta)/dS, put-call symmetric (same as put's)
+- `kuant.core.bsvega` — sibling first-order Greek, put-call symmetric

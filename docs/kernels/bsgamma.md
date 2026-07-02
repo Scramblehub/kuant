@@ -49,7 +49,7 @@ Gamma vanishes everywhere the option's convexity vanishes. Single
 ## Edge cases
 
 | Condition | Gamma |
-|---|---|
+| --- | --- |
 | Normal | analytic |
 | T=0 | 0 |
 | σ=0 | 0 |
@@ -82,5 +82,6 @@ underlying is running.
 ## Related kernels
 
 - `kuant.core.normpdf` — called once per gamma element
+- `kuant.core.bsput`, `kuant.core.bscall` — gamma is their second dS-derivative
 - `kuant.core.bsputdelta`, `kuant.core.bscalldelta` — gamma is their dS-derivative
 - `kuant.core.bsvega` — shares the put-call-symmetric pattern

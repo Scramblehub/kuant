@@ -80,4 +80,5 @@ Central to any IV surface work. Also useful for M9's vol-shock scenarios:
 
 - `kuant.core.normpdf` — called once per vega element
 - `kuant.core.bsput`, `kuant.core.bscall` — vega is their dσ-derivative
+- `kuant.core.bsputdelta`, `kuant.core.bscalldelta` — sibling first-order Greeks
 - `kuant.core.bsgamma` — shares the put-call-symmetric pattern
