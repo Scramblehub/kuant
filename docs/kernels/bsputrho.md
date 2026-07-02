@@ -95,4 +95,4 @@ period like 2022, you'll want rho-adjusted P&L attribution.
 
 - `kuant.core.bsput` — bsputrho is its dr-derivative
 - `kuant.core.normcdf` — called once per rho element
-- **Future**: `kuant.core.bscallrho` — opposite sign, different Φ argument
+- `kuant.core.bscallrho` — parity partner, opposite sign, uses Φ(d2) not Φ(-d2)

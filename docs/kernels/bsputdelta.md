@@ -37,9 +37,9 @@ bsputdelta (M9 monitor does exactly this) can trust identical behavior on:
 - dtype preservation (float32 defaulted-q trick)
 - NaN propagation via `full_like(nan)`
 
-If we ever refactor, the two kernels can share a `_prepare_bs_inputs()`
-helper. For now, keeping the code duplicated makes each file readable in
-isolation — a teaching decision, not an engineering one.
+The shared setup lives in `kuant/core/_bs_common.py::prepare_bs()` — see
+that module for the flow. Each Greek kernel is now ~20 lines of actual
+formula on top of the shared helper.
 
 ### 2. One line of actual math
 
@@ -127,5 +127,6 @@ existing inline pricer.
 
 - `kuant.core.bsput` — bsputdelta is its dS-derivative
 - `kuant.core.normcdf` — called once per delta element
-- **Future**: `kuant.core.bsgamma` — d²P/dS² = e^(-q·T) · φ(d1) / (S·σ·√T)
-- **Future**: `kuant.core.bsvega` — dP/dσ = S·e^(-q·T) · φ(d1) · √T
+- `kuant.core.bscalldelta` — parity partner: `delta_call - delta_put = e^(-q·T)`
+- `kuant.core.bsgamma` — d(bsputdelta)/dS, put-call symmetric
+- `kuant.core.bsvega` — dP/dσ, put-call symmetric

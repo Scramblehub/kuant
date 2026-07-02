@@ -122,6 +122,7 @@ inline. Assert same CAGR on one M9 backtest → confirms no numerical drift.
 ## Related kernels
 
 - `kuant.core.normcdf` — called twice per bsput element
-- **Future**: `kuant.core.bscall` — put-call parity gives it almost for free
-- **Future**: `kuant.core.bsputdelta` — `delta = -e^(-q·T) · Φ(-d1)`, one line
-- **Future**: `kuant.core.bsvega` — one line, useful for IV solvers
+- `kuant.core.bscall` — call price, put-call parity partner
+- `kuant.core.bsputdelta` — dP/dS, uses same normcdf pattern
+- `kuant.core.bsputrho` — dP/dr, uses same normcdf pattern
+- `kuant.core.bsgamma`, `kuant.core.bsvega` — put-call symmetric second-order Greeks

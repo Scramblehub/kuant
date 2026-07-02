@@ -26,9 +26,9 @@ Signature identical to `bsput`. Returns non-negative values.
 Both formulas use `d1` and `d2`, but the `Φ` arguments and outer signs flip:
 
 | Kernel | Formula |
-|---|---|
-| `bsput`  | `+K·e^(-r·T)·Φ(-d2) - S·e^(-q·T)·Φ(-d1)` |
-| `bscall` | `+S·e^(-q·T)·Φ(d1)  - K·e^(-r·T)·Φ(d2)`  |
+| --- | --- |
+| `bsput` | `+K·e^(-r·T)·Φ(-d2) - S·e^(-q·T)·Φ(-d1)` |
+| `bscall` | `+S·e^(-q·T)·Φ(d1)  - K·e^(-r·T)·Φ(d2)` |
 
 `bsput` uses `Φ(-d1), Φ(-d2)`; `bscall` uses `Φ(d1), Φ(d2)`.
 `bsput` weights the strike-discount term with +; `bscall` weights the
@@ -60,7 +60,7 @@ docstring for details.
 ### 2. Edge cases mirror bsput's structure but flip direction
 
 | Condition | Put | Call |
-|---|---|---|
+| --- | --- | --- |
 | Normal | analytic | analytic |
 | T=0 (expired) | max(K-S, 0) | max(S-K, 0) |
 | σ=0, T>0 | max(K·e^(-r·T) - S·e^(-q·T), 0) | max(S·e^(-q·T) - K·e^(-r·T), 0) |
@@ -112,6 +112,6 @@ calls, IV surface calibration) will lean on this.
 
 - `kuant.core.bsput` — put price. Related by put-call parity.
 - `kuant.core.normcdf` — called twice per bscall element
-- **Future**: `kuant.core.bscalldelta` — `+e^(-q·T) · Φ(d1)`, range [0, 1]
-- **Future**: `kuant.core.bscallrho` — `+T · K · e^(-r·T) · Φ(d2)`, range [0, +∞)
-- Already exists: `kuant.core.bsgamma`, `kuant.core.bsvega` (put-call symmetric)
+- `kuant.core.bscalldelta` — `+e^(-q·T) · Φ(d1)`, range [0, 1]
+- `kuant.core.bscallrho` — `+T · K · e^(-r·T) · Φ(d2)`, range [0, +∞)
+- `kuant.core.bsgamma`, `kuant.core.bsvega` — put-call symmetric, shared with bsput
