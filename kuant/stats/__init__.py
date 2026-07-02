@@ -3,10 +3,11 @@ from .rollcorr import rollcorr
 from .rollmean import rollmean
 from .rollminmax import rollmax, rollmin
 from .rollquantile import rollmedian, rollpercentile, rollquantile
+from .rollrank import rollrank
 from .rollstd import rollstd
 from .zscore import zscore
 
 __all__ = [
     'rollcorr', 'rollmax', 'rollmean', 'rollmedian', 'rollmin',
-    'rollpercentile', 'rollquantile', 'rollstd', 'zscore',
+    'rollpercentile', 'rollquantile', 'rollrank', 'rollstd', 'zscore',
 ]
