@@ -38,6 +38,7 @@ If ANY value in the window is NaN, output NaN for that window. Matches
 pandas `rolling(w, min_periods=w).mean()`.
 
 Implementation runs TWO parallel cumsums:
+
 - `cumsum(x_safe)` where NaNs are replaced with 0
 - `cumsum(is_nan.astype(int))` — the running count of NaNs
 
@@ -66,7 +67,7 @@ Rather than special-casing `i-w < 0`, we prepend a 0 to the cumsum so that
 ## Edge cases
 
 | Condition | Output |
-|---|---|
+| --- | --- |
 | `window == 1` | identity (each value is its own window mean) |
 | `window == len(x)` | first `n-1` NaN, last is overall mean |
 | `window > len(x)` | all NaN |
