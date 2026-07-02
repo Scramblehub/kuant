@@ -29,16 +29,16 @@ by the whole BS family.
 ### Foundation
 
 | Kernel | Formula | Doc |
-|---|---|---|
+| --- | --- | --- |
 | [`normcdf`](normcdf.md) | `Φ(x) = P[Z ≤ x]`, Z ~ N(0,1) | 28 tests |
 | [`normpdf`](normpdf.md) | `φ(x) = exp(-x²/2) / √(2π)` | 14 tests |
 
 ### Prices
 
 | Kernel | Formula | Doc |
-|---|---|---|
-| [`bsput`](bsput.md)   | `K·e^(-r·T)·Φ(-d2) - S·e^(-q·T)·Φ(-d1)` | 23 tests |
-| [`bscall`](bscall.md) | `S·e^(-q·T)·Φ(d1)  - K·e^(-r·T)·Φ(d2)`  | 24 tests |
+| --- | --- | --- |
+| [`bsput`](bsput.md) | `K·e^(-r·T)·Φ(-d2) - S·e^(-q·T)·Φ(-d1)` | 23 tests |
+| [`bscall`](bscall.md) | `S·e^(-q·T)·Φ(d1)  - K·e^(-r·T)·Φ(d2)` | 24 tests |
 
 Related by put-call parity: `C - P = S·e^(-q·T) - K·e^(-r·T)`. Verified to
 machine epsilon in `test_put_call_parity_random`.
@@ -46,22 +46,23 @@ machine epsilon in `test_put_call_parity_random`.
 ### First-order Greeks — direction-specific
 
 | Kernel | Formula | Range | Doc |
-|---|---|---|---|
-| [`bsputdelta`](bsputdelta.md)   | `-e^(-q·T)·Φ(-d1)` | `[-1, 0]` | 24 tests |
-| [`bscalldelta`](bscalldelta.md) | `+e^(-q·T)·Φ(d1)`  | `[0, 1]`  | 21 tests |
-| [`bsputrho`](bsputrho.md)       | `-T·K·e^(-r·T)·Φ(-d2)` | `(-∞, 0]` | 18 tests |
-| [`bscallrho`](bscallrho.md)     | `+T·K·e^(-r·T)·Φ(d2)`  | `[0, +∞)` | 19 tests |
+| --- | --- | --- | --- |
+| [`bsputdelta`](bsputdelta.md) | `-e^(-q·T)·Φ(-d1)` | `[-1, 0]` | 24 tests |
+| [`bscalldelta`](bscalldelta.md) | `+e^(-q·T)·Φ(d1)` | `[0, 1]` | 21 tests |
+| [`bsputrho`](bsputrho.md) | `-T·K·e^(-r·T)·Φ(-d2)` | `(-∞, 0]` | 18 tests |
+| [`bscallrho`](bscallrho.md) | `+T·K·e^(-r·T)·Φ(d2)` | `[0, +∞)` | 19 tests |
 
 Parity identities (both verified to machine epsilon):
+
 - `delta_call - delta_put = e^(-q·T)`
 - `rho_call - rho_put = T·K·e^(-r·T)`
 
 ### Second-order Greeks — put-call symmetric (one kernel serves both)
 
 | Kernel | Formula | Range | Doc |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | [`bsgamma`](bsgamma.md) | `e^(-q·T)·φ(d1) / (S·σ·√T)` | `[0, +∞)` | 16 tests |
-| [`bsvega`](bsvega.md)   | `S·e^(-q·T)·φ(d1)·√T`       | `[0, +∞)` | 15 tests |
+| [`bsvega`](bsvega.md) | `S·e^(-q·T)·φ(d1)·√T` | `[0, +∞)` | 15 tests |
 
 ## Shared setup — `_bs_common.prepare_bs`
 
