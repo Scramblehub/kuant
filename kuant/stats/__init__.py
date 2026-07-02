@@ -1,4 +1,5 @@
 '''kuant.stats — rolling and windowed statistical primitives.'''
+from .rollargminmax import rollargmax, rollargmin
 from .rollcorr import rollcorr
 from .rollmean import rollmean
 from .rollminmax import rollmax, rollmin
@@ -10,7 +11,7 @@ from .rollsum import rollsum
 from .zscore import zscore
 
 __all__ = [
-    'rollcorr', 'rollkurt', 'rollmax', 'rollmean', 'rollmedian',
-    'rollmin', 'rollpercentile', 'rollquantile', 'rollrank',
-    'rollskew', 'rollstd', 'rollsum', 'zscore',
+    'rollargmax', 'rollargmin', 'rollcorr', 'rollkurt', 'rollmax',
+    'rollmean', 'rollmedian', 'rollmin', 'rollpercentile', 'rollquantile',
+    'rollrank', 'rollskew', 'rollstd', 'rollsum', 'zscore',
 ]
