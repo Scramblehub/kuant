@@ -1,6 +1,10 @@
 """kuant.stats — rolling and windowed statistical primitives."""
 
+from .dfa import DFAResult, dfa
 from .hurstrs import HurstResult, hurstrs
+from .rollcoherence import rollcoherence
+from .rolltailindex import rolltailindex
+from .tailindex import tailindex
 from .rollargminmax import rollargmax, rollargmin
 from .rollbeta import rollbeta
 from .rollcalmar import rollcalmar
@@ -25,8 +29,13 @@ from .rollsum import rollsum
 from .zscore import zscore
 
 __all__ = [
+    "DFAResult",
+    "dfa",
     "HurstResult",
     "hurstrs",
+    "rollcoherence",
+    "rolltailindex",
+    "tailindex",
     "rollargmax",
     "rollargmin",
     "rollbeta",
