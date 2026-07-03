@@ -21,8 +21,10 @@ from .bsvanna import bsvanna
 from .bsvega import bsvega
 from .bsvolga import bsvolga
 from .bszomma import bszomma
+from .callpayoff import callpayoff
 from .impvol import impvol
 from .impvolbisection import impvolbisection
+from .putpayoff import putpayoff
 
 __all__ = [
     # first-order Greeks
@@ -34,6 +36,8 @@ __all__ = [
     # second-order Greeks (put-call symmetric)
     'bsvanna', 'bsvolga',
     'bsspeed', 'bszomma', 'bscolor',
+    # expiry payoffs
+    'callpayoff', 'putpayoff',
     # implied vol solvers
     'impvol', 'impvolbisection',
 ]
