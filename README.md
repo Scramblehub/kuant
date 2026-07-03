@@ -3,7 +3,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/kuant.svg)](https://pypi.org/project/kuant/)
 [![Python versions](https://img.shields.io/pypi/pyversions/kuant.svg)](https://pypi.org/project/kuant/)
 [![CI](https://github.com/Scramblehub/kuant/actions/workflows/ci.yml/badge.svg)](https://github.com/Scramblehub/kuant/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/badge/coverage-88%25-brightgreen.svg)](https://github.com/Scramblehub/kuant/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-89%25-brightgreen.svg)](https://github.com/Scramblehub/kuant/actions/workflows/ci.yml)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![License](https://img.shields.io/pypi/l/kuant.svg)](https://github.com/Scramblehub/kuant/blob/main/LICENSE)
 
