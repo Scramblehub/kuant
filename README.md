@@ -23,7 +23,7 @@ discovery — not just an implementation of textbook indicators.
 Alpha. 516 tests across 5 shipped subpackages:
 
 | Subpackage | Kernels | Highlights |
-|---|---|---|
+| --- | --- | --- |
 | `kuant.core` | 10 | BS family (put/call, delta, gamma, vega, rho) + normcdf/normpdf |
 | `kuant.options` | 1 | Vectorized Newton-Raphson implied-vol solver |
 | `kuant.stats` | 18 | Rolling primitives with strict-window NaN |
@@ -31,6 +31,7 @@ Alpha. 516 tests across 5 shipped subpackages:
 | `kuant.sindy` | 2 | permtest (universal null test), grangerscan |
 
 Each kernel has:
+
 - Full API doc under [`docs/kernels/`](docs/kernels/)
 - CPU fallback (numpy path — works on any machine)
 - GPU path (cupy — same math, verified for parity)
@@ -84,7 +85,7 @@ states, log_prob = viterbi(observations, pi, A, B)
 
 ## Repository layout
 
-```
+```folder
 kuant/
 ├── core/         Mathematical primitives (BS family, normal CDF/PDF)
 ├── options/      Options analytics (impvol solver)

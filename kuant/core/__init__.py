@@ -19,6 +19,8 @@ from .logsumexp import logsumexp
 from .normcdf import normcdf
 from .normpdf import normpdf
 from .normppf import normppf
+from .logtccdf import logtccdf
+from .logtcdf import logtcdf
 from .tcdf import tcdf
 from .tpdf import tpdf
 from .tppf import tppf
@@ -31,6 +33,7 @@ __all__ = [
     "lognormcdf", "lognormccdf",
     # Student-t family (fat-tail)
     "tcdf", "tpdf", "tppf",
+    "logtcdf", "logtccdf",
     # log-space arithmetic
     "logsumexp",
 ]
