@@ -1,4 +1,4 @@
-'''Second-derivative (acceleration) predictive-power scan.
+"""Second-derivative (acceleration) predictive-power scan.
 
 Motivation. Physics analog: knowing an object's position AND velocity
 AND acceleration should predict its trajectory better than position
@@ -17,12 +17,15 @@ martingale at daily frequency, and this tool automates the
 diagnostic that produces that verdict.
 
 Design: docs/kernels/sindy/accelerationscan.md.
-'''
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
 
 import numpy as np
+
+from kuant._validation import require_equal_length, require_positive
 
 
 @dataclass
@@ -36,35 +39,35 @@ class AccelerationScanResult:
 
     def summary(self) -> str:
         lines = [
-            '=== Acceleration predictive-power scan ===',
-            f'Peak smoothing:           {self.peak_smoothing}',
-            f'Peak |correlation|:       {self.peak_corr:+.4f}',
-            f'Noise-floor threshold:    {self.noise_floor:.4f}',
-            '',
+            "=== Acceleration predictive-power scan ===",
+            f"Peak smoothing:           {self.peak_smoothing}",
+            f"Peak |correlation|:       {self.peak_corr:+.4f}",
+            f"Noise-floor threshold:    {self.noise_floor:.4f}",
+            "",
             f'{"Smoothing":<12s} {"corr":>10s} {"n":>10s}',
         ]
         for w in self.smoothings:
             c = self.correlations[w]
             n = self.ns[w]
-            marker = ' <- peak' if w == self.peak_smoothing else ''
-            lines.append(f'{w:>10d}   {c:>+10.4f} {n:>10d}{marker}')
+            marker = " <- peak" if w == self.peak_smoothing else ""
+            lines.append(f"{w:>10d}   {c:>+10.4f} {n:>10d}{marker}")
 
         if abs(self.peak_corr) < self.noise_floor:
-            lines.append('')
-            lines.append('DIAGNOSTIC: peak |correlation| below the noise floor. The series')
-            lines.append('shows no exploitable acceleration structure. Returns are')
-            lines.append('martingale-like at this frequency.')
-        return '\n'.join(lines)
+            lines.append("")
+            lines.append("DIAGNOSTIC: peak |correlation| below the noise floor. The series")
+            lines.append("shows no exploitable acceleration structure. Returns are")
+            lines.append("martingale-like at this frequency.")
+        return "\n".join(lines)
 
 
 def _second_derivative(x: np.ndarray, smoothing: int) -> np.ndarray:
-    '''Second derivative smoothed by an `smoothing`-length moving average.
+    """Second derivative smoothed by an `smoothing`-length moving average.
 
     Approach: compute the discrete second difference `x[t] - 2x[t-1] +
     x[t-2]`, then apply a centered moving-average of length `smoothing`.
     NaN-filled at the boundaries where the smoothing window is not
     completely populated.
-    '''
+    """
     x = np.asarray(x, dtype=np.float64)
     n = x.size
     d2 = np.full(n, np.nan)
@@ -77,7 +80,7 @@ def _second_derivative(x: np.ndarray, smoothing: int) -> np.ndarray:
     # Centered moving average
     half = smoothing // 2
     for t in range(half, n - half):
-        window = d2[t - half:t + half + 1]
+        window = d2[t - half : t + half + 1]
         finite = window[np.isfinite(window)]
         if finite.size == smoothing:
             out[t] = finite.mean()
@@ -90,7 +93,7 @@ def accelerationscan(
     smoothings: list[int] | None = None,
     noise_floor: float = 0.025,
 ) -> AccelerationScanResult:
-    '''Test whether smoothed second derivatives of x predict target.
+    """Test whether smoothed second derivatives of x predict target.
 
     Parameters
     ----------
@@ -122,22 +125,20 @@ def accelerationscan(
     >>> result = accelerationscan(x, y, smoothings=[1, 5])
     >>> abs(result.correlations[1]) > result.noise_floor
     True
-    '''
+    """
     if smoothings is None:
         smoothings = [1, 5, 21, 63]
 
     x_arr = np.asarray(x, dtype=np.float64)
     y_arr = np.asarray(target, dtype=np.float64)
 
-    if x_arr.size != y_arr.size:
-        raise ValueError(f'x and target must have equal length, got {x_arr.size} vs {y_arr.size}')
+    require_equal_length(x_arr, "x", y_arr, "target", kernel="accelerationscan")
 
     correlations: dict[int, float] = {}
     ns: dict[int, int] = {}
 
     for w in smoothings:
-        if w < 1:
-            raise ValueError(f'smoothing must be >= 1, got {w}')
+        require_positive(w, "smoothing", kernel="accelerationscan", kind="int")
         accel = _second_derivative(x_arr, w)
         mask = np.isfinite(accel) & np.isfinite(y_arr)
         n = int(mask.sum())

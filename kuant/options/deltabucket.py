@@ -1,4 +1,4 @@
-'''Select the option index nearest to each target delta.
+"""Select the option index nearest to each target delta.
 
 Chain-selection primitive. Given a sorted list of options with known
 deltas (e.g. all calls in an expiry), and one or more target deltas
@@ -15,16 +15,20 @@ you pass the sign you want (e.g. -0.25 for a 25-delta put, +0.25 for
 a 25-delta call).
 
 Design: docs/kernels/options/deltabucket.md.
-'''
+"""
+
 from __future__ import annotations
 
 from typing import Any
 
 import numpy as np
 
+from kuant._validation import require_1d
+
 cp: Any
 try:
     import cupy as cp
+
     _CUPY_NDARRAY = cp.ndarray
 except ImportError:
     cp = None
@@ -41,7 +45,7 @@ def _detect_backend(*args) -> Any:
 
 
 def deltabucket(deltas, targets):
-    '''Return the index in `deltas` closest to each target delta.
+    """Return the index in `deltas` closest to each target delta.
 
     Parameters
     ----------
@@ -70,14 +74,10 @@ def deltabucket(deltas, targets):
     2
     >>> deltabucket(deltas, np.array([0.10, 0.50, 0.90]))
     array([1, 3, 5])
-    '''
+    """
     xp = _detect_backend(deltas, targets)
     deltas_arr = xp.asarray(deltas)
-    if deltas_arr.ndim != 1:
-        raise ValueError(
-            f'deltas must be 1D, got shape {deltas_arr.shape}. '
-            'Pass one chain at a time; batch across chains with a Python loop.'
-        )
+    require_1d(deltas_arr, "deltas", kernel="deltabucket")
     targets_arr = xp.asarray(targets)
     scalar_target = targets_arr.ndim == 0
     if scalar_target:

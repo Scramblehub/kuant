@@ -1,4 +1,4 @@
-'''Multi-seed model variance — a "no-cloning theorem" analog.
+"""Multi-seed model variance — a "no-cloning theorem" analog.
 
 The QM no-cloning theorem: an arbitrary quantum state cannot be
 perfectly copied. Applied to stochastic models: two runs of the same
@@ -22,46 +22,54 @@ Verdict from this tool: different paths, same destination — seed-
 ensembling shipped as a robustness enhancement.
 
 Design: docs/kernels/qm/nocloningscan.md.
-'''
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Callable
+
+from kuant._validation import require_range
 
 import numpy as np
 
 
 @dataclass
 class NoCloningScanResult:
-    '''Multi-seed model variance analysis.'''
-    seed_metrics: dict[int, dict[str, float]]     # seed -> metric name -> value
-    metric_stats: dict[str, dict[str, float]]     # metric name -> {mean, std, cv}
-    prediction_pair_corr_mean: float               # mean corr across seed pairs
+    """Multi-seed model variance analysis."""
+
+    seed_metrics: dict[int, dict[str, float]]  # seed -> metric name -> value
+    metric_stats: dict[str, dict[str, float]]  # metric name -> {mean, std, cv}
+    prediction_pair_corr_mean: float  # mean corr across seed pairs
     prediction_pair_corr_std: float
     n_seeds: int
 
     def summary(self) -> str:
         lines = [
-            '=== Multi-seed model variance ===',
-            f'Seeds:                        {self.n_seeds}',
-            f'Prediction pair-corr mean:    {self.prediction_pair_corr_mean:.4f}',
-            f'Prediction pair-corr std:     {self.prediction_pair_corr_std:.4f}',
-            '',
+            "=== Multi-seed model variance ===",
+            f"Seeds:                        {self.n_seeds}",
+            f"Prediction pair-corr mean:    {self.prediction_pair_corr_mean:.4f}",
+            f"Prediction pair-corr std:     {self.prediction_pair_corr_std:.4f}",
+            "",
         ]
         lines.append(f'{"Metric":<20s} {"mean":>10s} {"std":>10s} {"CV":>10s}')
         for name, stats in self.metric_stats.items():
-            lines.append(f'{name:<20s} {stats["mean"]:>10.4f} {stats["std"]:>10.4f} {stats["cv"]:>10.4f}')
+            lines.append(
+                f'{name:<20s} {stats["mean"]:>10.4f} {stats["std"]:>10.4f} {stats["cv"]:>10.4f}'
+            )
 
         pcorr = self.prediction_pair_corr_mean
-        max_cv = max(s['cv'] for s in self.metric_stats.values()) if self.metric_stats else 0.0
-        lines.append('')
+        max_cv = max(s["cv"] for s in self.metric_stats.values()) if self.metric_stats else 0.0
+        lines.append("")
         if pcorr < 0.95 and max_cv < 0.05:
-            lines.append('Verdict: DIFFERENT PATHS, SAME DESTINATION — seed-averaging safe.')
+            lines.append("Verdict: DIFFERENT PATHS, SAME DESTINATION — seed-averaging safe.")
         elif max_cv >= 0.05:
-            lines.append('Verdict: HIGH SEED VARIANCE — model may be overfitting to a random-seed instance.')
+            lines.append(
+                "Verdict: HIGH SEED VARIANCE — model may be overfitting to a random-seed instance."
+            )
         else:
-            lines.append('Verdict: near-identical seeds — no ensembling benefit.')
-        return '\n'.join(lines)
+            lines.append("Verdict: near-identical seeds — no ensembling benefit.")
+        return "\n".join(lines)
 
 
 def nocloningscan(
@@ -69,7 +77,7 @@ def nocloningscan(
     n_seeds: int,
     base_seed: int = 0,
 ) -> NoCloningScanResult:
-    '''Run `fit_predict_fn(seed)` across N seeds and summarize variance.
+    """Run `fit_predict_fn(seed)` across N seeds and summarize variance.
 
     Parameters
     ----------
@@ -109,9 +117,14 @@ def nocloningscan(
     >>> result = nocloningscan(fit_predict, n_seeds=5)
     >>> result.n_seeds
     5
-    '''
-    if n_seeds < 2:
-        raise ValueError(f'n_seeds must be >= 2, got {n_seeds}')
+    """
+    require_range(
+        n_seeds,
+        "n_seeds",
+        kernel="nocloningscan",
+        lo=2,
+        hi=float("inf"),
+    )
 
     seed_predictions: dict[int, np.ndarray] = {}
     seed_metrics: dict[int, dict[str, float]] = {}
@@ -129,8 +142,8 @@ def nocloningscan(
         values = np.array([seed_metrics[s][name] for s in seed_metrics])
         mean = float(values.mean())
         std = float(values.std())
-        cv = float(std / abs(mean)) if abs(mean) > 1e-12 else float('inf')
-        metric_stats[name] = {'mean': mean, 'std': std, 'cv': cv}
+        cv = float(std / abs(mean)) if abs(mean) > 1e-12 else float("inf")
+        metric_stats[name] = {"mean": mean, "std": std, "cv": cv}
 
     # Prediction pair correlations
     seeds = list(seed_predictions.keys())

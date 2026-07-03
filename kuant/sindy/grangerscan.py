@@ -25,6 +25,8 @@ from typing import Optional
 
 import numpy as np
 
+from kuant._validation import require_dep
+
 
 @dataclass
 class GrangerHit:
@@ -65,9 +67,12 @@ def _require_statsmodels():
 
         return grangercausalitytests
     except ImportError as e:
-        raise ImportError(
-            "kuant.sindy.grangerscan requires statsmodels. " "Install with: pip install statsmodels"
-        ) from e
+        require_dep(
+            "statsmodels",
+            kernel="grangerscan",
+            install="pip install statsmodels",
+            cause=e,
+        )
 
 
 def grangerscan(

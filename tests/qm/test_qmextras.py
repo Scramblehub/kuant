@@ -1,11 +1,15 @@
-'''Tests for posteriorentropy, nocloningscan, decoherencescan, and ghmm.'''
+"""Tests for posteriorentropy, nocloningscan, decoherencescan, and ghmm."""
+
 from __future__ import annotations
 
 import numpy as np
 import pytest
 
 from kuant.qm import (
-    decoherencescan, ghmm, nocloningscan, posteriorentropy,
+    decoherencescan,
+    ghmm,
+    nocloningscan,
+    posteriorentropy,
 )
 
 
@@ -31,22 +35,22 @@ def test_posteriorentropy_max_entropy_matches_uniform():
 
 def test_posteriorentropy_per_regime():
     gamma = np.array([[0.99, 0.01], [0.99, 0.01], [0.5, 0.5], [0.5, 0.5]])
-    regime = np.array(['low', 'low', 'high', 'high'])
+    regime = np.array(["low", "low", "high", "high"])
     result = posteriorentropy(gamma, regime=regime)
     assert result.per_regime is not None
-    assert result.per_regime['low']['mean'] < result.per_regime['high']['mean']
+    assert result.per_regime["low"]["mean"] < result.per_regime["high"]["mean"]
 
 
 def test_posteriorentropy_dimension_mismatch_raises():
     gamma = np.random.default_rng(0).dirichlet(np.ones(2), size=5)
-    with pytest.raises(ValueError, match='regime length'):
-        posteriorentropy(gamma, regime=np.array(['a', 'b']))
+    with pytest.raises(ValueError, match="'regime' length"):
+        posteriorentropy(gamma, regime=np.array(["a", "b"]))
 
 
 def test_posteriorentropy_summary_readable():
     gamma = np.array([[0.9, 0.1], [0.5, 0.5]])
     text = posteriorentropy(gamma).summary()
-    assert 'entropy' in text.lower()
+    assert "entropy" in text.lower()
 
 
 # ---------------------------------------------------------------------------
@@ -55,10 +59,12 @@ def test_posteriorentropy_summary_readable():
 
 
 def test_nocloningscan_high_pair_corr_when_identical():
-    '''If fit_predict_fn returns identical predictions across seeds,
-    the pair correlation should be near 1.'''
+    """If fit_predict_fn returns identical predictions across seeds,
+    the pair correlation should be near 1."""
+
     def fit_predict(seed):
-        return np.arange(50, dtype=float), {'m': 1.0}
+        return np.arange(50, dtype=float), {"m": 1.0}
+
     result = nocloningscan(fit_predict, n_seeds=3)
     assert result.prediction_pair_corr_mean == pytest.approx(1.0)
 
@@ -66,16 +72,17 @@ def test_nocloningscan_high_pair_corr_when_identical():
 def test_nocloningscan_verdict_matches_stats():
     def fit_predict(seed):
         rng = np.random.default_rng(seed)
-        return rng.normal(size=100), {'r2': 0.5 + rng.normal(scale=0.001)}
+        return rng.normal(size=100), {"r2": 0.5 + rng.normal(scale=0.001)}
+
     result = nocloningscan(fit_predict, n_seeds=5)
     # Different paths (pair corr low), tight metric (CV small).
     assert result.prediction_pair_corr_mean < 0.5
-    assert result.metric_stats['r2']['cv'] < 0.01
-    assert 'DIFFERENT PATHS' in result.summary()
+    assert result.metric_stats["r2"]["cv"] < 0.01
+    assert "DIFFERENT PATHS" in result.summary()
 
 
 def test_nocloningscan_min_seeds():
-    with pytest.raises(ValueError, match='must be >= 2'):
+    with pytest.raises(ValueError, match="predict_window|n_seeds"):
         nocloningscan(lambda s: (np.array([0.0]), {}), n_seeds=1)
 
 
@@ -97,8 +104,12 @@ def test_decoherencescan_basic_shape():
         return X_bar @ model
 
     result = decoherencescan(
-        fit_fn, predict_fn, X, y,
-        train_window=100, predict_window=50,
+        fit_fn,
+        predict_fn,
+        X,
+        y,
+        train_window=100,
+        predict_window=50,
     )
     assert len(result.bucket_corr) == len(result.bucket_bounds)
     assert result.peak_bucket_idx >= 0
@@ -119,7 +130,7 @@ def test_decoherencescan_summary_readable():
 
     result = decoherencescan(fit_fn, predict_fn, X, y, train_window=100, predict_window=40)
     text = result.summary()
-    assert 'decoherence' in text.lower()
+    assert "decoherence" in text.lower()
 
 
 # ---------------------------------------------------------------------------
@@ -142,6 +153,7 @@ def test_ghmm_forward_backward_likelihood_match(ghmm_2state):
     _, log_lik_fwd = ghmm.forward(obs, pi, A, mu, sigma)
     log_beta = ghmm.backward(obs, pi, A, mu, sigma)
     from scipy.special import logsumexp
+
     # log P(O) via backward: logsumexp_i(log_pi[i] + log_B[0, i] + log_beta[0, i])
     log_pi = np.log(pi)
     z0 = (obs[0] - mu) / sigma
@@ -151,7 +163,7 @@ def test_ghmm_forward_backward_likelihood_match(ghmm_2state):
 
 
 def test_ghmm_viterbi_recovers_regime(ghmm_2state):
-    '''With well-separated means, Viterbi should track the true regime.'''
+    """With well-separated means, Viterbi should track the true regime."""
     pi, A, mu, sigma = ghmm_2state
     # Two clear regimes: first 5 near 0, last 5 near 3
     obs = np.array([0.1, -0.2, 0.1, 0.3, -0.1, 3.0, 2.9, 3.1, 2.8, 3.2])
@@ -172,12 +184,12 @@ def test_ghmm_negative_sigma_raises(ghmm_2state):
     pi, A, mu, sigma = ghmm_2state
     obs = np.array([0.1, 0.2])
     bad_sigma = np.array([1.0, -0.5])
-    with pytest.raises(ValueError, match='sigma must be positive'):
+    with pytest.raises(ValueError, match="'sigma' must be positive"):
         ghmm.forward(obs, pi, A, mu, bad_sigma)
 
 
 def test_ghmm_shape_mismatch_raises(ghmm_2state):
     pi, A, mu, sigma = ghmm_2state
     obs = np.array([0.1, 0.2])
-    with pytest.raises(ValueError, match='mu must be'):
+    with pytest.raises(ValueError, match="'mu' must have shape"):
         ghmm.forward(obs, pi, A, np.array([0.0]), sigma)

@@ -1,4 +1,4 @@
-'''HMM forward algorithm (log-space).
+"""HMM forward algorithm (log-space).
 
 For a discrete-observation HMM with:
   N hidden states, M observation symbols
@@ -20,7 +20,8 @@ We work entirely in log-space with `scipy.special.logsumexp` to avoid
 underflow on long sequences.
 
 Design: docs/kernels/hmm_forward.md.
-'''
+"""
+
 from __future__ import annotations
 
 from typing import Any
@@ -28,9 +29,12 @@ from typing import Any
 import numpy as np
 from scipy.special import logsumexp
 
+from kuant._validation import require_1d, require_expected_shape
+
 cp: Any
 try:
     import cupy as cp
+
     _CUPY_NDARRAY = cp.ndarray
 except ImportError:
     cp = None
@@ -38,12 +42,16 @@ except ImportError:
 
 
 def _prepare_hmm_inputs(obs, pi, A, B):
-    '''Validate and coerce (obs, pi, A, B) into a consistent backend.
+    """Validate and coerce (obs, pi, A, B) into a consistent backend.
 
     Returns (backend, obs, log_pi, log_A, log_B).
     obs is int (observation indices); the others are log-probabilities.
-    '''
-    if isinstance(pi, _CUPY_NDARRAY) or isinstance(A, _CUPY_NDARRAY) or isinstance(B, _CUPY_NDARRAY):
+    """
+    if (
+        isinstance(pi, _CUPY_NDARRAY)
+        or isinstance(A, _CUPY_NDARRAY)
+        or isinstance(B, _CUPY_NDARRAY)
+    ):
         xp = cp
     else:
         xp = np
@@ -53,21 +61,17 @@ def _prepare_hmm_inputs(obs, pi, A, B):
     A_arr = xp.asarray(A, dtype=np.float64)
     B_arr = xp.asarray(B, dtype=np.float64)
 
-    if obs_arr.ndim != 1:
-        raise ValueError(f'obs must be 1D, got shape {obs_arr.shape}')
-    if obs_arr.dtype.kind not in 'iu':
+    require_1d(obs_arr, "obs", kernel="hmm.forward")
+    if obs_arr.dtype.kind not in "iu":
         # Allow float ints (e.g. from numpy) but require integer values
         obs_arr = obs_arr.astype(np.int64)
-    if pi_arr.ndim != 1:
-        raise ValueError(f'pi must be 1D, got shape {pi_arr.shape}')
+    require_1d(pi_arr, "pi", kernel="hmm.forward")
     N = pi_arr.size
-    if A_arr.shape != (N, N):
-        raise ValueError(f'A must be ({N}, {N}), got {A_arr.shape}')
-    if B_arr.ndim != 2 or B_arr.shape[0] != N:
-        raise ValueError(f'B must be ({N}, M), got {B_arr.shape}')
+    require_expected_shape(A_arr, "A", (N, N), kernel="hmm.forward")
+    require_expected_shape(B_arr, "B", (N, "M"), kernel="hmm.forward")
 
     # Move to log-space. Guard against log(0) with a floor of -inf.
-    with np.errstate(divide='ignore') if xp is np else _null_context():
+    with np.errstate(divide="ignore") if xp is np else _null_context():
         log_pi = xp.log(pi_arr)
         log_A = xp.log(A_arr)
         log_B = xp.log(B_arr)
@@ -76,22 +80,26 @@ def _prepare_hmm_inputs(obs, pi, A, B):
 
 
 class _null_context:
-    '''No-op context manager for cupy paths (cupy has no errstate).'''
-    def __enter__(self): return self
-    def __exit__(self, *a): return False
+    """No-op context manager for cupy paths (cupy has no errstate)."""
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
 
 
 def _logsumexp_axis(xp, arr, axis):
-    '''Numerically-stable logsumexp along an axis, for numpy or cupy.'''
+    """Numerically-stable logsumexp along an axis, for numpy or cupy."""
     if xp is np:
         return logsumexp(arr, axis=axis)
     # cupy: implement inline
     m = xp.max(arr, axis=axis, keepdims=True)
-    return (xp.log(xp.sum(xp.exp(arr - m), axis=axis)) + xp.squeeze(m, axis=axis))
+    return xp.log(xp.sum(xp.exp(arr - m), axis=axis)) + xp.squeeze(m, axis=axis)
 
 
 def forward(obs, pi, A, B):
-    '''Log-space HMM forward algorithm.
+    """Log-space HMM forward algorithm.
 
     Parameters
     ----------
@@ -121,7 +129,7 @@ def forward(obs, pi, A, B):
     >>> log_alpha, log_lik = forward(obs, pi, A, B)
     >>> log_alpha.shape
     (3, 2)
-    '''
+    """
     xp, obs_arr, log_pi, log_A, log_B = _prepare_hmm_inputs(obs, pi, A, B)
     T = obs_arr.size
     N = log_pi.size
@@ -136,7 +144,7 @@ def forward(obs, pi, A, B):
         # For each state j, compute logsumexp_i(log_alpha[t-1, i] + log_A[i, j])
         # Vectorize: broadcast log_alpha[t-1] over j via log_A
         # log_alpha[t-1, :, None] + log_A → (N, N), then logsumexp over axis 0
-        combined = log_alpha[t-1, :, None] + log_A                # (N_prev, N_next)
+        combined = log_alpha[t - 1, :, None] + log_A  # (N_prev, N_next)
         log_alpha[t] = _logsumexp_axis(xp, combined, axis=0) + log_B[:, obs_arr[t]]
 
     log_likelihood = float(_logsumexp_axis(xp, log_alpha[-1], axis=0))

@@ -1,4 +1,4 @@
-'''Nonlinear feature-library scan via GradientBoosting + permutation null.
+"""Nonlinear feature-library scan via GradientBoosting + permutation null.
 
 Motivation. If a LASSO scan (`sindylasso`) came back empty, that only
 rules out sparse LINEAR structure. Interactions and non-linearities
@@ -21,12 +21,15 @@ target runs produce the same gate strength. Without the permutation
 step this ships as a real signal; with it, the null is decisive.
 
 Design: docs/kernels/sindy/pinnscan.md.
-'''
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
 
 import numpy as np
+
+from kuant._validation import require_dep, require_equal_length, require_min_clean
 
 from .permtest import permtest
 
@@ -42,39 +45,41 @@ class PinnScanResult:
 
     def summary(self) -> str:
         lines = [
-            '=== Nonlinear (PINN-lite) feature-library scan ===',
-            f'Features in library:      {self.n_features}',
-            f'OOF R²:                   {self.r2_oof:.4f}',
-            f'OOF correlation:          {self.corr_oof:+.4f}',
-            f'Permutation p-value:      {self.permutation_p:.4f} (n={self.n_perms})',
-            f'Signal beats shuffle:     {self.permutation_p < 0.05}',
-            '',
-            'Top 10 feature importances:',
+            "=== Nonlinear (PINN-lite) feature-library scan ===",
+            f"Features in library:      {self.n_features}",
+            f"OOF R²:                   {self.r2_oof:.4f}",
+            f"OOF correlation:          {self.corr_oof:+.4f}",
+            f"Permutation p-value:      {self.permutation_p:.4f} (n={self.n_perms})",
+            f"Signal beats shuffle:     {self.permutation_p < 0.05}",
+            "",
+            "Top 10 feature importances:",
         ]
-        top = sorted(self.feature_importances.items(),
-                     key=lambda kv: -kv[1])[:10]
+        top = sorted(self.feature_importances.items(), key=lambda kv: -kv[1])[:10]
         for name, imp in top:
-            lines.append(f'  {name:<30s} {imp:.4f}')
+            lines.append(f"  {name:<30s} {imp:.4f}")
 
         if self.permutation_p >= 0.05:
-            lines.append('')
-            lines.append('DIAGNOSTIC: OOF fit does NOT survive permutation. The library')
-            lines.append('carries no nonlinear signal above the noise floor. If sindylasso')
-            lines.append('was also null on this library, retire it — the joint search space')
-            lines.append('has been explored.')
-        return '\n'.join(lines)
+            lines.append("")
+            lines.append("DIAGNOSTIC: OOF fit does NOT survive permutation. The library")
+            lines.append("carries no nonlinear signal above the noise floor. If sindylasso")
+            lines.append("was also null on this library, retire it — the joint search space")
+            lines.append("has been explored.")
+        return "\n".join(lines)
 
 
 def _require_sklearn():
     try:
         from sklearn.ensemble import GradientBoostingRegressor
         from sklearn.model_selection import KFold
+
         return GradientBoostingRegressor, KFold
     except ImportError as e:
-        raise ImportError(
-            'kuant.sindy.pinnscan requires scikit-learn. '
-            'Install with: pip install scikit-learn'
-        ) from e
+        require_dep(
+            "scikit-learn",
+            kernel="pinnscan",
+            install="pip install scikit-learn",
+            cause=e,
+        )
 
 
 def pinnscan(
@@ -85,7 +90,7 @@ def pinnscan(
     n_estimators: int = 100,
     random_state: int = 0,
 ) -> PinnScanResult:
-    '''Nonlinear feature-library scan with a permutation null.
+    """Nonlinear feature-library scan with a permutation null.
 
     Fits a GradientBoostingRegressor over the whole library using
     KFold CV to get out-of-fold predictions, then runs a permutation
@@ -109,22 +114,20 @@ def pinnscan(
     Returns
     -------
     PinnScanResult
-    '''
+    """
     GradientBoostingRegressor, KFold = _require_sklearn()
 
     feature_names = list(library.keys())
     X = np.column_stack([np.asarray(library[k], dtype=np.float64) for k in feature_names])
     y = np.asarray(target, dtype=np.float64)
 
-    if X.shape[0] != y.size:
-        raise ValueError(
-            f'target length {y.size} != features length {X.shape[0]}'
-        )
+    require_equal_length(X, "library", y, "target", kernel="pinnscan")
 
     mask = np.isfinite(np.column_stack([X, y[:, None]])).all(axis=1)
     X_clean, y_clean = X[mask], y[mask]
-    if len(y_clean) < 30:
-        raise ValueError(f'too few clean rows ({len(y_clean)}) after NaN drop')
+    require_min_clean(
+        y_clean, "target", kernel="pinnscan", min_count=30, purpose="fit the GBR + permutation null"
+    )
 
     kf = KFold(n_splits=n_splits, shuffle=False)
 
@@ -132,7 +135,8 @@ def pinnscan(
         oof = np.zeros_like(y_arg)
         for tr, te in kf.split(X_arg):
             m = GradientBoostingRegressor(
-                n_estimators=n_estimators, random_state=random_state,
+                n_estimators=n_estimators,
+                random_state=random_state,
             )
             m.fit(X_arg[tr], y_arg[tr])
             oof[te] = m.predict(X_arg[te])
@@ -150,11 +154,11 @@ def pinnscan(
 
     # Feature importances from a single fit on the full clean data.
     full_model = GradientBoostingRegressor(
-        n_estimators=n_estimators, random_state=random_state,
+        n_estimators=n_estimators,
+        random_state=random_state,
     ).fit(X_clean, y_clean)
     importances = {
-        name: float(imp)
-        for name, imp in zip(feature_names, full_model.feature_importances_)
+        name: float(imp) for name, imp in zip(feature_names, full_model.feature_importances_)
     }
 
     # Permutation p-value on OOF R².
@@ -163,8 +167,13 @@ def pinnscan(
         return r2
 
     perm_result = permtest(
-        real_r2, _r2_metric, X_clean, y_clean,
-        n_perms=n_perms, seed=random_state, higher_is_better=True,
+        real_r2,
+        _r2_metric,
+        X_clean,
+        y_clean,
+        n_perms=n_perms,
+        seed=random_state,
+        higher_is_better=True,
     )
 
     return PinnScanResult(

@@ -1,4 +1,4 @@
-'''Classify options by moneyness relative to spot.
+"""Classify options by moneyness relative to spot.
 
 Moneyness convention here: log-forward moneyness
     m = ln(K / F)   where F = S · e^((r-q)·T)
@@ -13,16 +13,20 @@ Given per-option (S, K, T, r, q) and a set of bucket edges on m, this
 kernel returns a bucket label per option.
 
 Design: docs/kernels/options/moneynessbucket.md.
-'''
+"""
+
 from __future__ import annotations
 
 from typing import Any
 
 import numpy as np
 
+from kuant._validation import require_1d
+
 cp: Any
 try:
     import cupy as cp
+
     _CUPY_NDARRAY = cp.ndarray
 except ImportError:
     cp = None
@@ -40,11 +44,11 @@ def _detect_backend(*args) -> Any:
 
 # Standard bucket labels used by many desks. Users can override.
 DEFAULT_EDGES = np.array([-0.10, -0.03, 0.03, 0.10])
-DEFAULT_LABELS = ('deep_ITM', 'ITM', 'ATM', 'OTM', 'deep_OTM')
+DEFAULT_LABELS = ("deep_ITM", "ITM", "ATM", "OTM", "deep_OTM")
 
 
 def moneynessbucket(S, K, T, r, q=0.0, edges=None):
-    '''Assign each option a bucket index based on log-forward moneyness.
+    """Assign each option a bucket index based on log-forward moneyness.
 
     Parameters
     ----------
@@ -77,7 +81,7 @@ def moneynessbucket(S, K, T, r, q=0.0, edges=None):
     >>> # F = 100·e^(0.05) ≈ 105.13; K=100 is slightly ITM-forward
     >>> moneynessbucket(S, K, 1.0, 0.05)
     array([0, 1, 1, 2, 4])
-    '''
+    """
     xp = _detect_backend(S, K, T, r, q, edges)
     S_arr = xp.asarray(S)
     K_arr = xp.asarray(K)
@@ -85,13 +89,11 @@ def moneynessbucket(S, K, T, r, q=0.0, edges=None):
     r_arr = xp.asarray(r)
 
     out_dtype = xp.result_type(S_arr.dtype, K_arr.dtype, T_arr.dtype, r_arr.dtype)
-    if out_dtype.kind in 'iub':
+    if out_dtype.kind in "iub":
         out_dtype = xp.dtype(xp.float64)
 
     q_arr = xp.asarray(q, dtype=out_dtype)
-    S_arr, K_arr, T_arr, r_arr, q_arr = xp.broadcast_arrays(
-        S_arr, K_arr, T_arr, r_arr, q_arr
-    )
+    S_arr, K_arr, T_arr, r_arr, q_arr = xp.broadcast_arrays(S_arr, K_arr, T_arr, r_arr, q_arr)
     S_arr = S_arr.astype(out_dtype, copy=False)
     K_arr = K_arr.astype(out_dtype, copy=False)
     T_arr = T_arr.astype(out_dtype, copy=False)
@@ -104,8 +106,7 @@ def moneynessbucket(S, K, T, r, q=0.0, edges=None):
         edges_arr = xp.asarray(DEFAULT_EDGES, dtype=out_dtype)
     else:
         edges_arr = xp.asarray(edges, dtype=out_dtype)
-        if edges_arr.ndim != 1:
-            raise ValueError(f'edges must be 1D, got shape {edges_arr.shape}')
+        require_1d(edges_arr, "edges", kernel="moneynessbucket")
 
     # digitize: returns index in [0, len(edges)]
     return xp.digitize(m, edges_arr)

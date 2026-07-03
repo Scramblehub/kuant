@@ -1,4 +1,4 @@
-'''Within-window decoherence scan — how model skill decays vs day-in-window.
+"""Within-window decoherence scan — how model skill decays vs day-in-window.
 
 Motivation. If you train a model on `[t-train_window, t)` and then use
 it to predict for `[t, t + predict_window)` without re-training, the
@@ -20,7 +20,8 @@ is the diagnostic that produces that table for any (fit_fn, predict_fn)
 combination.
 
 Design: docs/kernels/qm/decoherencescan.md.
-'''
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -28,10 +29,13 @@ from typing import Any, Callable
 
 import numpy as np
 
+from kuant._validation import require_range
+
 
 @dataclass
 class DecoherenceScanResult:
-    '''Per-bucket correlation of prediction vs realized target.'''
+    """Per-bucket correlation of prediction vs realized target."""
+
     bucket_bounds: list[tuple[int, int]]
     bucket_corr: list[float]
     bucket_n: list[int]
@@ -41,17 +45,17 @@ class DecoherenceScanResult:
 
     def summary(self) -> str:
         lines = [
-            '=== Within-window decoherence scan ===',
-            f'Monotonic decay: {self.is_monotonic}',
-            f'Peak bucket:     {self.bucket_bounds[self.peak_bucket_idx]} '
-            f'(corr {self.peak_corr:+.4f})',
-            '',
+            "=== Within-window decoherence scan ===",
+            f"Monotonic decay: {self.is_monotonic}",
+            f"Peak bucket:     {self.bucket_bounds[self.peak_bucket_idx]} "
+            f"(corr {self.peak_corr:+.4f})",
+            "",
             f'{"Day-in-window":<15s} {"corr":>10s} {"n":>10s}',
         ]
         for (lo, hi), c, n in zip(self.bucket_bounds, self.bucket_corr, self.bucket_n):
-            marker = ' <- peak' if (lo, hi) == self.bucket_bounds[self.peak_bucket_idx] else ''
+            marker = " <- peak" if (lo, hi) == self.bucket_bounds[self.peak_bucket_idx] else ""
             lines.append(f'{f"{lo:>3d}..{hi:<3d}":<15s} {c:>+10.4f} {n:>10d}{marker}')
-        return '\n'.join(lines)
+        return "\n".join(lines)
 
 
 def decoherencescan(
@@ -63,7 +67,7 @@ def decoherencescan(
     predict_window: int,
     buckets: list[tuple[int, int]] | None = None,
 ) -> DecoherenceScanResult:
-    '''Bucket predictions by day-in-window and measure correlation with target.
+    """Bucket predictions by day-in-window and measure correlation with target.
 
     Parameters
     ----------
@@ -97,15 +101,19 @@ def decoherencescan(
     A non-monotonic decay pattern is a warning sign that retraining
     frequency should be re-tuned — usually LESS frequent retraining
     beats MORE frequent (see zenoscan).
-    '''
+    """
     T = len(y)
-    if predict_window < 2:
-        raise ValueError(f'predict_window must be >= 2, got {predict_window}')
+    require_range(
+        predict_window,
+        "predict_window",
+        kernel="decoherencescan",
+        lo=2,
+        hi=float("inf"),
+    )
 
     if buckets is None:
         step = predict_window // 5 if predict_window >= 5 else 1
-        buckets = [(i, min(i + step, predict_window))
-                   for i in range(0, predict_window, step)]
+        buckets = [(i, min(i + step, predict_window)) for i in range(0, predict_window, step)]
 
     bucket_days = [np.arange(lo, hi) for lo, hi in buckets]
 
@@ -115,11 +123,11 @@ def decoherencescan(
 
     t = train_window
     while t + predict_window <= T:
-        model = fit_fn(X[t - train_window:t], y[t - train_window:t])
-        pred = predict_fn(model, X[t:t + predict_window])
+        model = fit_fn(X[t - train_window : t], y[t - train_window : t])
+        pred = predict_fn(model, X[t : t + predict_window])
         pred = np.asarray(pred).ravel()
-        y_pred_all[t:t + predict_window] = pred
-        day_in_win_all[t:t + predict_window] = np.arange(predict_window)
+        y_pred_all[t : t + predict_window] = pred
+        day_in_win_all[t : t + predict_window] = np.arange(predict_window)
         t += predict_window
 
     valid = ~np.isnan(y_pred_all)
@@ -139,8 +147,7 @@ def decoherencescan(
 
     peak_idx = int(np.argmax(bucket_corr))
     is_monotonic = all(
-        bucket_corr[i] >= bucket_corr[i + 1] - 1e-12
-        for i in range(len(bucket_corr) - 1)
+        bucket_corr[i] >= bucket_corr[i + 1] - 1e-12 for i in range(len(bucket_corr) - 1)
     )
 
     return DecoherenceScanResult(

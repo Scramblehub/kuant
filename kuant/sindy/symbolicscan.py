@@ -1,4 +1,4 @@
-'''Polynomial-symbolic regression scan.
+"""Polynomial-symbolic regression scan.
 
 Motivation. Between LASSO on raw features (`sindylasso`) and
 GradientBoosting on the same library (`pinnscan`), there's a gap:
@@ -17,7 +17,8 @@ polynomial improvement over the pure linear scan. The mechanism is
 the same as sindylasso, just with an interaction basis.
 
 Design: docs/kernels/sindy/symbolicscan.md.
-'''
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -25,10 +26,17 @@ from typing import Optional
 
 import numpy as np
 
+from kuant._validation import (
+    require_dep,
+    require_equal_length,
+    require_min_clean,
+    require_positive,
+)
+
 
 @dataclass
 class SymbolicScanResult:
-    selected_terms: dict[str, float]     # symbolic term string -> coefficient
+    selected_terms: dict[str, float]  # symbolic term string -> coefficient
     alpha_selected: float
     alpha_grid: np.ndarray
     r2: float
@@ -38,33 +46,32 @@ class SymbolicScanResult:
 
     def summary(self) -> str:
         lines = [
-            '=== Symbolic (polynomial) regression scan ===',
-            f'Polynomial degree:        {self.degree}',
-            f'Expanded library size:    {self.n_terms_in_expansion}',
-            f'Selected (non-zero):      {len(self.selected_terms)}',
-            f'Alpha chosen (by CV):     {self.alpha_selected:.4g}',
-            f'OOF R²:                   {self.r2:.4f}',
-            f'Intercept:                {self.intercept:+.4f}',
+            "=== Symbolic (polynomial) regression scan ===",
+            f"Polynomial degree:        {self.degree}",
+            f"Expanded library size:    {self.n_terms_in_expansion}",
+            f"Selected (non-zero):      {len(self.selected_terms)}",
+            f"Alpha chosen (by CV):     {self.alpha_selected:.4g}",
+            f"OOF R²:                   {self.r2:.4f}",
+            f"Intercept:                {self.intercept:+.4f}",
         ]
 
         if self.selected_terms:
-            lines.append('')
-            lines.append('Selected polynomial equation (largest |coef| first):')
-            ordered = sorted(self.selected_terms.items(),
-                             key=lambda kv: -abs(kv[1]))
-            eqn_terms = [f'{self.intercept:+.4f}']
+            lines.append("")
+            lines.append("Selected polynomial equation (largest |coef| first):")
+            ordered = sorted(self.selected_terms.items(), key=lambda kv: -abs(kv[1]))
+            eqn_terms = [f"{self.intercept:+.4f}"]
             for term, coef in ordered:
-                sign = '+' if coef >= 0 else '-'
-                eqn_terms.append(f'{sign} {abs(coef):.4f}·{term}')
-                lines.append(f'  {term:<30s} {coef:+.4f}')
-            lines.append('')
-            lines.append('  y ≈ ' + ' '.join(eqn_terms))
+                sign = "+" if coef >= 0 else "-"
+                eqn_terms.append(f"{sign} {abs(coef):.4f}·{term}")
+                lines.append(f"  {term:<30s} {coef:+.4f}")
+            lines.append("")
+            lines.append("  y ≈ " + " ".join(eqn_terms))
         else:
-            lines.append('')
-            lines.append('DIAGNOSTIC: LASSO selected zero polynomial terms. No compact')
-            lines.append('symbolic structure detected. Try pinnscan for a full nonlinear')
-            lines.append('search, or accept the null.')
-        return '\n'.join(lines)
+            lines.append("")
+            lines.append("DIAGNOSTIC: LASSO selected zero polynomial terms. No compact")
+            lines.append("symbolic structure detected. Try pinnscan for a full nonlinear")
+            lines.append("search, or accept the null.")
+        return "\n".join(lines)
 
 
 def _require_sklearn():
@@ -72,12 +79,15 @@ def _require_sklearn():
         from sklearn.linear_model import Lasso, LassoCV
         from sklearn.model_selection import KFold
         from sklearn.preprocessing import PolynomialFeatures
+
         return Lasso, LassoCV, KFold, PolynomialFeatures
     except ImportError as e:
-        raise ImportError(
-            'kuant.sindy.symbolicscan requires scikit-learn. '
-            'Install with: pip install scikit-learn'
-        ) from e
+        require_dep(
+            "scikit-learn",
+            kernel="symbolicscan",
+            install="pip install scikit-learn",
+            cause=e,
+        )
 
 
 def symbolicscan(
@@ -89,7 +99,7 @@ def symbolicscan(
     max_iter: int = 10000,
     include_bias: bool = False,
 ) -> SymbolicScanResult:
-    '''Polynomial-symbolic regression scan via LASSO on a polynomial expansion.
+    """Polynomial-symbolic regression scan via LASSO on a polynomial expansion.
 
     Parameters
     ----------
@@ -126,11 +136,10 @@ def symbolicscan(
     >>> result = symbolicscan(y, {'x1': x1, 'x2': x2})
     >>> 'x1 x2' in result.selected_terms or 'x1*x2' in result.selected_terms
     True
-    '''
+    """
     Lasso, LassoCV, KFold, PolynomialFeatures = _require_sklearn()
 
-    if degree < 1:
-        raise ValueError(f'degree must be >= 1, got {degree}')
+    require_positive(degree, "degree", kernel="symbolicscan", kind="int")
 
     if alpha_grid is None:
         alpha_grid = np.logspace(-5, -1, 30)
@@ -139,15 +148,17 @@ def symbolicscan(
     X_raw = np.column_stack([np.asarray(features[k], dtype=np.float64) for k in feature_names])
     y = np.asarray(target, dtype=np.float64)
 
-    if X_raw.shape[0] != y.size:
-        raise ValueError(
-            f'target length {y.size} != features length {X_raw.shape[0]}'
-        )
+    require_equal_length(X_raw, "features", y, "target", kernel="symbolicscan")
 
     mask = np.isfinite(np.column_stack([X_raw, y[:, None]])).all(axis=1)
     X_raw_clean, y_clean = X_raw[mask], y[mask]
-    if len(y_clean) < 30:
-        raise ValueError(f'too few clean rows ({len(y_clean)}) after NaN drop')
+    require_min_clean(
+        y_clean,
+        "target",
+        kernel="symbolicscan",
+        min_count=30,
+        purpose="fit polynomial LASSO",
+    )
 
     # Polynomial expansion
     poly = PolynomialFeatures(degree=degree, include_bias=include_bias, interaction_only=False)
@@ -159,9 +170,7 @@ def symbolicscan(
     model.fit(X_poly, y_clean)
 
     selected = {
-        name: float(coef)
-        for name, coef in zip(term_names, model.coef_)
-        if abs(coef) > 1e-12
+        name: float(coef) for name, coef in zip(term_names, model.coef_) if abs(coef) > 1e-12
     }
 
     # OOF R² at chosen alpha

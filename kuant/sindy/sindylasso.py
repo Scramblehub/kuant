@@ -1,4 +1,4 @@
-'''LASSO-with-CV feature-library scan.
+"""LASSO-with-CV feature-library scan.
 
 Motivation. Given a target time series and a rich library of candidate
 features (lagged versions of X, non-linear transforms, interactions,
@@ -17,7 +17,8 @@ If it selects a few features and the R² beats a shuffled-target
 baseline, you have candidate signals.
 
 Design: docs/kernels/sindy/sindylasso.md.
-'''
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -25,57 +26,61 @@ from typing import Optional
 
 import numpy as np
 
+from kuant._validation import require_dep, require_equal_length, require_min_clean
+
 
 @dataclass
 class SindyLassoResult:
-    selected_features: dict[str, float]         # feature name -> coefficient (non-zero only)
+    selected_features: dict[str, float]  # feature name -> coefficient (non-zero only)
     alpha_selected: float
     alpha_grid: np.ndarray
-    r2: float                                     # OOF R² at chosen alpha
+    r2: float  # OOF R² at chosen alpha
     n_features_in_library: int
     intercept: float
 
     def summary(self) -> str:
         n_sel = len(self.selected_features)
         lines = [
-            '=== SINDy LASSO feature-library scan ===',
-            f'Library size:            {self.n_features_in_library}',
-            f'Selected (non-zero):     {n_sel}',
-            f'Alpha chosen (by CV):    {self.alpha_selected:.4g}',
-            f'Alpha grid range:        [{self.alpha_grid[0]:.4g}, {self.alpha_grid[-1]:.4g}]',
-            f'OOF R² at chosen alpha:  {self.r2:.4f}',
-            f'Intercept:               {self.intercept:+.4f}',
+            "=== SINDy LASSO feature-library scan ===",
+            f"Library size:            {self.n_features_in_library}",
+            f"Selected (non-zero):     {n_sel}",
+            f"Alpha chosen (by CV):    {self.alpha_selected:.4g}",
+            f"Alpha grid range:        [{self.alpha_grid[0]:.4g}, {self.alpha_grid[-1]:.4g}]",
+            f"OOF R² at chosen alpha:  {self.r2:.4f}",
+            f"Intercept:               {self.intercept:+.4f}",
         ]
 
         # Null-signal warning: alpha at top of range + zero features selected
         if n_sel == 0:
             top = self.alpha_grid.max()
             if abs(self.alpha_selected - top) < 1e-12:
-                lines.append('')
-                lines.append('DIAGNOSTIC: CV picked the strongest regularization AND selected')
-                lines.append('zero features. Signal-to-noise is below threshold across the entire')
-                lines.append('library. This is a clean null result.')
+                lines.append("")
+                lines.append("DIAGNOSTIC: CV picked the strongest regularization AND selected")
+                lines.append("zero features. Signal-to-noise is below threshold across the entire")
+                lines.append("library. This is a clean null result.")
 
         if n_sel > 0:
-            lines.append('')
-            lines.append('Selected features (largest |coef| first):')
-            ordered = sorted(self.selected_features.items(),
-                             key=lambda kv: -abs(kv[1]))
+            lines.append("")
+            lines.append("Selected features (largest |coef| first):")
+            ordered = sorted(self.selected_features.items(), key=lambda kv: -abs(kv[1]))
             for name, coef in ordered:
-                lines.append(f'  {name:<30s} {coef:+.4f}')
-        return '\n'.join(lines)
+                lines.append(f"  {name:<30s} {coef:+.4f}")
+        return "\n".join(lines)
 
 
 def _require_sklearn():
     try:
         from sklearn.linear_model import LassoCV
         from sklearn.model_selection import KFold
+
         return LassoCV, KFold
     except ImportError as e:
-        raise ImportError(
-            'kuant.sindy.sindylasso requires scikit-learn. '
-            'Install with: pip install scikit-learn'
-        ) from e
+        require_dep(
+            "scikit-learn",
+            kernel="sindylasso",
+            install="pip install scikit-learn",
+            cause=e,
+        )
 
 
 def sindylasso(
@@ -85,7 +90,7 @@ def sindylasso(
     n_splits: int = 5,
     max_iter: int = 10000,
 ) -> SindyLassoResult:
-    '''LASSO-with-CV feature-library scan.
+    """LASSO-with-CV feature-library scan.
 
     Parameters
     ----------
@@ -126,7 +131,7 @@ def sindylasso(
     >>> result = sindylasso(y, library)
     >>> 'x1' in result.selected_features
     True
-    '''
+    """
     LassoCV, KFold = _require_sklearn()
 
     if alpha_grid is None:
@@ -136,33 +141,33 @@ def sindylasso(
     X = np.column_stack([np.asarray(library[k], dtype=np.float64) for k in feature_names])
     y = np.asarray(target, dtype=np.float64)
 
-    if X.shape[0] != y.size:
-        raise ValueError(
-            f'target has length {y.size} but features have length {X.shape[0]}'
-        )
+    require_equal_length(X, "library", y, "target", kernel="sindylasso")
 
     # Drop rows with any NaN.
     mask = np.isfinite(np.column_stack([X, y[:, None]])).all(axis=1)
     X_clean, y_clean = X[mask], y[mask]
-    if len(y_clean) < 30:
-        raise ValueError(f'too few clean rows ({len(y_clean)}) after NaN drop')
+    require_min_clean(
+        y_clean, "target", kernel="sindylasso", min_count=30, purpose="fit LASSO with CV"
+    )
 
     kf = KFold(n_splits=n_splits, shuffle=False)
     model = LassoCV(
-        alphas=alpha_grid, cv=kf, max_iter=max_iter, n_jobs=1,
+        alphas=alpha_grid,
+        cv=kf,
+        max_iter=max_iter,
+        n_jobs=1,
     )
     model.fit(X_clean, y_clean)
 
     # Selected features = non-zero coefficients
     selected = {
-        name: float(coef)
-        for name, coef in zip(feature_names, model.coef_)
-        if abs(coef) > 1e-12
+        name: float(coef) for name, coef in zip(feature_names, model.coef_) if abs(coef) > 1e-12
     }
 
     # OOF R² at chosen alpha
     oof = np.zeros_like(y_clean)
     from sklearn.linear_model import Lasso
+
     for tr, te in kf.split(X_clean):
         m = Lasso(alpha=float(model.alpha_), max_iter=max_iter)
         m.fit(X_clean[tr], y_clean[tr])
