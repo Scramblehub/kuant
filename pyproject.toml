@@ -4,13 +4,33 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kuant"
-version = "0.0.1"
+version = "0.1.0"
 description = "GPU-accelerated quantitative research kernels. Kernel × quant."
 readme = "README.md"
 license = { text = "Apache-2.0" }
 requires-python = ">=3.10"
+authors = [
+    { name = "Orange Shark" },
+]
+keywords = [
+    "quant",
+    "quantitative-finance",
+    "options",
+    "black-scholes",
+    "greeks",
+    "implied-volatility",
+    "rolling-statistics",
+    "hidden-markov-model",
+    "sindy",
+    "extreme-value-theory",
+    "generalized-pareto",
+    "student-t",
+    "gpu",
+    "cupy",
+    "numpy",
+]
 classifiers = [
-    "Development Status :: 1 - Planning",
+    "Development Status :: 3 - Alpha",
     "Intended Audience :: Financial and Insurance Industry",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: Apache Software License",
@@ -26,6 +46,12 @@ dependencies = [
     "numpy>=1.24",
     "scipy>=1.11",
 ]
+
+[project.urls]
+Homepage = "https://github.com/Scramblehub/kuant"
+Repository = "https://github.com/Scramblehub/kuant"
+Issues = "https://github.com/Scramblehub/kuant/issues"
+Documentation = "https://github.com/Scramblehub/kuant/tree/main/docs"
 
 [project.optional-dependencies]
 gpu = ["cupy-cuda12x>=12.0"]
