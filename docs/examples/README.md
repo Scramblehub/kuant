@@ -6,19 +6,67 @@ End-to-end usage patterns showing how to compose kernels for real tasks.
 
 Each example lives in its own file and:
 
-1. Imports only from kuant (no other quant deps)
-2. Solves one specific task (price an option surface, backtest a signal,
-   invert an IV curve, decode HMM states, ...)
-3. Has a top-of-file comment explaining what it demonstrates
+1. Imports only from kuant (no other quant deps beyond numpy)
+2. Solves one specific task
+3. Has a top-of-file docstring explaining what it demonstrates
 4. Runs on CPU by default; GPU acceleration is optional
+5. Fully self-contained — no external data needed
 
-## Planned examples
+Run any example directly:
 
-- `bs_price_surface.py` — vectorized BS pricing on a (strike, tenor) grid
-- `iv_surface_from_market.py` — invert an option chain to an IV surface
-- `rolling_zscore_signal.py` — z-score of returns as a mean-reversion signal
-- `hmm_regime_decode.py` — Viterbi-decode market regimes on a return series
-- `belltest_your_features.py` — run the classical-bound test on your own data
+```bash
+python docs/examples/<name>.py
+```
+
+## Examples
+
+### Options (`kuant.core` + `kuant.options`)
+
+- **[`bs_price_surface.py`](bs_price_surface.py)** — vectorized Black-Scholes
+  pricing on a full (strike, tenor) grid, batched Greeks across the same grid,
+  put-call and delta parity checks. Shows how a 168-option surface is one
+  function call.
+
+- **[`iv_surface_from_market.py`](iv_surface_from_market.py)** — invert a
+  synthetic option chain to recover the implied vol surface using
+  `impvol` (Newton), with `impvolbisection` as the flat-vega fallback.
+  Demonstrates when to use which solver.
+
+### Rolling statistics (`kuant.stats`)
+
+- **[`rolling_zscore_signal.py`](rolling_zscore_signal.py)** — turn a
+  return series into a bounded mean-reversion signal via `zscore`.
+  Shows equivalence to `(returns - rollmean) / rollstd` and how the
+  signal composes with a bounded position-sizing kernel.
+
+### Regime discovery (`kuant.qm`)
+
+- **[`hmm_regime_decode.py`](hmm_regime_decode.py)** — Gaussian-emission
+  HMM: simulate a hidden regime process, generate returns, then use
+  `viterbi` for the maximum-likelihood state sequence and `posterior`
+  for smoothed per-bar state probabilities. Achieves ~96% state
+  recovery on the toy data.
+
+### Fat-tail modeling (`kuant.core` fat-tail primitives)
+
+- **[`evt_tail_fit.py`](evt_tail_fit.py)** — Peaks-Over-Threshold fit
+  using the Generalized Pareto Distribution (`gpdpdf` / `gpdcdf` /
+  `gpdppf`), applied to fat-tailed synthetic returns. Extrapolates
+  return-period losses beyond the sample. Compares with Student-t
+  (`tcdf`) as a parametric alternative.
+
+### Signal validation (`kuant.sindy`)
+
+- **[`permtest_your_signal.py`](permtest_your_signal.py)** — universal
+  permutation null-test via `permtest`. Runs the same test on a real
+  linear signal and a pure-noise null; shows p ~ 0.001 for the real
+  signal, p ~ 0.82 for the null.
+
+## Next examples
+
+Ideas for future additions:
+
+- `belltest_your_features.py` — classical-bound test on your own factor pairs
 - `granger_signal_scan.py` — screen a macro library against your target
-
-Currently empty — populate as tasks accumulate.
+- `sindylasso_feature_discovery.py` — LASSO scan across a hand-engineered library
+- `impvol_vs_bisection.py` — timing benchmark, when each pays off
