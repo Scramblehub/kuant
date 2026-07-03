@@ -22,8 +22,10 @@ from .bsvega import bsvega
 from .bsvolga import bsvolga
 from .bszomma import bszomma
 from .callpayoff import callpayoff
+from .deltabucket import deltabucket
 from .impvol import impvol
 from .impvolbisection import impvolbisection
+from .moneynessbucket import moneynessbucket
 from .putpayoff import putpayoff
 
 __all__ = [
@@ -38,6 +40,8 @@ __all__ = [
     'bsspeed', 'bszomma', 'bscolor',
     # expiry payoffs
     'callpayoff', 'putpayoff',
+    # chain-selection filters
+    'deltabucket', 'moneynessbucket',
     # implied vol solvers
     'impvol', 'impvolbisection',
 ]

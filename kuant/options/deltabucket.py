@@ -1,0 +1,93 @@
+'''Select the option index nearest to each target delta.
+
+Chain-selection primitive. Given a sorted list of options with known
+deltas (e.g. all calls in an expiry), and one or more target deltas
+(e.g. 0.25, 0.10 for skew nodes), return the INDEX of the option in
+the chain whose delta is closest to each target.
+
+Common trader usage:
+  - "25-delta call" for RR/BF construction
+  - "10-delta put" for tail hedge sizing
+  - "50-delta" ATM proxy from delta axis instead of strike axis
+
+The kernel is agnostic to whether the deltas are for calls or puts —
+you pass the sign you want (e.g. -0.25 for a 25-delta put, +0.25 for
+a 25-delta call).
+
+Design: docs/kernels/options/deltabucket.md.
+'''
+from __future__ import annotations
+
+from typing import Any
+
+import numpy as np
+
+cp: Any
+try:
+    import cupy as cp
+    _CUPY_NDARRAY = cp.ndarray
+except ImportError:
+    cp = None
+    _CUPY_NDARRAY = type(None)
+
+
+def _detect_backend(*args) -> Any:
+    if cp is None:
+        return np
+    for a in args:
+        if isinstance(a, _CUPY_NDARRAY):
+            return cp
+    return np
+
+
+def deltabucket(deltas, targets):
+    '''Return the index in `deltas` closest to each target delta.
+
+    Parameters
+    ----------
+    deltas : 1D array
+        Deltas of the options in a chain (any monotone / arbitrary order).
+    targets : scalar or 1D array
+        Target delta(s) to match.
+
+    Returns
+    -------
+    idx : scalar int or 1D array of ints
+        For each target, the index into `deltas` of the closest match.
+        Ties resolved by picking the LOWER index (numpy argmin default).
+
+    Notes
+    -----
+    Signed match by convention: a target of +0.25 seeks the call-like
+    +0.25 delta; -0.25 seeks the put-like -0.25 delta. The kernel does
+    not enforce sign conventions — you pass what you want.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> deltas = np.array([0.05, 0.15, 0.25, 0.50, 0.75, 0.95])
+    >>> deltabucket(deltas, 0.25)
+    2
+    >>> deltabucket(deltas, np.array([0.10, 0.50, 0.90]))
+    array([1, 3, 5])
+    '''
+    xp = _detect_backend(deltas, targets)
+    deltas_arr = xp.asarray(deltas)
+    if deltas_arr.ndim != 1:
+        raise ValueError(
+            f'deltas must be 1D, got shape {deltas_arr.shape}. '
+            'Pass one chain at a time; batch across chains with a Python loop.'
+        )
+    targets_arr = xp.asarray(targets)
+    scalar_target = targets_arr.ndim == 0
+    if scalar_target:
+        targets_arr = targets_arr.reshape(1)
+
+    # For each target, compute |delta - target| across all options and take argmin.
+    # Shape: (n_targets, n_deltas) — broadcast subtraction.
+    diff = xp.abs(deltas_arr[None, :] - targets_arr[:, None])
+    idx = xp.argmin(diff, axis=1)
+
+    if scalar_target:
+        return int(idx[0])
+    return idx
