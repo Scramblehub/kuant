@@ -57,18 +57,13 @@ Unlike `pinnscan`, this tool doesn't run a permutation null. If you
 find a candidate above the noise floor, follow up with
 `permtest(peak_corr, ...)` explicitly.
 
-## Real-world use
+## Canonical null pattern
 
-V8 SINDy #4 (acceleration null): tested three variants:
-
-| Signal | corr fwd 5d | corr fwd 21d |
-|---|---|---|
-| accel_5_z (5d MA of d²V8) | –0.023 | –0.004 |
-| accel_21_z (21d MA of d²V8) | +0.001 | +0.020 |
-| d2_z (raw d²V8, smoothed 5d) | –0.013 | –0.004 |
-
-All `|corr| < 0.025` — within the noise floor. Clean null. V8 returns
-are effectively martingale at daily frequency.
+The typical daily-frequency financial-returns result: all tested
+smoothings give `|corr| < 0.025` — within the sample-size-dependent
+noise floor. Clean null. Returns are effectively martingale at daily
+frequency at that scale, and the summary auto-diagnostic tag
+surfaces the null verdict.
 
 ## Related tools
 

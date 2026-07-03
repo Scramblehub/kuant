@@ -8,9 +8,10 @@ the CV picks the right level of sparsity.
 
 If CV picks the STRONGEST regularization at the top of your search
 range (i.e., forces the LASSO to select zero features), that's an
-unambiguous null-signal signature. Our V8 SINDy #1 (residuals after
-multi-factor wash) is the canonical example — LASSO selected 0 of 22
-features and picked alpha=0.10 (top of the search range).
+unambiguous null-signal signature. A common example from prior
+research on a residuals-after-multi-factor-wash target: LASSO selected
+0 of 22 candidate features and picked the top-of-range alpha,
+diagnosing the residual as unpredictable at daily frequency.
 
 If it selects a few features and the R² beats a shuffled-target
 baseline, you have candidate signals.

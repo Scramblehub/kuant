@@ -6,7 +6,7 @@ retrained very frequently might be "frozen" in its most recent
 training-window state — never getting the chance to develop skill on
 newer data before being reset.
 
-Our production experience: the shipped V8 HMM sleeve was retrained
+Real-world motivation: a shipped HMM-based regime sleeve was retrained
 every 21 trading days. Testing 21d / 63d / 126d / 252d revealed that
 126d beat 21d on every metric AND used 6× less compute. Explanation:
 the model had a "warm-up" period (days 0–20 in a window were actively

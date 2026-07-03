@@ -89,9 +89,8 @@ CPU==GPU parity + backend promotion.
 
 ## Direct usage in kuant
 
-Not currently used by the V8 stack (M9 is put-only). Present for
-completeness — future work on the call side (bull-call spreads, covered
-calls, IV surface calibration) will lean on this.
+Present for completeness; needed for any call-side workflow (bull-call
+spreads, covered calls, IV surface calibration).
 
 ## Related kernels
 

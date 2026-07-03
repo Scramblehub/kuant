@@ -8,14 +8,14 @@ Shannon entropy per time step is:
 Range: [0, log(N)]. Low → posterior is confident (concentrated on one
 state). High → posterior is diffuse (near-uniform over states).
 
-Practical use in kuant: gate strategy actions only when the posterior
-is confident. In our V8 HMM research this beat threshold gating on
-BOTH Sharpe and MDD — the model was often right about the state, but
-sometimes it was diffuse enough that acting was noise.
+Practical use: gate strategy actions only when the posterior is
+confident. Entropy-weighted gating often outperforms threshold gating
+when the HMM's posterior collapses cleanly in the target regime and
+blurs in the counter-regime.
 
 Optional: pass a categorical regime indicator to get conditional
-entropy stats per regime. In our data, entropy collapsed during
-high-VIX periods (mean 0.180) and blurred during low-VIX (mean 0.373).
+entropy stats per regime. A collapse in one regime and a blur in
+another is the signature this tool is designed to surface.
 
 Design: docs/kernels/qm/posteriorentropy.md.
 '''

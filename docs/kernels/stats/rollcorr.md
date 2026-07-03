@@ -108,7 +108,7 @@ range [-1, 1]), CPU==GPU parity.
 
 - Cross-asset lead-lag diagnostics on returns streams
 - Pairs signal for M9 basket-level correlation drift
-- Rolling `corr(V8_returns, SPY_returns)` as a regime metric
+- Rolling `corr(strategy_returns, benchmark_returns)` as a regime metric
 
 ## Related kernels
 

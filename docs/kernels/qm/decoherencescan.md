@@ -12,7 +12,7 @@ NON-MONOTONIC (bad first, then peaks, then decays), you have a
 right as it's becoming useful.
 
 This is the diagnostic that motivated our 21d → 126d retrain-frequency
-change on the V8 HMM sleeve.
+change on an HMM-based sleeve.
 
 ## Public API
 
@@ -56,22 +56,17 @@ Users can override for finer resolution or targeted probes.
 i. If False, a non-monotonic decay pattern was detected — treat as a
 warning that retrain frequency might be over-tuned.
 
-## Real-world use
+## Canonical non-monotonic pattern
 
-V8 HMM sleeve, 252d prediction window:
-
-| Day-in-window | Correlation | Notes |
-|---|---|---|
-| 0..20 | **–0.156** | Actively wrong (recency bias from train tail) |
-| 20..40 | **+0.203** | Peak skill |
-| 40..60 | +0.111 | Decaying |
-| 60..100 | +0.108 | Slow decay |
-| 100..150 | –0.013 | Noise |
-| 150..252 | +0.078 | Partial recovery |
-
-Non-monotonic. Peak at 20..40 days. Since we were retraining every
-21 days, we were RESETTING the model right at peak skill. Increased
-retrain freq to 126d → shipped as a production win.
+The pattern that motivates this tool: a walk-forward bucketed
+correlation series that is NEGATIVE for the first ~20 days after each
+fit (recency bias from the training tail overpowers signal), PEAKS
+around days 20–40, then decays through the rest of the prediction
+window. If your retrain cadence is close to the "peak skill" bucket
+boundary, you are resetting the model during its most useful window.
+Extending the retrain cadence past the peak-skill bucket is a
+frequently-shipping remedy — see `kuant.qm.zenoscan` for the natural
+follow-up.
 
 ## Related tools
 

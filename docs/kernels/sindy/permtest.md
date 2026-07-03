@@ -49,16 +49,16 @@ Pure numpy loop over permutations. Cheap enough for a few thousand
 runs. For very expensive `metric_fn`, users should batch smartly
 outside of this call.
 
-## Real-world use in our research
+## Canonical failure modes this catches
 
-Ran hundreds of these on V8 during production research. Without them
-we would have shipped multiple garbage signals. Specific saves:
+Common patterns this test kills before they ship:
 
-- SINDy #8 PINN-lite: apparent gate looked great (+7.26pp CAGR,
-  +0.61 Calmar), but `p_value = 0.50` — half of shuffled runs did as
-  well. Killed before shipping.
-- Cross-derivative V5: real signal (`p = 0.004`) but not enough Sharpe
-  lift; kept as caveat, not shipped.
+- A gate that looks meaningful on headline metrics but has
+  `p_value ≈ 0.5` — half of random-shuffle runs produce equal or
+  better numbers.
+- A signal with a very low `p_value` (real) that still doesn't move
+  the metric you care about far enough to warrant deployment.
+  Documented, not shipped.
 
 ## Related tools
 

@@ -43,22 +43,15 @@ Rows where either the target or the candidate is NaN are excluded
 per-candidate. Skips candidates with fewer than 30 clean observations
 (warns if `verbose=True`).
 
-## Real-world use in our research
+## Typical pattern
 
-Ran on 35 macro factors × 3 horizons = 105 tests. Corrected threshold
-= 0.05 / 105 = 0.00048. Five passed:
-
-| Candidate | Horizon | F | p |
-|---|---|---|---|
-| VIX_level | 5d | 6.71 | 3e-6 |
-| VIX_dret | 5d | 5.23 | 9e-5 |
-| VIX_level | 2d | 4.86 | 2e-4 |
-| VIX_level | 1d | 4.85 | 2e-4 |
-| **RSP** | **5d** | **4.58** | **4e-4** |
-
-Four of five were VIX-derivatives (redundant with V4's existing
-mechanism). Only RSP-SPY breadth at 5d was genuinely orthogonal — and
-it went on to inform a real production gate.
+A common outcome when scanning a macro-factor library of a few dozen
+candidates across a handful of horizons: several candidates pass the
+Bonferroni threshold, but most of them are variants of the same
+underlying macro variable (e.g. multiple `X_level`, `X_dret`,
+`X_pct` all pass together). Post-filter for orthogonality against
+your existing signal set — the "hits" that survive that filter are
+often just one or two genuinely new candidates worth chasing.
 
 ## Interpretation warning — post-filter for orthogonality
 

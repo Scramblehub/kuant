@@ -63,14 +63,12 @@ For `n_features` base features and degree `d`, the expansion has
 terms — LASSO CV becomes slow. For research on rich libraries,
 keep `degree ≤ 2` or drop obviously-irrelevant base features first.
 
-## Real-world use
+## Value even when it returns null
 
-V8 SINDy #9 (symbolic regression null): degree-2 expansion of a
-candidate feature library, LASSO with CV. Result: no polynomial
-improvement over the pure linear scan. Documented as a null.
-
-The value of running symbolicscan even when it fails: rules out the
-compact-interaction hypothesis before proceeding to the fully
+A frequent outcome on daily-frequency financial data: a degree-2
+polynomial expansion of a decent candidate library shows no
+improvement over the pure linear scan. That negative result rules
+out the compact-interaction hypothesis before proceeding to the fully
 nonlinear pinnscan (more expensive, less interpretable).
 
 ## Related tools

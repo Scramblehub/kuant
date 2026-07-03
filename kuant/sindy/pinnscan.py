@@ -13,11 +13,12 @@ your physical intuition, a nonlinear regressor should be able to
 recover any real interaction. If GBR + permutation says "no", you can
 retire the entire library.
 
-Real-world example from our V8 research (SINDy #8): 20-feature library
-(dβ/dt × 8, factor returns × 8, VIX, HY OAS, RSP breadth) → GBR OOF
-correlation +0.0211, quintile gate ΔCAGR +7.26pp but permutation
-p = 0.50 (half of random gates did at least as well). Real diagnostic,
-saved us from shipping a garbage signal.
+Canonical example this catches: a rich library (~20 hand-engineered
+features) gives a small but non-zero OOF correlation, a quintile gate
+built on the OOF predictions looks meaningfully positive on headline
+metrics, but the permutation p sits around 0.5 — half of shuffled-
+target runs produce the same gate strength. Without the permutation
+step this ships as a real signal; with it, the null is decisive.
 
 Design: docs/kernels/sindy/pinnscan.md.
 '''

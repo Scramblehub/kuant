@@ -106,7 +106,7 @@ constant window).
 - **Mean-reversion signals** — enter when `|z| > 2` (2σ deviation)
 - **Anomaly gates** — flag `|z| > 3` as outliers
 - **Momentum bands** — track z-score of returns to detect regime shifts
-- Foundation for the V8 hourly-tilt overlay (referenced in current
+- Foundation for hourly-tilt overlays (referenced in current
   research pipeline as "z-score flip" reversal detection)
 
 ## Related kernels

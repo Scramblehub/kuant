@@ -38,8 +38,8 @@ future to past in a time-series library.
 
 The `summary()` method flags the classic null-signal signature: CV
 picks alpha at the TOP of the search range AND the LASSO selects
-zero features. This is exactly what our V8 SINDy #1 (residuals null)
-looked like — an unambiguous "signal-to-noise is below threshold
+zero features. This is the canonical residuals-after-multi-factor-wash
+null pattern — an unambiguous "signal-to-noise is below threshold
 across the entire library" verdict.
 
 ### NaN rows are dropped, not imputed
@@ -59,18 +59,14 @@ number matches the metric that drove alpha selection.
 `_require_sklearn()` at call time. Importing `kuant.sindy` doesn't
 require sklearn.
 
-## Real-world use
+## Canonical null pattern
 
-V8 SINDy #1 (residuals after multi-factor wash): 22-feature library
-(lagged residuals, V8/VIX/SPY state, factor exposures, HY OAS, dd,
-z21). Result:
-
-- alpha selected: 0.10 (top of search range)
-- non-zero coefficients: 0 of 22
-- R²: 0.0000
-
-Clean null. The `summary()` auto-diagnostic tag surfaces this pattern
-without the reader having to interpret the numbers.
+The clearest null-signature this tool surfaces: CV picks the highest
+alpha in the search range AND the LASSO selects zero non-zero
+coefficients across an entire library of 20+ candidate features.
+When that happens, the summary auto-diagnostic tag explicitly labels
+it — you don't have to interpret the numbers, the tool tells you
+signal-to-noise is below threshold across the whole library.
 
 ## Related tools
 

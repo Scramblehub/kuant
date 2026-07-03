@@ -5,11 +5,12 @@ predictors × H horizons, test which candidates Granger-cause the
 target. Bonferroni correction (α / (N·H)) controls the family-wise
 error rate at the standard 0.05.
 
-Classic use in our production research: scan 35 macro factors × 3
-horizons for candidates that might inform V8 leverage gating. Found
-5 candidates passed Bonferroni. Four were VIX-derivatives (already in
-V4 → redundant); the one genuinely orthogonal finding was RSP-SPY
-breadth at 5d.
+Classic use: scan a few dozen macro factors across a handful of
+horizons for candidates that might inform a strategy's leverage or
+gating decisions. Typical outcome — a handful of candidates pass
+Bonferroni; most turn out to be variants of the same underlying
+macro variable, leaving one or two genuinely orthogonal findings
+worth chasing.
 
 Cheap to run (statsmodels' grangercausalitytests is compiled),
 useful even when the ultimate gate ends up being borderline.

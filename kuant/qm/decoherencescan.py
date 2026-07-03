@@ -3,7 +3,7 @@
 Motivation. If you train a model on `[t-train_window, t)` and then use
 it to predict for `[t, t + predict_window)` without re-training, the
 model's skill vs actual outcomes need not be monotone in the day-in-
-window. In our production research on V8's HMM sleeve, we found:
+window. On an HMM-based sleeve in prior research, we found:
 
   Day in window     Correlation of prediction with realized
   0..20             -0.156 (actively wrong)

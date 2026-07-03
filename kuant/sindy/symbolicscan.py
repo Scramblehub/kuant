@@ -11,10 +11,10 @@ squares + pairwise interactions), then runs LASSO with CV on the
 expanded library. Non-zero coefficients give you a compact
 polynomial equation.
 
-V8 SINDy #9 (symbolic regression null): polynomial degree-2 expansion
-of a candidate library, then LASSO. Result: no polynomial improvement
-over linear. Documented as a null; the mechanism is the same as
-sindylasso, just with an interaction basis.
+Typical null result on daily-frequency financial data: polynomial
+degree-2 expansion of a candidate library, then LASSO, yields no
+polynomial improvement over the pure linear scan. The mechanism is
+the same as sindylasso, just with an interaction basis.
 
 Design: docs/kernels/sindy/symbolicscan.md.
 '''

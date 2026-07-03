@@ -58,18 +58,14 @@ permutation. The library carries no nonlinear signal above the noise
 floor." Combined with a null `sindylasso` result, this typically means
 the joint search space has been exhausted.
 
-## Real-world use
+## Canonical failure mode this catches
 
-V8 SINDy #8 (PINN-lite null). 20-feature library (dβ/dt × 8, factor
-returns × 8, VIX, HY OAS, RSP breadth):
-
-- OOF correlation: +0.0211
-- OOF R²: 0.0004
-- Quintile gate applied to OOF predictions: ΔCAGR +7.26pp, ΔCalmar +0.61
-- **Permutation p = 0.50** (half of random-shuffle runs did as well)
-
-This is the canonical positive-looking-but-actually-null pattern.
-Without the permutation test we would have shipped a garbage signal.
+The pattern this tool is designed to catch: a small non-zero OOF
+correlation combined with a quintile gate that looks meaningfully
+positive on headline metrics — but a permutation p near 0.5, meaning
+roughly half of shuffled-target runs produce the same gate strength.
+Without the permutation step this would ship as a real signal; with
+it, the null is decisive.
 
 ## Related tools
 

@@ -102,7 +102,7 @@ in q, shift equivariance, length), CPU==GPU parity.
 - Robust dispersion via IQR: `rollpercentile(x, w, 75) - rollpercentile(x, w, 25)`
 - Rank-normalized signals: check whether current value is above the
   rolling 90th percentile
-- V8 sleeve gating: rolling-median filter for outlier price prints
+- Sleeve gating: rolling-median filter for outlier price prints
 
 ## Related kernels
 

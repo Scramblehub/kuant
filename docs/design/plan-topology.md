@@ -13,7 +13,7 @@ dep patterns.
 | `bettiseries` | Rolling Betti-number time series (b₀, b₁) | (uses persistenthomology) |
 | `wasserstein` | Wasserstein distance between two persistence diagrams | `persim` |
 | `mapper` | Mapper algorithm (topological summary of high-dim data) | `kmapper` |
-| `dispersioncollapse` | Sector-dispersion-collapse signal (from V8 bubble diagnostic) | none |
+| `dispersioncollapse` | Sector-dispersion-collapse signal | none |
 
 ## Design decisions to lock
 
@@ -79,7 +79,7 @@ we don't lose track of it.
 
 ### `dispersioncollapse(returns_matrix, window=63, quantile=0.20)`
 
-Distilled from V8 bubble diagnostic (signal S3, weak but preserved as
+Weak but preserved as
 reference). Fires when sector-return dispersion drops below its
 `quantile`-th percentile for 5+ consecutive days. Returns 1D boolean
 array.

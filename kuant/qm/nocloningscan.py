@@ -15,10 +15,11 @@ If per-seed metric variance is LARGE, seed diversity IS the source of
 apparent skill: your model is not robust and you're overfitting to a
 random-seed instance.
 
-Practical example from our research: 10 seeds of the V8 HMM produced
-posterior time-series that correlated 0.66 across seeds (very NOT
-identical paths), but the final CAGR/Sharpe were tight (Sharpe std
-0.01). Result → seed-ensembling was a robustness win.
+Practical example: 10 seeds of an HMM-based regime sleeve produced
+posterior time-series correlated at ~0.66 across seeds (very NOT
+identical paths) while headline metrics were tight (sub-1% CV).
+Verdict from this tool: different paths, same destination — seed-
+ensembling shipped as a robustness enhancement.
 
 Design: docs/kernels/qm/nocloningscan.md.
 '''

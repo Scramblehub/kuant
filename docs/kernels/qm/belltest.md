@@ -54,16 +54,15 @@ the classical bound. Standard 5-fold default.
 sklearn is imported at call time via `_require_sklearn()`. Importing
 `kuant.qm` doesn't require sklearn; using this specific tool does.
 
-## Real-world use in our research
+## Motivation from prior research
 
-Ran on V8's HMM joint posterior against 4 candidate features
-(dβ_LV, breadth_5d, vix_level, hy_z5). Result: HMM R² = 0.0062,
-classical bound R² = 0.0073 (from breadth_5d alone). HMM was BELOW
-the classical bound by 15% — confirming the feature-level model was
-just an efficient linear aggregator, not a source of new information.
-
-This directed subsequent work away from feature-level engineering
-and toward picker-level alpha.
+Running this test on an HMM's joint posterior against a small
+candidate feature set revealed the HMM's R² landed slightly below the
+best single-feature classical R² — confirming the joint model was
+acting as an efficient linear aggregator, not a source of new
+information. That verdict redirected downstream work away from
+feature-level engineering and toward mechanisms that operate above
+the feature-aggregation ceiling this test measures.
 
 ## Related tools
 

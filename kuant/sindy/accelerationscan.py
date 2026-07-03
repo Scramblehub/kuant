@@ -10,15 +10,11 @@ correlation of each acceleration variant with the target. If a
 smoothing produces a meaningful correlation, acceleration is
 predictive.
 
-V8 SINDy #4 (acceleration null): tested three variants:
-
-    accel_5_z  (5d MA of d²V8),   corr fwd 5d = -0.023,   fwd 21d = -0.004
-    accel_21_z (21d MA of d²V8),  corr fwd 5d = +0.001,   fwd 21d = +0.020
-    d2_z       (raw d²V8, 5d MA), corr fwd 5d = -0.013,   fwd 21d = -0.004
-
-All |corr| < 0.025. Clean null: V8 returns are martingale-like at daily
-frequency, no self-referential acceleration structure. This tool is
-the automation of that test.
+Canonical null for daily-frequency financial returns: all tested
+smoothings produce |corr| < 0.025 with forward returns — within the
+noise floor at typical sample sizes. Returns are effectively
+martingale at daily frequency, and this tool automates the
+diagnostic that produces that verdict.
 
 Design: docs/kernels/sindy/accelerationscan.md.
 '''

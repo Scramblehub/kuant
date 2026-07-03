@@ -14,7 +14,7 @@ you happened to fit — the model would look "just as good" on
 random garbage.
 
 This is the single most important null test for a null-heavy
-research pipeline. We ran hundreds of these on V8; without them
+research pipeline. Ran hundreds of these on our own strategies; without them
 we would have shipped garbage signals.
 
 Design: docs/tools/permtest.md.

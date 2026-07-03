@@ -17,7 +17,7 @@ open an issue first so we can align on scope.
   learned parameters + log-likelihood history.
 - **ghmm.baumwelch** — Same for the Gaussian HMM. M-step updates
   are `μ_i = Σ_t γ[t,i]·obs[t] / Σ_t γ[t,i]` etc.
-- **hmmensemble** — Temporal Ensemble HMM (used in production V8
+- **hmmensemble** — Temporal Ensemble HMM:
   research). Fits K HMMs with different initializations and averages
   their posteriors. Sibling of `nocloningscan`.
 - **densitymatrix** — Full N×N uncertainty representation instead of
@@ -36,19 +36,19 @@ open an issue first so we can align on scope.
 - **sindylasso** — LASSO-with-CV feature library scan. Given a target
   and a feature library, run cross-validated LASSO and return the
   selected non-zero coefficients + optional built-in permutation
-  test. Distilled from V8 SINDy #1 (residuals null).
+  test. Baseline linear feature-library scan.
 - **pinnscan** — Nonlinear counterpart to sindylasso. GradientBoosting
   on the library + permutation p-value on the OOF predictions.
-  Distilled from V8 SINDy #8 (PINN-lite null).
+  Nonlinear counterpart to sindylasso.
 - **symbolicscan** — Polynomial-symbolic regression scan. Bivariate
   degree-2 by default. Return the sparsest polynomial that beats a
-  baseline R². Distilled from V8 SINDy #9 (symbolic null).
+  baseline R².
 - **crossderivativescan** — 2D bivariate ramp fits (`∂²y / ∂x₁∂x₂`).
-  Distilled from V8 SINDy #5 (borderline).
+ 
 - **tvsindy** — Time-varying SINDy fit with rolling windows. Distilled
-  from V8 SINDy #3 (β-hedge null).
+  .
 - **accelerationscan** — `d²y/dt²` predictive power scan. Distilled
-  from V8 SINDy #4 (acceleration null).
+  .
 
 ## kuant.topology
 
@@ -58,7 +58,7 @@ open an issue first so we can align on scope.
 - **bettinumbers** — Betti number time-series (b₀, b₁, ...).
 - **mapper** — Mapper algorithm on high-dim data with a scalar filter
   function.
-- **dispersioncollapse** — Sector dispersion collapse signal (from V8
+- **dispersioncollapse** — Sector dispersion collapse signal (per prior
   bubble diagnostic S3, weak but worth including as reference).
 
 ## kuant.core

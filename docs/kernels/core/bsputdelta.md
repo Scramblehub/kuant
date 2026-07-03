@@ -89,9 +89,9 @@ if abs(delta) >= 0.70:
     close_put()
 ```
 
-At `|delta| ≥ 0.70`, trailing past the strike is worse than the loss from
-being called away. Bakes a real-world +30pp CAGR improvement into a
-monitor readable in one line.
+At `|delta| ≥ 0.70`, trailing past the strike is often worse than the
+loss from being called away. A one-line D70 rule can materially improve
+put-monitoring on a real position book.
 
 ## Related kernels
 

@@ -4,7 +4,7 @@ Same four algorithms as kuant.qm.hmm (forward / backward / viterbi /
 posterior), but observations are continuous scalars and per-state
 emissions are N(mu, sigma²).
 
-This is what V8 regime work actually uses in production — returns are
+This is what typical regime work uses in practice — returns are
 continuous, not discrete symbols.
 '''
 from .backward import backward

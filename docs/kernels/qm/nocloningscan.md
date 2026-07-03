@@ -58,19 +58,14 @@ summary tags a verdict based on:
 For `n_seeds` up to a few hundred, this is O(N² · T) — fine. For
 larger N, sample pairs rather than exhaust them.
 
-## Real-world use
+## Motivation from prior research
 
-V8 HMM sleeve with 10 seeds:
-
-| Metric | Mean | Std | CV |
-|---|---|---|---|
-| Sharpe | 2.51 | 0.01 | 0.4% |
-| CAGR | 171.6% | 0.3% | 0.2% |
-
-Pair-corr on posterior time-series: **0.66** (very NOT identical).
-
-Verdict: DIFFERENT PATHS, SAME DESTINATION. Seed-ensembling was
-approved and shipped as robustness enhancement.
+Running an HMM-based sleeve across 10 seeds produced a case where
+headline metrics were extremely tight across seeds (sub-1% CV on
+Sharpe and CAGR) while the posterior time-series correlated at only
+~0.66 across seeds — different paths, same destination. That is
+exactly the DIFFERENT PATHS SAME DESTINATION verdict this tool tags,
+and it justified adding a seed-ensemble step to the sleeve.
 
 ## Related tools
 
