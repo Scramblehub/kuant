@@ -17,7 +17,7 @@ This has been an important negative-result tool in our production
 research: it confirmed our HMM sleeve was at the classical bound and
 directed further work toward picker-level (not feature-level) alpha.
 
-Design: docs/tools/bell_test.md.
+Design: docs/tools/belltest.md.
 '''
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ import numpy as np
 
 
 def _require_sklearn():
-    '''Lazy import of sklearn — only needed when bell_test is called.'''
+    '''Lazy import of sklearn — only needed when belltest is called.'''
     try:
         from sklearn.ensemble import GradientBoostingRegressor
         from sklearn.linear_model import LinearRegression, Ridge
@@ -37,7 +37,7 @@ def _require_sklearn():
         return GradientBoostingRegressor, LinearRegression, Ridge, GaussianMixture, KFold
     except ImportError as e:
         raise ImportError(
-            'kuant.qm.bell_test requires scikit-learn. Install with: '
+            'kuant.qm.belltest requires scikit-learn. Install with: '
             'pip install scikit-learn'
         ) from e
 
@@ -84,7 +84,7 @@ def _cv_r2(model_fn: Callable, X: np.ndarray, y: np.ndarray, n_splits: int = 5) 
     return 1.0 - ss_res / ss_tot if ss_tot > 0 else 0.0
 
 
-def bell_test(
+def belltest(
     features: dict[str, np.ndarray],
     target: np.ndarray,
     joint_model_fn: Optional[Callable[[np.ndarray, np.ndarray], np.ndarray]] = None,
