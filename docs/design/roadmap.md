@@ -4,6 +4,11 @@ Living list of things planned but not yet built. Priority-ordered
 within each category. If you're reading this and want to build one,
 open an issue first so we can align on scope.
 
+## Scheduled next
+
+- **kuant.topology** — see [plan-topology.md](plan-topology.md)
+- **kuant.options + kuant.core Greeks** — see [plan-options.md](plan-options.md)
+
 ## kuant.qm
 
 - **hmm.baumwelch** — EM parameter training for discrete HMM. Given
