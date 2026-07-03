@@ -1,23 +1,45 @@
 '''kuant.qm — QM-inspired tools for financial time series.
 
 Submodules:
-  hmm       — hidden Markov model inference (numpy/cupy)
-  belltest — reusable Bell-inequality-style aggregation test (module)
+  hmm          — discrete-observation HMM inference
+  ghmm         — Gaussian-observation HMM inference (continuous scalars)
 
 Direct exports:
-  belltest        — the function (from kuant.qm.belltest)
-  BellTestResult   — the dataclass returned by belltest()
-
-The belltest function requires scikit-learn at CALL time. Importing
-this module does not require sklearn.
+  belltest             — Bell-inequality-style aggregation test
+  BellTestResult
+  zenoscan             — retrain-frequency scan (Zeno effect)
+  ZenoScanResult
+  posteriorentropy     — Shannon entropy of an HMM posterior per bar
+  PosteriorEntropyResult
+  nocloningscan        — multi-seed model variance analysis
+  NoCloningScanResult
+  decoherencescan      — day-in-window skill decay diagnostic
+  DecoherenceScanResult
 '''
-from . import hmm
+from . import ghmm, hmm
 from .belltest import BellTestResult
 from .belltest import belltest as _belltest_fn
-from .zenoscan import ZenoScanResult, zenoscan
+from .decoherencescan import DecoherenceScanResult
+from .decoherencescan import decoherencescan as _decoherencescan_fn
+from .nocloningscan import NoCloningScanResult
+from .nocloningscan import nocloningscan as _nocloningscan_fn
+from .posteriorentropy import PosteriorEntropyResult
+from .posteriorentropy import posteriorentropy as _posteriorentropy_fn
+from .zenoscan import ZenoScanResult
+from .zenoscan import zenoscan as _zenoscan_fn
 
-# Expose belltest the function under a clear name (belltest.py the
-# module and belltest the function share a name; disambiguate here).
+# Disambiguate module/function name collisions.
 belltest = _belltest_fn
+zenoscan = _zenoscan_fn
+posteriorentropy = _posteriorentropy_fn
+nocloningscan = _nocloningscan_fn
+decoherencescan = _decoherencescan_fn
 
-__all__ = ['belltest', 'BellTestResult', 'hmm', 'zenoscan', 'ZenoScanResult']
+__all__ = [
+    'hmm', 'ghmm',
+    'belltest', 'BellTestResult',
+    'zenoscan', 'ZenoScanResult',
+    'posteriorentropy', 'PosteriorEntropyResult',
+    'nocloningscan', 'NoCloningScanResult',
+    'decoherencescan', 'DecoherenceScanResult',
+]
