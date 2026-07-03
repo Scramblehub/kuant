@@ -1,0 +1,35 @@
+# Pre-commit hooks for kuant.
+#
+# Install once:
+#     pip install pre-commit
+#     pre-commit install
+#
+# Then every `git commit` runs these checks and blocks bad code from
+# entering history. Manual run: `pre-commit run --all-files`.
+
+repos:
+  # Ruff — lint + format (replaces flake8 + black + isort).
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
+
+  # Standard sanity hooks — file hygiene.
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      - id: check-merge-conflict
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+# Don't run the auto-fix on the tests directory in every commit —
+# fixture files sometimes intentionally hold artificial content.
+# (Kept minimal for now; expand if teams grow.)
