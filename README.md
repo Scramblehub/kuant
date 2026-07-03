@@ -20,21 +20,21 @@ discovery — not just an implementation of textbook indicators.
 
 ## Status
 
-Alpha. 516 tests across 5 shipped subpackages:
+Alpha. **887 tests** across 5 shipped subpackages:
 
 | Subpackage | Kernels | Highlights |
 |---|---|---|
-| `kuant.core` | 10 | BS family (put/call, delta, gamma, vega, rho) + normcdf/normpdf |
-| `kuant.options` | 1 | Vectorized Newton-Raphson implied-vol solver |
-| `kuant.stats` | 18 | Rolling primitives with strict-window NaN |
-| `kuant.qm` | 3 | HMM inference (forward/backward/viterbi/posterior), belltest, zenoscan |
-| `kuant.sindy` | 2 | permtest (universal null test), grangerscan |
+| `kuant.core` | 11 | BS pricing (bscall/bsput) + full Gaussian family (normcdf/normpdf/normppf + log-tails) + Student-t (tcdf/tpdf/tppf) + logsumexp |
+| `kuant.options` | 21 | First-order Greeks (delta/gamma/vega/rho/theta/charm) + second-order (vanna/volga/speed/zomma/color) + payoffs + chain filters + Newton and bisection implied-vol solvers |
+| `kuant.stats` | 19 | Rolling primitives with strict-window NaN, plus Hurst (R/S) and rolling Hurst |
+| `kuant.qm` | 5 + `hmm`/`ghmm` subpackages | HMM/GHMM inference (forward/backward/viterbi/posterior) + belltest, zenoscan, posteriorentropy, nocloningscan, decoherencescan |
+| `kuant.sindy` | 6 | permtest, grangerscan, sindylasso, pinnscan, symbolicscan, accelerationscan |
 
 Each kernel has:
 - Full API doc under [`docs/kernels/`](docs/kernels/)
 - CPU fallback (numpy path — works on any machine)
 - GPU path (cupy — same math, verified for parity)
-- Cross-checked test suite (golden values, library reference, cross-kernel identities)
+- Cross-checked test suite (golden values, library reference, cross-kernel identities, machine-precision fd tolerances)
 
 ## Install
 
@@ -105,7 +105,7 @@ docs/
 ├── design/       Cross-cutting design docs
 └── examples/     Worked examples
 
-tests/            1:1 with kernel files; 516 tests total
+tests/            1:1 with kernel files; 887 tests total
 ```
 
 ## Design principles
