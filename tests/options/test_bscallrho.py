@@ -8,7 +8,8 @@ import numpy as np
 import pytest
 from scipy.stats import norm
 
-from kuant.core import bscall, bscallrho, bsputrho
+from kuant.core import bscall
+from kuant.options import bscallrho, bsputrho
 
 
 def _reference_rho(S, K, T, r, sigma, q=0.0):

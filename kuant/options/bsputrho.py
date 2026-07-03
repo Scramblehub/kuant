@@ -6,8 +6,8 @@ Put-specific. Call rho: opposite sign, uses Φ(d2). Design: docs/kernels/bsputrh
 '''
 from __future__ import annotations
 
-from ._bs_common import finalize, prepare_bs
-from .normcdf import normcdf
+from ..core._bs_common import finalize, prepare_bs
+from ..core.normcdf import normcdf
 
 
 def bsputrho(S, K, T, r, sigma, q=0.0):

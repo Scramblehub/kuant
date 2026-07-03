@@ -82,7 +82,7 @@ def test_matches_brentq_random_puts(rng):
     should agree wherever the price surface has non-negligible slope.
     Skip the low-vega tail where BOTH algorithms hit the same numerical
     floor and disagree by the flat-region uncertainty.'''
-    from kuant.core import bsvega
+    from kuant.options import bsvega
 
     for _ in range(50):
         S = rng.uniform(50, 200)
@@ -105,7 +105,7 @@ def test_matches_brentq_random_puts(rng):
 
 
 def test_matches_brentq_random_calls(rng):
-    from kuant.core import bsvega
+    from kuant.options import bsvega
 
     for _ in range(50):
         S = rng.uniform(50, 200)

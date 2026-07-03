@@ -28,7 +28,8 @@ from typing import Any
 
 import numpy as np
 
-from ..core import bscall, bsput, bsvega
+from ..core import bscall, bsput
+from .bsvega import bsvega
 
 cp: Any
 try:

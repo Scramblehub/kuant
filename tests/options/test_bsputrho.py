@@ -5,7 +5,8 @@ import numpy as np
 import pytest
 from scipy.stats import norm
 
-from kuant.core import bsput, bsputrho
+from kuant.core import bsput
+from kuant.options import bsputrho
 
 
 def _reference_rho(S, K, T, r, sigma, q=0.0):

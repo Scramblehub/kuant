@@ -5,7 +5,8 @@ import numpy as np
 import pytest
 from scipy.stats import norm
 
-from kuant.core import bsput, bsputdelta, bsgamma
+from kuant.core import bsput
+from kuant.options import bsputdelta, bsgamma
 
 
 def _reference_gamma(S, K, T, r, sigma, q=0.0):

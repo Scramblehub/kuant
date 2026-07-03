@@ -13,7 +13,8 @@ import numpy as np
 import pytest
 from scipy.stats import norm
 
-from kuant.core import bsput, bsputdelta
+from kuant.core import bsput
+from kuant.options import bsputdelta
 
 
 # Independent reference (uses scipy directly, not our normcdf)

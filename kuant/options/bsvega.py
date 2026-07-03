@@ -7,8 +7,8 @@ Design: docs/kernels/bsvega.md.
 '''
 from __future__ import annotations
 
-from ._bs_common import finalize, prepare_bs
-from .normpdf import normpdf
+from ..core._bs_common import finalize, prepare_bs
+from ..core.normpdf import normpdf
 
 
 def bsvega(S, K, T, r, sigma, q=0.0):

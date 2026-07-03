@@ -10,7 +10,8 @@ import numpy as np
 import pytest
 from scipy.stats import norm
 
-from kuant.core import bscall, bscalldelta, bsputdelta
+from kuant.core import bscall
+from kuant.options import bscalldelta, bsputdelta
 
 
 def _reference_delta(S, K, T, r, sigma, q=0.0):

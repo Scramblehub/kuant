@@ -7,8 +7,8 @@ Design: docs/kernels/bscalldelta.md.
 '''
 from __future__ import annotations
 
-from ._bs_common import finalize, prepare_bs
-from .normcdf import normcdf
+from ..core._bs_common import finalize, prepare_bs
+from ..core.normcdf import normcdf
 
 
 def bscalldelta(S, K, T, r, sigma, q=0.0):

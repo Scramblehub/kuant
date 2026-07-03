@@ -5,7 +5,8 @@ import numpy as np
 import pytest
 from scipy.stats import norm
 
-from kuant.core import bsput, bsvega
+from kuant.core import bsput
+from kuant.options import bsvega
 
 
 def _reference_vega(S, K, T, r, sigma, q=0.0):
