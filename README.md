@@ -1,5 +1,9 @@
 # kuant
 
+[![PyPI version](https://img.shields.io/pypi/v/kuant.svg)](https://pypi.org/project/kuant/)
+[![Python versions](https://img.shields.io/pypi/pyversions/kuant.svg)](https://pypi.org/project/kuant/)
+[![License](https://img.shields.io/pypi/l/kuant.svg)](https://github.com/Scramblehub/kuant/blob/main/LICENSE)
+
 GPU-accelerated quantitative research kernels. *kernel × quant.*
 
 ## Vision
