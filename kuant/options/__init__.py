@@ -10,20 +10,30 @@ from .bscallcharm import bscallcharm
 from .bscalldelta import bscalldelta
 from .bscallrho import bscallrho
 from .bscalltheta import bscalltheta
+from .bscolor import bscolor
 from .bsgamma import bsgamma
 from .bsputcharm import bsputcharm
 from .bsputdelta import bsputdelta
 from .bsputrho import bsputrho
 from .bsputtheta import bsputtheta
+from .bsspeed import bsspeed
+from .bsvanna import bsvanna
 from .bsvega import bsvega
+from .bsvolga import bsvolga
+from .bszomma import bszomma
 from .impvol import impvol
 from .impvolbisection import impvolbisection
 
 __all__ = [
+    # first-order Greeks
     'bscalldelta', 'bsputdelta',
     'bsgamma', 'bsvega',
     'bscallrho', 'bsputrho',
     'bscalltheta', 'bsputtheta',
     'bscallcharm', 'bsputcharm',
+    # second-order Greeks (put-call symmetric)
+    'bsvanna', 'bsvolga',
+    'bsspeed', 'bszomma', 'bscolor',
+    # implied vol solvers
     'impvol', 'impvolbisection',
 ]
