@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import numpy as np
-import pytest
 from scipy.special import logsumexp as scipy_lse
 
 from kuant.core import logsumexp

@@ -109,7 +109,6 @@ def zenoscan(
         y_pred_full = np.full(T, np.nan)
         n_retrain = 0
         current_model = None
-        last_train_end = -1
 
         for t in range(train_window, T):
             # Retrain at boundaries divisible by freq (measured from train_window).
@@ -117,7 +116,6 @@ def zenoscan(
                 train_start = t - train_window
                 current_model = fit_fn(X[train_start:t], y[train_start:t])
                 n_retrain += 1
-                last_train_end = t
 
             # Predict at t using the currently-active model.
             y_pred_full[t] = predict_fn(current_model, X[t:t+1])[0]

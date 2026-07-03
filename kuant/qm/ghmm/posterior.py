@@ -17,7 +17,6 @@ def posterior(obs, pi, A, mu, sigma):
         log_likelihood
     '''
     xp, obs_arr, log_pi, log_A, log_B = _prepare_ghmm_inputs(obs, pi, A, mu, sigma)
-    T = obs_arr.size
 
     log_alpha, log_lik = forward(obs, pi, A, mu, sigma)
     log_beta = backward(obs, pi, A, mu, sigma)

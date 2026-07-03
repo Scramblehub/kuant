@@ -47,8 +47,7 @@ def test_with_dividend():
     S = np.array([100.0])
     K = np.array([100.0])
     T, r, q = 1.0, 0.05, 0.02
-    F = S * np.exp((r - q) * T)  # ≈ 103.04
-    # K/F ≈ 0.9705, m ≈ -0.030
+    # F = S·exp((r-q)T) ≈ 103.04, so K/F ≈ 0.9705, m ≈ -0.030
     result = moneynessbucket(S, K, T, r, q)
     assert result[0] in (1, 2)  # right around bucket boundary
 

@@ -14,7 +14,6 @@ Computed in log-space directly to avoid ever exponentiating tiny values.
 '''
 from __future__ import annotations
 
-from typing import Any
 
 import numpy as np
 

@@ -8,8 +8,8 @@ import pandas as pd
 import pytest
 
 from kuant.stats import (
-    rollbeta, rollcorr, rollcov, rollema, rollemastd, rollidio,
-    rollmad, rollmax, rollmean, rollmin, rollrange, rollstd,
+    rollbeta, rollcorr, rollcov, rollemastd, rollidio,
+    rollmad, rollmax, rollmin, rollrange, rollstd,
 )
 
 

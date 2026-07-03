@@ -10,10 +10,9 @@ Design: docs/kernels/hmm_posterior.md.
 '''
 from __future__ import annotations
 
-import numpy as np
 
 from .backward import backward
-from .forward import _logsumexp_axis, _prepare_hmm_inputs, forward
+from .forward import _prepare_hmm_inputs, forward
 
 
 def posterior(obs, pi, A, B):
@@ -29,8 +28,6 @@ def posterior(obs, pi, A, B):
         log P(O | model). Same as the value returned by forward().
     '''
     xp, obs_arr, log_pi, log_A, log_B = _prepare_hmm_inputs(obs, pi, A, B)
-    T = obs_arr.size
-    N = log_pi.size
 
     log_alpha, log_lik = forward(obs, pi, A, B)
     log_beta = backward(obs, pi, A, B)

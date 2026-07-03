@@ -18,7 +18,7 @@ from typing import Any
 import numpy as np
 from scipy.special import ndtr
 
-from ..queueing import DEVICE, THROTTLE
+from ..queueing import THROTTLE
 
 # cp/_cp_erf typed Any so Pylance doesn't complain on the None-branch;
 # runtime guards (_HAS_CUPY / isinstance(_CUPY_NDARRAY)) ensure safety.
