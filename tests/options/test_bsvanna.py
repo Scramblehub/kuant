@@ -40,19 +40,19 @@ def test_matches_scipy_reference(S, K, T, r, sigma, q):
 
 
 def test_fd_dDelta_dSigma():
-    '''vanna = d(delta_call)/d(sigma).'''
+    '''vanna = d(delta_call)/d(sigma). Step chosen for O(1e-11) truncation.'''
     S, K, T, r, sigma, q = 100.0, 105.0, 1.0, 0.05, 0.20, 0.02
     ds = 1e-6
     fd = (bscalldelta(S, K, T, r, sigma + ds, q) - bscalldelta(S, K, T, r, sigma - ds, q)) / (2 * ds)
-    assert abs(bsvanna(S, K, T, r, sigma, q) - fd) < 1e-5
+    assert abs(bsvanna(S, K, T, r, sigma, q) - fd) < 1e-9
 
 
 def test_fd_dVega_dSpot():
-    '''vanna = d(vega)/d(spot).'''
+    '''vanna = d(vega)/d(spot). h=1e-4 balances truncation and roundoff.'''
     S, K, T, r, sigma, q = 100.0, 105.0, 1.0, 0.05, 0.20, 0.02
-    ds = 1e-3
+    ds = 1e-4
     fd = (bsvega(S + ds, K, T, r, sigma, q) - bsvega(S - ds, K, T, r, sigma, q)) / (2 * ds)
-    assert abs(bsvanna(S, K, T, r, sigma, q) - fd) < 1e-5
+    assert abs(bsvanna(S, K, T, r, sigma, q) - fd) < 1e-9
 
 
 def test_put_call_symmetry():

@@ -44,12 +44,13 @@ def test_matches_scipy_reference(S, K, T, r, sigma, q):
 
 
 def test_finite_difference_matches():
+    '''theta = -d(price)/dT. h=1e-5 balances truncation and roundoff.'''
     S, K, r, sigma, q = 100.0, 100.0, 0.05, 0.20, 0.02
     for T in [0.25, 0.5, 1.0, 2.0]:
         dt = 1e-5
         num = -(bsput(S, K, T + dt, r, sigma, q) - bsput(S, K, T - dt, r, sigma, q)) / (2 * dt)
         ana = bsputtheta(S, K, T, r, sigma, q)
-        assert abs(ana - num) < 1e-5
+        assert abs(ana - num) < 1e-8
 
 
 def test_expired_zero():

@@ -30,11 +30,11 @@ def test_matches_scipy_reference(S, K, T, r, sigma, q):
 
 
 def test_fd_dVega_dSigma():
-    '''volga = d(vega)/d(sigma).'''
+    '''volga = d(vega)/d(sigma). h=1e-6 balances truncation and roundoff.'''
     S, K, T, r, sigma, q = 100.0, 105.0, 1.0, 0.05, 0.20, 0.02
     ds = 1e-6
     fd = (bsvega(S, K, T, r, sigma + ds, q) - bsvega(S, K, T, r, sigma - ds, q)) / (2 * ds)
-    assert abs(bsvolga(S, K, T, r, sigma, q) - fd) < 1e-4
+    assert abs(bsvolga(S, K, T, r, sigma, q) - fd) < 1e-8
 
 
 def test_atm_volga_positive():

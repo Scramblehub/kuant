@@ -30,11 +30,11 @@ def test_matches_scipy_reference(S, K, T, r, sigma, q):
 
 
 def test_fd_dGamma_dSigma():
-    '''zomma = d(gamma)/d(sigma).'''
+    '''zomma = d(gamma)/d(sigma). h=1e-6 balances truncation and roundoff.'''
     S, K, T, r, sigma, q = 100.0, 105.0, 1.0, 0.05, 0.20, 0.02
     ds = 1e-6
     fd = (bsgamma(S, K, T, r, sigma + ds, q) - bsgamma(S, K, T, r, sigma - ds, q)) / (2 * ds)
-    assert abs(bszomma(S, K, T, r, sigma, q) - fd) < 1e-5
+    assert abs(bszomma(S, K, T, r, sigma, q) - fd) < 1e-9
 
 
 def test_expired_zero():

@@ -31,11 +31,11 @@ def test_matches_scipy_reference(S, K, T, r, sigma, q):
 
 
 def test_fd_dGamma_dT():
-    '''color = d(gamma)/d(T).'''
+    '''color = d(gamma)/d(T). h=1e-5 balances truncation and roundoff.'''
     S, K, T, r, sigma, q = 100.0, 105.0, 1.0, 0.05, 0.20, 0.02
     dt = 1e-5
     fd = (bsgamma(S, K, T + dt, r, sigma, q) - bsgamma(S, K, T - dt, r, sigma, q)) / (2 * dt)
-    assert abs(bscolor(S, K, T, r, sigma, q) - fd) < 1e-5
+    assert abs(bscolor(S, K, T, r, sigma, q) - fd) < 1e-9
 
 
 def test_expired_zero():

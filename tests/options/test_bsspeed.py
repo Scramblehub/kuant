@@ -29,11 +29,11 @@ def test_matches_scipy_reference(S, K, T, r, sigma, q):
 
 
 def test_fd_dGamma_dSpot():
-    '''speed = d(gamma)/d(spot).'''
+    '''speed = d(gamma)/d(spot). h=1e-3 keeps truncation ~1e-10.'''
     S, K, T, r, sigma, q = 100.0, 105.0, 1.0, 0.05, 0.20, 0.02
     ds = 1e-3
     fd = (bsgamma(S + ds, K, T, r, sigma, q) - bsgamma(S - ds, K, T, r, sigma, q)) / (2 * ds)
-    assert abs(bsspeed(S, K, T, r, sigma, q) - fd) < 1e-6
+    assert abs(bsspeed(S, K, T, r, sigma, q) - fd) < 1e-9
 
 
 def test_expired_zero():
