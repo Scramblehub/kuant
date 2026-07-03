@@ -1,4 +1,4 @@
-'''Rolling higher-moment kernels: rollskew (3rd) and rollkurt (4th, excess).
+"""Rolling higher-moment kernels: rollskew (3rd) and rollkurt (4th, excess).
 
 Both use the cumsum trick on x, x², x³ (and x⁴ for kurt), with the shifting
 stability trick borrowed from rollstd. Bias corrections match pandas
@@ -20,16 +20,20 @@ Bias-corrected outputs:
 NaN policy — STRICT WINDOW. Zero-variance guard: m2 == 0 → NaN.
 
 Design: docs/kernels/rollmoments.md.
-'''
+"""
+
 from __future__ import annotations
 
 from typing import Any
 
 import numpy as np
 
+from kuant._validation import require_1d, require_positive
+
 cp: Any
 try:
     import cupy as cp
+
     _CUPY_NDARRAY = cp.ndarray
 except ImportError:
     cp = None
@@ -39,36 +43,45 @@ except ImportError:
 def _prepare_input(x):
     if isinstance(x, _CUPY_NDARRAY):
         arr = x
-        if arr.dtype.kind in 'iub':
+        if arr.dtype.kind in "iub":
             arr = arr.astype(np.float64)
         backend = cp
     else:
         arr = np.asarray(x)
-        if arr.dtype.kind in 'iub':
+        if arr.dtype.kind in "iub":
             arr = arr.astype(np.float64)
         backend = np
 
-    if arr.ndim != 1:
-        raise ValueError(f'requires 1D input, got shape {arr.shape}')
+    require_1d(arr, "x", kernel="rollmoments")
 
     return backend, arr, arr.dtype
 
 
 def _rolling_moments_setup(x, window, up_to_order):
-    '''Compute shared cumsum-based intermediates for higher moments.
+    """Compute shared cumsum-based intermediates for higher moments.
 
     Returns (xp, out_dtype, w, n, nan_count, mu, m2, m3, m4).
     m3 is None if up_to_order < 3; m4 is None if up_to_order < 4.
     Fills a NaN result vector and returns it as the final element too.
-    '''
+    """
     xp, arr, out_dtype = _prepare_input(x)
     n = arr.size
     w = int(window)
 
-    if w <= 0:
-        raise ValueError(f'window must be positive, got {w}')
+    require_positive(w, "window", kernel="rollmoments", kind="int")
     if w > n:
-        return xp, out_dtype, w, n, None, None, None, None, None, xp.full(n, xp.nan, dtype=out_dtype)
+        return (
+            xp,
+            out_dtype,
+            w,
+            n,
+            None,
+            None,
+            None,
+            None,
+            None,
+            xp.full(n, xp.nan, dtype=out_dtype),
+        )
 
     is_nan = xp.isnan(arr)
     zero_scalar = xp.asarray(0, dtype=out_dtype)
@@ -100,7 +113,7 @@ def _rolling_moments_setup(x, window, up_to_order):
     mu = S1 / w
     # 2nd central moment: sum((y - μ)²) / w = (S2 - w·μ²) / w = S2/w - μ²
     m2 = S2 / w - mu * mu
-    m2 = xp.maximum(m2, zero_scalar)   # guard tiny negatives from FP rounding
+    m2 = xp.maximum(m2, zero_scalar)  # guard tiny negatives from FP rounding
 
     m3 = None
     m4 = None
@@ -120,7 +133,7 @@ def _rolling_moments_setup(x, window, up_to_order):
 
 
 def rollskew(x, window):
-    '''Rolling sample skewness (pandas convention: adjusted Fisher-Pearson).
+    """Rolling sample skewness (pandas convention: adjusted Fisher-Pearson).
 
     Requires `window >= 3`.
 
@@ -139,7 +152,7 @@ def rollskew(x, window):
     >>> import numpy as np
     >>> rollskew(np.array([1.0, 2, 4, 8, 16]), 5)  # right-skewed → positive
     array([nan, nan, nan, nan, 1.375...])
-    '''
+    """
     xp, out_dtype, w, n, nnan, mu, m2, m3, _m4, result = _rolling_moments_setup(x, window, 3)
     if nnan is None:
         return result  # window > n or w <= 0 handled by setup
@@ -148,7 +161,7 @@ def rollskew(x, window):
     assert m2 is not None and m3 is not None  # up_to_order=3 → guaranteed non-None
 
     valid_var = m2 > 0
-    denom = xp.where(valid_var, m2 ** 1.5, xp.asarray(1.0, dtype=out_dtype))
+    denom = xp.where(valid_var, m2**1.5, xp.asarray(1.0, dtype=out_dtype))
     g1 = m3 / denom
     # Bias correction: sqrt(w(w-1)) / (w-2)
     bias = np.sqrt(w * (w - 1)) / (w - 2)
@@ -156,12 +169,12 @@ def rollskew(x, window):
     skew = xp.where(valid_var, skew, xp.asarray(xp.nan, dtype=out_dtype))
 
     valid = nnan == 0
-    result[w-1:] = xp.where(valid, skew, xp.asarray(xp.nan, dtype=out_dtype))
+    result[w - 1 :] = xp.where(valid, skew, xp.asarray(xp.nan, dtype=out_dtype))
     return result
 
 
 def rollkurt(x, window):
-    '''Rolling excess kurtosis (pandas convention).
+    """Rolling excess kurtosis (pandas convention).
 
     Requires `window >= 4`. Returns Fisher/excess kurtosis (subtract 3 from
     the raw ratio), with bias correction.
@@ -176,7 +189,7 @@ def rollkurt(x, window):
     --------
     >>> import numpy as np
     >>> rollkurt(np.random.default_rng(0).normal(size=100), 50)[-1]  # ~ 0 for N(0,1)
-    '''
+    """
     xp, out_dtype, w, n, nnan, mu, m2, m3, m4, result = _rolling_moments_setup(x, window, 4)
     if nnan is None:
         return result
@@ -196,5 +209,5 @@ def rollkurt(x, window):
     kurt = xp.where(valid_var, kurt, xp.asarray(xp.nan, dtype=out_dtype))
 
     valid = nnan == 0
-    result[w-1:] = xp.where(valid, kurt, xp.asarray(xp.nan, dtype=out_dtype))
+    result[w - 1 :] = xp.where(valid, kurt, xp.asarray(xp.nan, dtype=out_dtype))
     return result

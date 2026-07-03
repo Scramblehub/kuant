@@ -1,4 +1,5 @@
-'''Test suite for kuant.stats.rollquantile (+ rollmedian, rollpercentile).'''
+"""Test suite for kuant.stats.rollquantile (+ rollmedian, rollpercentile)."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -14,7 +15,7 @@ from kuant.stats import rollmedian, rollpercentile, rollquantile
 
 
 def test_median_of_progression():
-    '''Rolling median of arithmetic progression = middle of window.'''
+    """Rolling median of arithmetic progression = middle of window."""
     x = np.array([1.0, 2, 3, 4, 5])
     result = rollmedian(x, 3)
     np.testing.assert_allclose(result[2:], [2.0, 3.0, 4.0], atol=1e-12)
@@ -55,7 +56,7 @@ def test_median_matches_pandas(rng):
         np.testing.assert_allclose(result, reference, atol=1e-12, equal_nan=True)
 
 
-@pytest.mark.parametrize('q', [0.10, 0.25, 0.75, 0.90])
+@pytest.mark.parametrize("q", [0.10, 0.25, 0.75, 0.90])
 def test_quantile_matches_pandas(rng, q):
     x = rng.uniform(-1, 1, size=500)
     for w in [10, 30]:
@@ -90,22 +91,22 @@ def test_window_larger_than_length():
 
 
 def test_window_zero_raises():
-    with pytest.raises(ValueError, match='must be positive'):
+    with pytest.raises(ValueError, match="must be positive"):
         rollquantile(np.array([1.0, 2, 3]), 0, 0.5)
 
 
 def test_q_out_of_range_raises():
-    with pytest.raises(ValueError, match='q must be in'):
+    with pytest.raises(ValueError, match="'q' must be"):
         rollquantile(np.array([1.0, 2, 3]), 2, 1.5)
 
 
 def test_percentile_out_of_range_raises():
-    with pytest.raises(ValueError, match='p must be in'):
+    with pytest.raises(ValueError, match="'p' must be"):
         rollpercentile(np.array([1.0, 2, 3]), 2, 150)
 
 
 def test_2d_input_raises():
-    with pytest.raises(ValueError, match='1D'):
+    with pytest.raises(ValueError, match="1D"):
         rollquantile(np.array([[1.0, 2], [3, 4]]), 2, 0.5)
 
 
@@ -138,7 +139,7 @@ def test_dtype_preserved_float32():
 
 
 def test_quantile_monotonic_in_q(rng):
-    '''For a fixed window, quantile should be non-decreasing in q.'''
+    """For a fixed window, quantile should be non-decreasing in q."""
     x = rng.uniform(-1, 1, size=100)
     w = 10
     r_lo = rollquantile(x, w, 0.25)
@@ -150,7 +151,7 @@ def test_quantile_monotonic_in_q(rng):
 
 
 def test_shift_by_constant(rng):
-    '''Quantile shifts by a constant when input does.'''
+    """Quantile shifts by a constant when input does."""
     x = rng.uniform(-1, 1, size=100)
     r1 = rollmedian(x, 10)
     r2 = rollmedian(x + 500, 10)
@@ -171,6 +172,7 @@ def test_result_length_equals_input(rng):
 
 def test_gpu_matches_cpu(skip_no_gpu, rng):
     import cupy as cp
+
     x_cpu = rng.uniform(-1, 1, size=200)
     x_gpu = cp.asarray(x_cpu)
     for w in [3, 20]:
@@ -181,5 +183,6 @@ def test_gpu_matches_cpu(skip_no_gpu, rng):
 
 def test_gpu_preserves_backend(skip_no_gpu):
     import cupy as cp
+
     result = rollmedian(cp.asarray([1.0, 2, 3, 4, 5]), 3)
     assert isinstance(result, cp.ndarray)

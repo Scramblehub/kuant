@@ -23,6 +23,8 @@ from typing import Any
 
 import numpy as np
 
+from kuant._validation import require_positive
+
 cp: Any
 try:
     import cupy as cp
@@ -73,8 +75,7 @@ def rollmdd(x, window: int):
 
     n = x_arr.size
     w = int(window)
-    if w <= 0:
-        raise ValueError(f"window must be positive, got {w}")
+    require_positive(w, "window", kernel="rollmdd", kind="int")
     if n < w:
         out_dtype = x_arr.dtype if x_arr.dtype.kind == "f" else np.float64
         empty = np.full(n, np.nan, dtype=out_dtype)

@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from kuant._validation import require_positive
+
 from .tailindex import tailindex
 
 
@@ -46,8 +48,7 @@ def rolltailindex(x, window: int, k_frac: float = 0.10, min_k: int = 10):
     arr = np.asarray(x, dtype=np.float64).ravel()
     n = arr.size
     w = int(window)
-    if w <= 0:
-        raise ValueError(f"window must be positive, got {w}")
+    require_positive(w, "window", kernel="rolltailindex", kind="int")
 
     result = np.full(n, np.nan)
     for t in range(w - 1, n):

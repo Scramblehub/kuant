@@ -24,6 +24,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from kuant.errors import KuantValueError
+
 
 @dataclass
 class DFAResult:
@@ -73,13 +75,22 @@ def dfa(x, min_w: int = 10, max_w: int | None = None, n_windows: int = 20) -> DF
     arr = arr[np.isfinite(arr)]
     n = arr.size
     if n < 4 * min_w:
-        raise ValueError(
-            f"series too short for DFA with min_w={min_w}: need >= {4 * min_w}, got {n}"
+        raise KuantValueError(
+            f"kuant.dfa: series too short for DFA with min_w={min_w}: need "
+            f">= {4 * min_w} clean samples, got {n} after NaN drop.  "
+            f"[KE-VAL-RANGE]\n"
+            f"  → Fix: provide at least {4 * min_w} finite observations, "
+            f"or lower `min_w` (default 4)"
         )
     if max_w is None:
         max_w = n // 4
     if max_w <= min_w:
-        raise ValueError(f"max_w ({max_w}) must exceed min_w ({min_w})")
+        raise KuantValueError(
+            f"kuant.dfa: 'max_w' ({max_w}) must exceed 'min_w' ({min_w}).  "
+            f"[KE-VAL-RANGE]\n"
+            f"  → Fix: either raise `max_w` or lower `min_w`; the DFA fit "
+            f"needs a range of window sizes to regress against"
+        )
 
     # 1) Integrate mean-centered series
     y = np.cumsum(arr - float(np.mean(arr)))
@@ -87,7 +98,12 @@ def dfa(x, min_w: int = 10, max_w: int | None = None, n_windows: int = 20) -> DF
     # 2) Log-spaced windows
     ws = np.unique(np.logspace(np.log10(min_w), np.log10(max_w), n_windows).astype(int))
     if ws.size < 3:
-        raise ValueError(f"too few distinct windows ({ws.size}); increase n_windows or the range")
+        raise KuantValueError(
+            f"kuant.dfa: too few distinct windows ({ws.size}); need >= 3 "
+            f"for the log-log regression.  [KE-VAL-RANGE]\n"
+            f"  → Fix: increase `n_windows` (currently {n_windows}) or "
+            f"widen the [min_w, max_w] range"
+        )
 
     log_F = np.full(ws.size, np.nan)
     for i, w in enumerate(ws):
@@ -116,7 +132,12 @@ def dfa(x, min_w: int = 10, max_w: int | None = None, n_windows: int = 20) -> DF
     log_ws = np.log(ws.astype(np.float64))
     valid = np.isfinite(log_F)
     if valid.sum() < 3:
-        raise ValueError("fewer than 3 windows produced finite F(w) values")
+        raise KuantValueError(
+            "kuant.dfa: fewer than 3 windows produced finite F(w) values, "
+            "cannot fit the exponent.  [KE-CONV-DEGENERATE]\n"
+            "  → Fix: input may be constant on many windows (zero RMS); "
+            "check the series for long flat spans"
+        )
     slope, intercept = np.polyfit(log_ws[valid], log_F[valid], 1)
     return DFAResult(
         H=float(slope),

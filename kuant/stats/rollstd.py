@@ -1,4 +1,4 @@
-'''Rolling window standard deviation, via shifted cumsum trick.
+"""Rolling window standard deviation, via shifted cumsum trick.
 
 rollstd(x, w, ddof=1)[i] = sqrt(sum((x_j - mu_i)²) / (w - ddof))
     for j in the window [i-w+1 .. i], mu_i = mean of that window.
@@ -17,16 +17,20 @@ ddof: default 1 (sample std). Set 0 for population. `w - ddof <= 0`
 returns all NaN (no degrees of freedom).
 
 Design: docs/kernels/rollstd.md.
-'''
+"""
+
 from __future__ import annotations
 
 from typing import Any
 
 import numpy as np
 
+from kuant._validation import require_1d, require_nonnegative, require_positive
+
 cp: Any
 try:
     import cupy as cp
+
     _HAS_CUPY = True
     _CUPY_NDARRAY = cp.ndarray
 except ImportError:
@@ -36,26 +40,25 @@ except ImportError:
 
 
 def _prepare_input(x):
-    '''Coerce input into (backend, arr, out_dtype). 1D only.'''
+    """Coerce input into (backend, arr, out_dtype). 1D only."""
     if isinstance(x, _CUPY_NDARRAY):
         arr = x
-        if arr.dtype.kind in 'iub':
+        if arr.dtype.kind in "iub":
             arr = arr.astype(np.float64)
         backend = cp
     else:
         arr = np.asarray(x)
-        if arr.dtype.kind in 'iub':
+        if arr.dtype.kind in "iub":
             arr = arr.astype(np.float64)
         backend = np
 
-    if arr.ndim != 1:
-        raise ValueError(f'rollstd requires 1D input, got shape {arr.shape}')
+    require_1d(arr, "x", kernel="rollstd")
 
     return backend, arr, arr.dtype
 
 
 def rollstd(x, window, ddof=1):
-    '''Rolling window standard deviation.
+    """Rolling window standard deviation.
 
     Parameters
     ----------
@@ -91,15 +94,13 @@ def rollstd(x, window, ddof=1):
     array([nan, nan,  1.,  1.,  1.])
     >>> rollstd(np.array([5.0, 5, 5, 5]), window=2)
     array([nan,  0.,  0.,  0.])
-    '''
+    """
     xp, arr, out_dtype = _prepare_input(x)
     n = arr.size
     w = int(window)
 
-    if w <= 0:
-        raise ValueError(f'window must be positive, got {w}')
-    if not isinstance(ddof, int) or ddof < 0:
-        raise ValueError(f'ddof must be a non-negative int, got {ddof}')
+    require_positive(w, "window", kernel="rollstd", kind="int")
+    require_nonnegative(ddof, "ddof", kernel="rollstd", kind="int")
     if w > n:
         return xp.full(n, xp.nan, dtype=out_dtype)
 
@@ -144,6 +145,6 @@ def rollstd(x, window, ddof=1):
 
     result = xp.full(n, xp.nan, dtype=out_dtype)
     valid = window_nan_count == 0
-    result[w-1:] = xp.where(valid, std_w, xp.asarray(xp.nan, dtype=out_dtype))
+    result[w - 1 :] = xp.where(valid, std_w, xp.asarray(xp.nan, dtype=out_dtype))
 
     return result

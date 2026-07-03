@@ -1,4 +1,4 @@
-'''Rolling covariance via shifted cumsum trick.
+"""Rolling covariance via shifted cumsum trick.
 
 rollcov(x, y, w, ddof=1) = cov of x and y within trailing window.
 
@@ -7,16 +7,25 @@ cumsum for stability), but returns the RAW covariance instead of
 normalizing to correlation.
 
 Design: docs/kernels/rollcov.md.
-'''
+"""
+
 from __future__ import annotations
 
 from typing import Any
 
 import numpy as np
 
+from kuant._validation import (
+    require_1d,
+    require_equal_length,
+    require_nonnegative,
+    require_positive,
+)
+
 cp: Any
 try:
     import cupy as cp
+
     _CUPY_NDARRAY = cp.ndarray
 except ImportError:
     cp = None
@@ -33,15 +42,14 @@ def _prepare_inputs(x, y):
         x_arr = np.asarray(x)
         y_arr = np.asarray(y)
 
-    if x_arr.dtype.kind in 'iub':
+    if x_arr.dtype.kind in "iub":
         x_arr = x_arr.astype(np.float64)
-    if y_arr.dtype.kind in 'iub':
+    if y_arr.dtype.kind in "iub":
         y_arr = y_arr.astype(np.float64)
 
-    if x_arr.ndim != 1 or y_arr.ndim != 1:
-        raise ValueError(f'requires 1D inputs, got shapes {x_arr.shape}, {y_arr.shape}')
-    if x_arr.size != y_arr.size:
-        raise ValueError(f'x and y must have same length, got {x_arr.size} and {y_arr.size}')
+    require_1d(x_arr, "x", kernel="rollcov")
+    require_1d(y_arr, "y", kernel="rollcov")
+    require_equal_length(x_arr, "x", y_arr, "y", kernel="rollcov")
 
     out_dtype = backend.result_type(x_arr.dtype, y_arr.dtype)
     x_arr = x_arr.astype(out_dtype, copy=False)
@@ -51,7 +59,7 @@ def _prepare_inputs(x, y):
 
 
 def rollcov(x, y, window, ddof=1):
-    '''Rolling covariance between two 1D series.
+    """Rolling covariance between two 1D series.
 
     Parameters
     ----------
@@ -64,15 +72,13 @@ def rollcov(x, y, window, ddof=1):
     -------
     1D array, same length/backend/dtype
         Windows with any NaN in either series produce NaN.
-    '''
+    """
     xp, x, y, out_dtype = _prepare_inputs(x, y)
     n = x.size
     w = int(window)
 
-    if w <= 0:
-        raise ValueError(f'window must be positive, got {w}')
-    if not isinstance(ddof, int) or ddof < 0:
-        raise ValueError(f'ddof must be a non-negative int, got {ddof}')
+    require_positive(w, "window", kernel="rollcov", kind="int")
+    require_nonnegative(ddof, "ddof", kernel="rollcov", kind="int")
     if w > n:
         return xp.full(n, xp.nan, dtype=out_dtype)
     denom = w - ddof
@@ -114,5 +120,5 @@ def rollcov(x, y, window, ddof=1):
 
     result = xp.full(n, xp.nan, dtype=out_dtype)
     valid = nnan == 0
-    result[w-1:] = xp.where(valid, cov_w, xp.asarray(xp.nan, dtype=out_dtype))
+    result[w - 1 :] = xp.where(valid, cov_w, xp.asarray(xp.nan, dtype=out_dtype))
     return result

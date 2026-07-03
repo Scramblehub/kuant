@@ -1,4 +1,4 @@
-'''Exponentially weighted moving average via recurrence.
+"""Exponentially weighted moving average via recurrence.
 
     ema[0] = x[0]
     ema[i] = alpha * x[i] + (1 - alpha) * ema[i-1]
@@ -21,7 +21,8 @@ NaN policy: NaN propagates through the recurrence naturally. No shift
 trick needed (recurrence is scale-invariant in the linear regime).
 
 Design: docs/kernels/rollema.md.
-'''
+"""
+
 from __future__ import annotations
 
 from typing import Any
@@ -29,9 +30,13 @@ from typing import Any
 import numpy as np
 from scipy.signal import lfilter
 
+from kuant._validation import require_1d, require_range
+from kuant.errors import KuantValueError
+
 cp: Any
 try:
     import cupy as cp
+
     _CUPY_NDARRAY = cp.ndarray
 except ImportError:
     cp = None
@@ -41,23 +46,22 @@ except ImportError:
 def _prepare_input(x):
     if isinstance(x, _CUPY_NDARRAY):
         arr = x
-        if arr.dtype.kind in 'iub':
+        if arr.dtype.kind in "iub":
             arr = arr.astype(np.float64)
         backend = cp
     else:
         arr = np.asarray(x)
-        if arr.dtype.kind in 'iub':
+        if arr.dtype.kind in "iub":
             arr = arr.astype(np.float64)
         backend = np
 
-    if arr.ndim != 1:
-        raise ValueError(f'rollema requires 1D input, got shape {arr.shape}')
+    require_1d(arr, "x", kernel="rollema")
 
     return backend, arr, arr.dtype
 
 
 def rollema(x, span=None, alpha=None):
-    '''Exponentially weighted moving average.
+    """Exponentially weighted moving average.
 
     Parameters
     ----------
@@ -80,20 +84,32 @@ def rollema(x, span=None, alpha=None):
     >>> x = np.array([1.0, 2, 3, 4, 5])
     >>> rollema(x, alpha=0.5)
     array([1.    , 1.5   , 2.25  , 3.125 , 4.0625])
-    '''
+    """
     if (span is None) == (alpha is None):
-        raise ValueError('provide exactly one of span or alpha')
+        both = span is not None
+        raise KuantValueError(
+            "kuant.rollema: provide exactly one of `span` or `alpha`, got "
+            f"{'both' if both else 'neither'}.  [KE-VAL-MUTEX]\n"
+            "  → Fix: `span=21` (pandas-style, alpha = 2/(span+1)) OR "
+            "`alpha=0.1` (direct smoothing factor)"
+        )
 
     if span is not None:
-        if span < 1:
-            raise ValueError(f'span must be >= 1, got {span}')
+        require_range(span, "span", kernel="rollema", lo=1.0, hi=float("inf"))
         alpha_val = 2.0 / (float(span) + 1.0)
     else:
         # Guaranteed non-None by the exactly-one check above.
         assert alpha is not None
         alpha_val = float(alpha)
-        if not (0.0 < alpha_val <= 1.0):
-            raise ValueError(f'alpha must be in (0, 1], got {alpha_val}')
+        require_range(
+            alpha_val,
+            "alpha",
+            kernel="rollema",
+            lo=0.0,
+            hi=1.0,
+            lo_inclusive=False,
+            hi_inclusive=True,
+        )
 
     xp, arr, out_dtype = _prepare_input(x)
     n = arr.size

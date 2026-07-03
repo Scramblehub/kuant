@@ -1,4 +1,4 @@
-'''Rolling regression coefficient (beta) of y on x.
+"""Rolling regression coefficient (beta) of y on x.
 
     beta = cov(x, y) / var(x)
 
@@ -9,16 +9,20 @@ Composes rollcov and a variance-of-x cumsum. Reuses the same shifting
 trick for numerical stability.
 
 Design: docs/kernels/rollbeta.md.
-'''
+"""
+
 from __future__ import annotations
 
 from typing import Any
 
 import numpy as np
 
+from kuant._validation import require_1d, require_equal_length, require_positive
+
 cp: Any
 try:
     import cupy as cp
+
     _CUPY_NDARRAY = cp.ndarray
 except ImportError:
     cp = None
@@ -35,22 +39,26 @@ def _prepare_inputs(x, y):
         x_arr = np.asarray(x)
         y_arr = np.asarray(y)
 
-    if x_arr.dtype.kind in 'iub':
+    if x_arr.dtype.kind in "iub":
         x_arr = x_arr.astype(np.float64)
-    if y_arr.dtype.kind in 'iub':
+    if y_arr.dtype.kind in "iub":
         y_arr = y_arr.astype(np.float64)
 
-    if x_arr.ndim != 1 or y_arr.ndim != 1:
-        raise ValueError(f'requires 1D inputs, got shapes {x_arr.shape}, {y_arr.shape}')
-    if x_arr.size != y_arr.size:
-        raise ValueError(f'x and y must have same length, got {x_arr.size} and {y_arr.size}')
+    require_1d(x_arr, "x", kernel="rollbeta")
+    require_1d(y_arr, "y", kernel="rollbeta")
+    require_equal_length(x_arr, "x", y_arr, "y", kernel="rollbeta")
 
     out_dtype = backend.result_type(x_arr.dtype, y_arr.dtype)
-    return backend, x_arr.astype(out_dtype, copy=False), y_arr.astype(out_dtype, copy=False), out_dtype
+    return (
+        backend,
+        x_arr.astype(out_dtype, copy=False),
+        y_arr.astype(out_dtype, copy=False),
+        out_dtype,
+    )
 
 
 def rollbeta(x, y, window):
-    '''Rolling regression coefficient of y on x.
+    """Rolling regression coefficient of y on x.
 
     Parameters
     ----------
@@ -68,13 +76,12 @@ def rollbeta(x, y, window):
     Slope of the OLS regression y ~ alpha + beta*x fit over each
     trailing window. Direct application: rolling CAPM beta,
     pairs-trading hedge ratio.
-    '''
+    """
     xp, x, y, out_dtype = _prepare_inputs(x, y)
     n = x.size
     w = int(window)
 
-    if w <= 0:
-        raise ValueError(f'window must be positive, got {w}')
+    require_positive(w, "window", kernel="rollbeta", kind="int")
     if w > n or w < 2:
         return xp.full(n, xp.nan, dtype=out_dtype)
 
@@ -108,8 +115,8 @@ def rollbeta(x, y, window):
     sx2 = csx2[w:] - csx2[:-w]
     nnan = csnan[w:] - csnan[:-w]
 
-    cov_num = sxy - sx * sy / w      # unnormalized
-    varx_num = sx2 - sx * sx / w     # unnormalized
+    cov_num = sxy - sx * sy / w  # unnormalized
+    varx_num = sx2 - sx * sx / w  # unnormalized
 
     # The (w - ddof) factor cancels in the ratio, so beta doesn't need ddof.
     varx_num = xp.maximum(varx_num, zero_scalar)
@@ -119,5 +126,5 @@ def rollbeta(x, y, window):
 
     result = xp.full(n, xp.nan, dtype=out_dtype)
     valid = nnan == 0
-    result[w-1:] = xp.where(valid, beta, xp.asarray(xp.nan, dtype=out_dtype))
+    result[w - 1 :] = xp.where(valid, beta, xp.asarray(xp.nan, dtype=out_dtype))
     return result

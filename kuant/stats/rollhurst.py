@@ -1,4 +1,4 @@
-'''Rolling Hurst exponent.
+"""Rolling Hurst exponent.
 
 At each anchor `t >= window - 1`, fit an R/S Hurst exponent on the
 trailing `window` samples. Useful when the underlying series may
@@ -8,18 +8,23 @@ interleaved with periods of mean-reversion.
 Composes `hurstrs` in a trailing-window loop.
 
 Design: docs/kernels/stats/rollhurst.md.
-'''
+"""
+
 from __future__ import annotations
 
 from typing import Any
 
 import numpy as np
 
+from kuant._validation import require_1d
+from kuant.errors import KuantValueError
+
 from .hurstrs import hurstrs
 
 cp: Any
 try:
     import cupy as cp
+
     _CUPY_NDARRAY = cp.ndarray
 except ImportError:
     cp = None
@@ -32,9 +37,8 @@ def _to_numpy(r):
     return np.asarray(r, dtype=np.float64)
 
 
-def rollhurst(r, window: int = 252, min_w: int = 8,
-              n_windows: int = 8) -> np.ndarray:
-    '''Rolling Hurst exponent on trailing windows.
+def rollhurst(r, window: int = 252, min_w: int = 8, n_windows: int = 8) -> np.ndarray:
+    """Rolling Hurst exponent on trailing windows.
 
     Parameters
     ----------
@@ -69,19 +73,22 @@ def rollhurst(r, window: int = 252, min_w: int = 8,
     >>> H_t = rollhurst(r, window=250)
     >>> np.isnan(H_t[:249]).all()
     True
-    '''
+    """
     r_np = _to_numpy(r)
-    if r_np.ndim != 1:
-        raise ValueError(f'rollhurst requires a 1D input, got shape {r_np.shape}')
+    require_1d(r_np, "r", kernel="rollhurst")
     if window < 4 * min_w:
-        raise ValueError(
-            f'window ({window}) must be at least 4 * min_w ({4 * min_w})'
+        raise KuantValueError(
+            f"kuant.rollhurst: 'window' ({window}) must be at least 4 * "
+            f"min_w ({4 * min_w}) for R/S regression to have enough scale "
+            f"points.  [KE-VAL-RANGE]\n"
+            f"  → Fix: raise `window` to at least {4 * min_w}, or lower "
+            f"`min_w`"
         )
 
     n = r_np.size
     H = np.full(n, np.nan)
     for t in range(window - 1, n):
-        segment = r_np[t - window + 1: t + 1]
+        segment = r_np[t - window + 1 : t + 1]
         try:
             result = hurstrs(segment, min_w=min_w, n_windows=n_windows)
             H[t] = result.H

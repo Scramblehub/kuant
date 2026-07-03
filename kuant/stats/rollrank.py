@@ -1,4 +1,4 @@
-'''Rolling rank of the current value within its trailing window.
+"""Rolling rank of the current value within its trailing window.
 
 rollrank(x, w)[i] = rank of x[i] among x[i-w+1 .. i+1]
 
@@ -21,16 +21,20 @@ containing any NaN would produce wrong counts. We detect NaN-containing
 windows explicitly and mask to NaN.
 
 Design: docs/kernels/rollrank.md.
-'''
+"""
+
 from __future__ import annotations
 
 from typing import Any
 
 import numpy as np
 
+from kuant._validation import require_1d, require_positive
+
 cp: Any
 try:
     import cupy as cp
+
     _CUPY_NDARRAY = cp.ndarray
 except ImportError:
     cp = None
@@ -40,17 +44,16 @@ except ImportError:
 def _prepare_input(x):
     if isinstance(x, _CUPY_NDARRAY):
         arr = x
-        if arr.dtype.kind in 'iub':
+        if arr.dtype.kind in "iub":
             arr = arr.astype(np.float64)
         backend = cp
     else:
         arr = np.asarray(x)
-        if arr.dtype.kind in 'iub':
+        if arr.dtype.kind in "iub":
             arr = arr.astype(np.float64)
         backend = np
 
-    if arr.ndim != 1:
-        raise ValueError(f'rollrank requires 1D input, got shape {arr.shape}')
+    require_1d(arr, "x", kernel="rollrank")
 
     return backend, arr, arr.dtype
 
@@ -58,13 +61,15 @@ def _prepare_input(x):
 def _sliding_view(xp, arr, w):
     if xp is np:
         from numpy.lib.stride_tricks import sliding_window_view
+
         return sliding_window_view(arr, w)
     from cupy.lib.stride_tricks import sliding_window_view
+
     return sliding_window_view(arr, w)
 
 
 def rollrank(x, window, pct=False):
-    '''Rolling rank of the current value within the window.
+    """Rolling rank of the current value within the window.
 
     Parameters
     ----------
@@ -89,18 +94,17 @@ def rollrank(x, window, pct=False):
     array([nan, nan,  3. ,  1.5,  3. ])
     >>> rollrank(np.array([3.0, 1, 4, 1, 5]), 3, pct=True)
     array([nan, nan, 1. , 0.5, 1. ])
-    '''
+    """
     xp, arr, out_dtype = _prepare_input(x)
     n = arr.size
     w = int(window)
 
-    if w <= 0:
-        raise ValueError(f'window must be positive, got {w}')
+    require_positive(w, "window", kernel="rollrank", kind="int")
     if w > n:
         return xp.full(n, xp.nan, dtype=out_dtype)
 
-    windowed = _sliding_view(xp, arr, w)      # (n-w+1, w)
-    last = windowed[:, -1:]                    # (n-w+1, 1), broadcast target
+    windowed = _sliding_view(xp, arr, w)  # (n-w+1, w)
+    last = windowed[:, -1:]  # (n-w+1, 1), broadcast target
 
     less = xp.sum(windowed < last, axis=1).astype(out_dtype)
     equal = xp.sum(windowed == last, axis=1).astype(out_dtype)
@@ -116,5 +120,5 @@ def rollrank(x, window, pct=False):
     rank = xp.where(is_nan_row, nan_scalar, rank)
 
     result = xp.full(n, xp.nan, dtype=out_dtype)
-    result[w-1:] = rank
+    result[w - 1 :] = rank
     return result

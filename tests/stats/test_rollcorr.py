@@ -1,4 +1,5 @@
-'''Test suite for kuant.stats.rollcorr.'''
+"""Test suite for kuant.stats.rollcorr."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -14,7 +15,7 @@ from kuant.stats import rollcorr
 
 
 def test_perfect_positive_correlation():
-    '''y = 2x for all i → corr = 1 everywhere.'''
+    """y = 2x for all i → corr = 1 everywhere."""
     x = np.array([1.0, 2, 3, 4, 5])
     y = 2 * x
     result = rollcorr(x, y, 3)
@@ -29,7 +30,7 @@ def test_perfect_negative_correlation():
 
 
 def test_uncorrelated_series():
-    '''Two orthogonal patterns → corr near 0 over the full-length window.'''
+    """Two orthogonal patterns → corr near 0 over the full-length window."""
     x = np.array([1.0, -1, 1, -1])
     y = np.array([1.0, 1, -1, -1])
     result = rollcorr(x, y, 4)
@@ -55,7 +56,7 @@ def test_matches_pandas_uniform(rng):
 
 
 def test_matches_pandas_correlated_signal(rng):
-    '''y = x + small noise → non-trivial correlation the reference must match.'''
+    """y = x + small noise → non-trivial correlation the reference must match."""
     x = rng.uniform(-1, 1, size=500)
     y = 0.5 * x + rng.normal(0, 0.1, size=500)
     for w in [5, 30]:
@@ -99,7 +100,7 @@ def test_result_in_range(rng):
 
 
 def test_zero_variance_returns_nan():
-    '''Constant y → rollstd_y = 0 → corr undefined → NaN.'''
+    """Constant y → rollstd_y = 0 → corr undefined → NaN."""
     x = np.array([1.0, 2, 3, 4, 5])
     y = np.full(5, 3.0)
     result = rollcorr(x, y, 3)
@@ -107,7 +108,7 @@ def test_zero_variance_returns_nan():
 
 
 def test_window_1_all_nan():
-    '''Correlation of single points is undefined.'''
+    """Correlation of single points is undefined."""
     x = np.array([1.0, 2, 3, 4])
     y = np.array([2.0, 3, 4, 5])
     result = rollcorr(x, y, 1)
@@ -122,22 +123,22 @@ def test_window_larger_than_length():
 
 
 def test_window_zero_raises():
-    with pytest.raises(ValueError, match='must be positive'):
+    with pytest.raises(ValueError, match="must be positive"):
         rollcorr(np.array([1.0, 2]), np.array([3.0, 4]), 0)
 
 
 def test_length_mismatch_raises():
-    with pytest.raises(ValueError, match='same length'):
+    with pytest.raises(ValueError, match="equal length"):
         rollcorr(np.array([1.0, 2, 3]), np.array([1.0, 2]), 2)
 
 
 def test_2d_input_raises():
-    with pytest.raises(ValueError, match='1D'):
+    with pytest.raises(ValueError, match="1D"):
         rollcorr(np.array([[1.0, 2], [3, 4]]), np.array([[1.0, 2], [3, 4]]), 2)
 
 
 def test_nan_in_x_only():
-    '''NaN in x poisons the union → windows overlapping NaN produce NaN.'''
+    """NaN in x poisons the union → windows overlapping NaN produce NaN."""
     x = np.array([1.0, 2, np.nan, 4, 5, 6])
     y = np.array([1.0, 2, 3, 4, 5, 6])
     result = rollcorr(x, y, 3)
@@ -179,7 +180,7 @@ def test_python_list_input():
 
 
 def test_symmetry(rng):
-    '''corr(x, y) == corr(y, x).'''
+    """corr(x, y) == corr(y, x)."""
     x = rng.uniform(-1, 1, size=100)
     y = rng.uniform(-1, 1, size=100)
     r1 = rollcorr(x, y, 10)
@@ -188,7 +189,7 @@ def test_symmetry(rng):
 
 
 def test_shift_invariance(rng):
-    '''corr(x + a, y + b) == corr(x, y) for any a, b.'''
+    """corr(x + a, y + b) == corr(x, y) for any a, b."""
     x = rng.uniform(-1, 1, size=100)
     y = rng.uniform(-1, 1, size=100)
     r1 = rollcorr(x, y, 10)
@@ -197,7 +198,7 @@ def test_shift_invariance(rng):
 
 
 def test_scale_invariance_positive(rng):
-    '''corr(a*x, b*y) == corr(x, y) for a, b > 0.'''
+    """corr(a*x, b*y) == corr(x, y) for a, b > 0."""
     x = rng.uniform(0.1, 1.0, size=100)
     y = rng.uniform(0.1, 1.0, size=100)
     r1 = rollcorr(x, y, 10)
@@ -206,7 +207,7 @@ def test_scale_invariance_positive(rng):
 
 
 def test_scale_sign_flip(rng):
-    '''corr(x, -y) == -corr(x, y).'''
+    """corr(x, -y) == -corr(x, y)."""
     x = rng.uniform(-1, 1, size=100)
     y = rng.uniform(-1, 1, size=100)
     r1 = rollcorr(x, y, 10)
@@ -219,7 +220,7 @@ def test_first_w_minus_1_nan():
     y = x * 2
     for w in [2, 5, 10]:
         result = rollcorr(x, y, w)
-        assert np.all(np.isnan(result[:w-1]))
+        assert np.all(np.isnan(result[: w - 1]))
 
 
 # ---------------------------------------------------------------------------
@@ -229,6 +230,7 @@ def test_first_w_minus_1_nan():
 
 def test_gpu_matches_cpu(skip_no_gpu, rng):
     import cupy as cp
+
     x_cpu = rng.uniform(-1, 1, size=500)
     y_cpu = rng.uniform(-1, 1, size=500)
     for w in [5, 20, 50]:
@@ -239,5 +241,6 @@ def test_gpu_matches_cpu(skip_no_gpu, rng):
 
 def test_gpu_preserves_backend(skip_no_gpu):
     import cupy as cp
+
     result = rollcorr(cp.asarray([1.0, 2, 3, 4, 5]), cp.asarray([2.0, 4, 6, 8, 10]), 3)
     assert isinstance(result, cp.ndarray)

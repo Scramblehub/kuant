@@ -1,6 +1,7 @@
-'''Test suite for the "stats completion" batch:
+"""Test suite for the "stats completion" batch:
 rollrange, rollcov, rollbeta, rollmad, rollemastd, rollidio.
-'''
+"""
+
 from __future__ import annotations
 
 import numpy as np
@@ -8,8 +9,16 @@ import pandas as pd
 import pytest
 
 from kuant.stats import (
-    rollbeta, rollcorr, rollcov, rollemastd, rollidio,
-    rollmad, rollmax, rollmin, rollrange, rollstd,
+    rollbeta,
+    rollcorr,
+    rollcov,
+    rollemastd,
+    rollidio,
+    rollmad,
+    rollmax,
+    rollmin,
+    rollrange,
+    rollstd,
 )
 
 
@@ -68,7 +77,7 @@ def test_rollcov_of_x_with_itself_equals_var(rng):
 
 
 def test_rollcov_length_mismatch_raises():
-    with pytest.raises(ValueError, match='same length'):
+    with pytest.raises(ValueError, match="equal length"):
         rollcov(np.array([1.0, 2, 3]), np.array([1.0, 2]), 2)
 
 
@@ -78,7 +87,7 @@ def test_rollcov_length_mismatch_raises():
 
 
 def test_rollbeta_perfect_line():
-    '''y = 2x → beta == 2.'''
+    """y = 2x → beta == 2."""
     x = np.arange(10, dtype=np.float64)
     y = 2.0 * x
     result = rollbeta(x, y, 5)
@@ -117,7 +126,7 @@ def test_rollmad_hand_computed():
 
 
 def test_rollmad_robust_to_outlier():
-    '''One extreme outlier shouldn't blow up MAD (unlike std).'''
+    """One extreme outlier shouldn't blow up MAD (unlike std)."""
     x_clean = np.random.default_rng(0).uniform(-1, 1, size=99)
     x_outlier = np.concatenate([x_clean, [1000.0]])
     mad_result = rollmad(x_outlier, 100)[-1]
@@ -157,7 +166,7 @@ def test_rollemastd_biased_matches_pandas(rng):
 
 
 def test_rollemastd_neither_span_nor_alpha_raises():
-    with pytest.raises(ValueError, match='exactly one'):
+    with pytest.raises(ValueError, match="exactly one"):
         rollemastd(np.array([1.0, 2, 3]))
 
 
@@ -167,9 +176,9 @@ def test_rollemastd_neither_span_nor_alpha_raises():
 
 
 def test_rollidio_perfect_correlation_is_zero(rng):
-    '''If y is a linear function of x, all variance is explained → idio ≈ 0.
+    """If y is a linear function of x, all variance is explained → idio ≈ 0.
     The (1 - corr²) term is subject to FP cancellation near corr=1, so we
-    allow a modest tolerance rather than strict machine-zero.'''
+    allow a modest tolerance rather than strict machine-zero."""
     x = rng.uniform(-1, 1, size=200)
     y = 2.0 * x + 3.0
     result = rollidio(y, x, 20)
@@ -178,7 +187,7 @@ def test_rollidio_perfect_correlation_is_zero(rng):
 
 
 def test_rollidio_uncorrelated_equals_std_y(rng):
-    '''Uncorrelated → residual std == std(y).'''
+    """Uncorrelated → residual std == std(y)."""
     x = rng.uniform(-1, 1, size=500)
     y = rng.uniform(-1, 1, size=500)  # independent
     result = rollidio(y, x, 50)
@@ -191,7 +200,7 @@ def test_rollidio_uncorrelated_equals_std_y(rng):
 
 
 def test_rollidio_closed_form_matches_manual(rng):
-    '''Verify rollidio == sqrt(var(y) * (1 - corr²)).'''
+    """Verify rollidio == sqrt(var(y) * (1 - corr²))."""
     x = rng.uniform(-1, 1, size=200)
     y = 0.5 * x + rng.normal(0, 0.3, size=200)
     result = rollidio(y, x, 20)
@@ -208,17 +217,18 @@ def test_rollidio_closed_form_matches_manual(rng):
 
 def test_all_gpu_matches_cpu(skip_no_gpu, rng):
     import cupy as cp
+
     x = rng.uniform(-1, 1, size=200)
     y = rng.uniform(-1, 1, size=200)
     x_g, y_g = cp.asarray(x), cp.asarray(y)
     w = 20
 
     for name, cpu, gpu in [
-        ('rollrange', rollrange(x, w), rollrange(x_g, w)),
-        ('rollcov', rollcov(x, y, w), rollcov(x_g, y_g, w)),
-        ('rollbeta', rollbeta(x, y, w), rollbeta(x_g, y_g, w)),
-        ('rollmad', rollmad(x, w), rollmad(x_g, w)),
-        ('rollemastd', rollemastd(x, alpha=0.3), rollemastd(x_g, alpha=0.3)),
-        ('rollidio', rollidio(y, x, w), rollidio(y_g, x_g, w)),
+        ("rollrange", rollrange(x, w), rollrange(x_g, w)),
+        ("rollcov", rollcov(x, y, w), rollcov(x_g, y_g, w)),
+        ("rollbeta", rollbeta(x, y, w), rollbeta(x_g, y_g, w)),
+        ("rollmad", rollmad(x, w), rollmad(x_g, w)),
+        ("rollemastd", rollemastd(x, alpha=0.3), rollemastd(x_g, alpha=0.3)),
+        ("rollidio", rollidio(y, x, w), rollidio(y_g, x_g, w)),
     ]:
         np.testing.assert_allclose(cpu, cp.asnumpy(gpu), atol=1e-10, equal_nan=True, err_msg=name)

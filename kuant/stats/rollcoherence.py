@@ -13,6 +13,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from kuant._validation import require_dep, require_equal_length, require_positive
+
 
 def rollcoherence(
     x,
@@ -63,21 +65,20 @@ def rollcoherence(
     try:
         from scipy.signal import coherence
     except ImportError as e:
-        raise ImportError(
-            "kuant.stats.rollcoherence requires scipy.signal.coherence. "
-            "scipy is a hard dep of kuant, so this should always be available; "
-            "install with: pip install scipy"
-        ) from e
+        require_dep(
+            "scipy",
+            kernel="rollcoherence",
+            install="pip install scipy",
+            cause=e,
+        )
 
     x_arr = np.asarray(x, dtype=np.float64).ravel()
     y_arr = np.asarray(y, dtype=np.float64).ravel()
-    if x_arr.size != y_arr.size:
-        raise ValueError(f"x and y must have equal length; got {x_arr.size} vs {y_arr.size}")
+    require_equal_length(x_arr, "x", y_arr, "y", kernel="rollcoherence")
 
     n = x_arr.size
     w = int(window)
-    if w <= 0:
-        raise ValueError(f"window must be positive, got {w}")
+    require_positive(w, "window", kernel="rollcoherence", kind="int")
     if nperseg is None:
         nperseg = max(8, w // 2)
 

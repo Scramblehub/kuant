@@ -1,4 +1,4 @@
-'''Rolling window Pearson correlation, batched via shifted cumsum trick.
+"""Rolling window Pearson correlation, batched via shifted cumsum trick.
 
 rollcorr(x, y, w)[i] = corr(x[i-w+1..i+1], y[i-w+1..i+1])
                     = cov(x, y) / (std(x) * std(y))     over the window
@@ -24,16 +24,20 @@ Result clipped to [-1, 1] to defend against floating-point noise pushing
 just past the bounds.
 
 Design: docs/kernels/rollcorr.md.
-'''
+"""
+
 from __future__ import annotations
 
 from typing import Any
 
 import numpy as np
 
+from kuant._validation import require_1d, require_equal_length, require_positive
+
 cp: Any
 try:
     import cupy as cp
+
     _CUPY_NDARRAY = cp.ndarray
 except ImportError:
     cp = None
@@ -41,7 +45,7 @@ except ImportError:
 
 
 def _prepare_inputs(x, y):
-    '''Coerce (x, y) into (backend, x_arr, y_arr, out_dtype). Both 1D, equal length.'''
+    """Coerce (x, y) into (backend, x_arr, y_arr, out_dtype). Both 1D, equal length."""
     if isinstance(x, _CUPY_NDARRAY) or isinstance(y, _CUPY_NDARRAY):
         backend = cp
         x_arr = cp.asarray(x)
@@ -51,15 +55,14 @@ def _prepare_inputs(x, y):
         x_arr = np.asarray(x)
         y_arr = np.asarray(y)
 
-    if x_arr.dtype.kind in 'iub':
+    if x_arr.dtype.kind in "iub":
         x_arr = x_arr.astype(np.float64)
-    if y_arr.dtype.kind in 'iub':
+    if y_arr.dtype.kind in "iub":
         y_arr = y_arr.astype(np.float64)
 
-    if x_arr.ndim != 1 or y_arr.ndim != 1:
-        raise ValueError(f'rollcorr requires 1D inputs, got shapes {x_arr.shape}, {y_arr.shape}')
-    if x_arr.size != y_arr.size:
-        raise ValueError(f'x and y must have same length, got {x_arr.size} and {y_arr.size}')
+    require_1d(x_arr, "x", kernel="rollcorr")
+    require_1d(y_arr, "y", kernel="rollcorr")
+    require_equal_length(x_arr, "x", y_arr, "y", kernel="rollcorr")
 
     out_dtype = backend.result_type(x_arr.dtype, y_arr.dtype)
     x_arr = x_arr.astype(out_dtype, copy=False)
@@ -69,7 +72,7 @@ def _prepare_inputs(x, y):
 
 
 def rollcorr(x, y, window):
-    '''Rolling Pearson correlation between two 1D series.
+    """Rolling Pearson correlation between two 1D series.
 
     Parameters
     ----------
@@ -92,13 +95,12 @@ def rollcorr(x, y, window):
     >>> y = np.array([2.0, 4, 6, 8, 10])  # perfectly correlated
     >>> rollcorr(x, y, 3)
     array([nan, nan,  1.,  1.,  1.])
-    '''
+    """
     xp, x, y, out_dtype = _prepare_inputs(x, y)
     n = x.size
     w = int(window)
 
-    if w <= 0:
-        raise ValueError(f'window must be positive, got {w}')
+    require_positive(w, "window", kernel="rollcorr", kind="int")
     if w > n:
         return xp.full(n, xp.nan, dtype=out_dtype)
     if w < 2:
@@ -167,6 +169,6 @@ def rollcorr(x, y, window):
 
     result = xp.full(n, xp.nan, dtype=out_dtype)
     valid = nnan == 0
-    result[w-1:] = xp.where(valid, corr, xp.asarray(xp.nan, dtype=out_dtype))
+    result[w - 1 :] = xp.where(valid, corr, xp.asarray(xp.nan, dtype=out_dtype))
 
     return result
