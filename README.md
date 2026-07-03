@@ -58,6 +58,29 @@ pip install kuant[gpu]
 pip install scikit-learn statsmodels
 ```
 
+## Benchmarks
+
+GPU acceleration on batched primitives is real. Verified median wall time
+on batches of 1M elements (NVIDIA GPU + Intel-class CPU):
+
+| Kernel              | numpy    | cupy    | speedup |
+| ---                 | ---:     | ---:    | ---:    |
+| `bscall`   1M       | 92.5 ms  | 1.13 ms | **82x** |
+| `normcdf`  1M       | 14.4 ms  | 0.17 ms | **85x** |
+
+Smaller batches are dispatch-overhead bound; the crossover is around 10K
+elements. The whole benchmark suite (55 measurements across the 5
+subpackages) is in `benchmarks/`. Reproduce with:
+
+```bash
+./benchmarks/run.sh
+tail -f benchmarks/results/latest.jsonl
+```
+
+The runner is queue-based — you can drop a new benchmark file into
+`benchmarks/suites/` while the queue is running, and it gets picked up
+on the next scan. See `benchmarks/README.md` for the full workflow.
+
 ## Documentation
 
 - [`docs/kernels/`](docs/kernels/) — per-kernel API docs, one per kernel,

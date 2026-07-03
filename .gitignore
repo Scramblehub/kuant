@@ -61,6 +61,13 @@ secrets/
 *.credentials
 .pypirc
 
+# Benchmark runtime artifacts (results streamed locally, not committed)
+benchmarks/results/latest.jsonl
+benchmarks/results/manifest.json
+benchmarks/queue.log
+benchmarks/.queue.lock
+.benchmarks/
+
 # Docs build
 docs/_build/
 docs/_static/
