@@ -1,136 +1,168 @@
-# Plan: kuant.options expansion
+# Plan: kuant.options expansion + BS Greeks refactor
 
-`kuant.options` currently has one kernel: `impvol` (vectorized
-Newton-Raphson IV solver). Tomorrow's target: complete the option
-analytics category so kuant covers the standard research toolkit.
+## Canonical structure (source of truth)
 
-## Scope
+```text
+kuant/
+├── core/         Mathematical primitives (BS pricing, norm CDF, returns)
+├── options/      Options-specific (pricing, Greeks, chain filters)
+├── stats/        Rolling and cross-sectional statistics
+├── portfolio/    P&L, drawdown, Sharpe, attribution
+├── backtest/     Simulation engine components
+├── signals/      Signal computation (regime, VWAP, correlation break)
+├── text/         Regex and text parsing (OCC symbols, SEC forms, LM dict)
+├── data/         Bar aggregation, alignment, corporate actions
+├── edgecases/    NaN handling, sparse trading, delisted names
+├── queueing/     Coordination layer (job queue, freshness, dep graph)
+├── sindy/        Sparse Identification of Nonlinear Dynamics
+├── qm/           Quantum-mechanics-inspired regime discovery
+└── topology/     Topological Data Analysis
+```
 
-Six new kernels, split into three themes.
+## What went wrong
 
-### Theme 1 — Time-decay Greeks (θ) and charm (∂δ/∂t)
+We shipped ALL BS Greeks (`bsputdelta`, `bscalldelta`, `bsputrho`,
+`bscallrho`, `bsgamma`, `bsvega`) into `kuant.core`. That belongs in
+`kuant.options` per the canonical spec. `kuant.core` should stay lean:
+just BS pricing (`bsput`, `bscall`) as a math primitive, `normcdf`,
+`normpdf`, plus other pure-math foundations.
 
-The remaining Greeks that aren't already in `kuant.core`.
+## Refactor first, add second
 
-| Kernel | Formula | Location |
-|---|---|---|
-| `bscalltheta` | ∂C/∂t (annualized, negative for calls) | `kuant.core.bscalltheta` |
-| `bsputtheta` | ∂P/∂t (annualized, negative for puts) | `kuant.core.bsputtheta` |
-| `bscallcharm` | ∂δ_call/∂t | `kuant.core.bscallcharm` |
-| `bsputcharm` | ∂δ_put/∂t | `kuant.core.bsputcharm` |
+### Step 1 — Reorganize BS Greeks: core → options
 
-**These go in `kuant.core`, not `kuant.options`.** Same rationale as
-existing Greeks: they're pure math primitives on `bsput`/`bscall`.
+Move these files from `kuant/core/` to `kuant/options/`:
 
-### Theme 2 — IV solver robustness
+- `bsputdelta.py`
+- `bscalldelta.py`
+- `bsputrho.py`
+- `bscallrho.py`
+- `bsgamma.py`
+- `bsvega.py`
+- `_bs_common.py` (shared setup helper — moves with the Greeks that use it)
 
-| Kernel | Purpose | Location |
-|---|---|---|
-| `impvolbisection` | Bisection-based IV solver as fallback for the low-vega tail where Newton diverges | `kuant.options.impvolbisection` |
+Update imports so each moved kernel does `from kuant.core import
+bsput, bscall, normcdf, normpdf` (these stay in core). Update
+`kuant/options/__init__.py` to re-export the Greeks; drop the Greeks
+from `kuant/core/__init__.py`.
 
-Complements `impvol`. Falls back to bracketing bisection when Newton
-step overshoots or vega is below a threshold. Slower per call but
-guaranteed to converge on any monotonic price function.
+Move the corresponding docs from `docs/kernels/core/` to
+`docs/kernels/options/`. Move the corresponding tests from
+`tests/core/` to `tests/options/`. Update the paths and any
+cross-references in the docs README.
 
-### Theme 3 — Option chain utilities
+Keep in `kuant.core`:
 
-| Kernel | Purpose | Location |
-|---|---|---|
-| `optionchain` | Utilities for building/filtering an option chain from a strike grid + expiries | `kuant.options.optionchain` |
+- `bsput`, `bscall` — BS pricing formulas (foundational math)
+- `normcdf`, `normpdf` — normal distribution primitives
 
-Not a "kernel" in the numerical-primitive sense — more of a helper
-for research pipelines. Small.
+### Step 2 — After the refactor, add new kernels in `kuant.options`
+
+All six new kernels go in `kuant.options` (BS options analytics).
+
+#### Time-decay Greeks (theta)
+
+Two direction-specific kernels like delta and rho:
+
+- `bscalltheta`:
+
+  ```math
+  -S·e^(-q·T)·φ(d1)·σ/(2√T) + q·S·e^(-q·T)·Φ(d1) - r·K·e^(-r·T)·Φ(d2)
+  ```
+
+- `bsputtheta`:
+
+  ```math
+  -S·e^(-q·T)·φ(d1)·σ/(2√T) - q·S·e^(-q·T)·Φ(-d1) + r·K·e^(-r·T)·Φ(-d2)
+  ```
+
+Verify against a scipy-based reference. Cross-check by finite-
+difference of `bsput`/`bscall` w.r.t. `T`.
+
+#### Second-order-mixed Greek (charm, ∂δ/∂t)
+
+Two direction-specific kernels:
+
+- `bscallcharm`:
+
+  ```math
+  -e^(-q·T)·(q·Φ(d1) - φ(d1)·(2(r-q)T - d2·σ√T) / (2T·σ√T))
+  ```
+
+- `bsputcharm`:
+
+  ```math
+  -e^(-q·T)·(-q·Φ(-d1) - φ(d1)·(2(r-q)T - d2·σ√T) / (2T·σ√T))
+  ```
+
+Cross-check by finite-difference of `bsputdelta`/`bscalldelta` w.r.t.
+`T`.
+
+#### IV solver robustness
+
+`impvolbisection` — bracketing-bisection IV solver, guaranteed to
+converge on any monotonic price function. Fallback for the low-vega
+tail where Newton (`impvol`) diverges. Ships next to `impvol` in
+`kuant.options`. Two solvers side by side lets the user choose speed
+(`impvol`) vs guaranteed convergence (`impvolbisection`).
 
 ## Design decisions to lock
 
 ### Theta sign convention
 
-Standard: negative for a long option position (time decay costs the
-holder). Match Bloomberg / most textbooks. Users can flip if they
-prefer positive-per-day.
+Textbook: negative for a long option (time decay costs the holder).
+Match Bloomberg / most references.
 
-### Theta units — annualized or per-day?
+### Theta units — annualized
 
-Textbook is annualized (∂/∂T where T is in years). Traders often
-prefer per-day (annualized / 365). Support both:
+Match the rest of the BS family: annualized (∂/∂T with T in years).
+Users compute per-day as `theta / 365` at the call site. Document the
+`/365` pattern in the doc.
 
-```python
-theta_annual = bscalltheta(S, K, T, r, sigma, q=0.0)      # default
-theta_daily  = bscalltheta(S, K, T, r, sigma, q=0.0) / 365
-```
+### Separate `impvolbisection` function, not a `stable=True` flag
 
-Default annualized; document the /365 pattern for daily.
+Cleaner namespace. Reader sees the algorithm name in the code
+directly. `impvol` stays Newton-only; `impvolbisection` is the
+bisection alternative.
 
-### `impvolbisection` — separate function or `stable=True` flag on `impvol`?
+### Three-layer cross-check pattern (matches the rest of the BS family)
 
-Option A: separate `kuant.options.impvolbisection(...)`. Cleaner
-namespace, explicit choice.
-Option B: `impvol(..., stable=False)` with `stable=True` triggering
-bisection. Single-function API.
-
-Recommend Option A. `impvolbisection` is a distinct algorithm; hiding
-it behind a flag conflates two things. Reader who sees `impvol` in
-code knows exactly which algorithm ran.
-
-### `optionchain` shape
-
-Returns a structured object (dataclass? DataFrame?) with strike/tenor
-grid metadata + prices per (strike, tenor) cell. Design later — this
-is more of a research helper than a numerical kernel.
-
-## Formulas
-
-### `bscalltheta`
-
-```math
-θ_call = -S·e^(-q·T)·φ(d1)·σ/(2√T)
-       + q·S·e^(-q·T)·Φ(d1)
-       - r·K·e^(-r·T)·Φ(d2)
-```
-
-### `bsputtheta`
-
-```math
-θ_put = -S·e^(-q·T)·φ(d1)·σ/(2√T)
-      - q·S·e^(-q·T)·Φ(-d1)
-      + r·K·e^(-r·T)·Φ(-d2)
-```
-
-### `bscallcharm` (annualized)
-
-```math
-charm_call = -e^(-q·T)·(q·Φ(d1) - φ(d1)·(2(r-q)T - d2·σ√T)/(2T·σ√T))
-```
-
-### `bsputcharm`
-
-```math
-charm_put = -e^(-q·T)·(-q·Φ(-d1) - φ(d1)·(2(r-q)T - d2·σ√T)/(2T·σ√T))
-```
-
-Verify against a reference implementation (`py_vollib`, `mibian`, or
-scipy manually) before shipping.
+1. Golden values from scipy-based reference (a few hand-picked
+   `(S,K,T,r,σ,q)` tuples with expected output pasted into
+   `pytest.parametrize`).
+2. 1000-point random reference match at `atol=1e-10`.
+3. Cross-kernel identity via finite-difference of the corresponding
+   lower-order Greek (theta: FD of `bsput` w.r.t. `T`; charm: FD of
+   `bsputdelta` w.r.t. `T`).
 
 ## Implementation order
 
-1. **`bscalltheta` + `bsputtheta`** — one file `bstheta.py` with both
-   like the delta/rho pairs. Golden values from a scipy reference.
-2. **`bscallcharm` + `bsputcharm`** — one file `bscharm.py`.
-   Cross-check via finite-difference of `bsputdelta` / `bscalldelta`.
-3. **`impvolbisection`** — sits in `kuant.options`. Bracketing
-   bisection with early-exit tolerance. Cross-check against `impvol`
-   in the normal regime.
-4. **`optionchain`** — design + implement last. Small helper, easy
-   to shape once the Greeks are all in place.
+1. Step 1 refactor — move BS Greeks from `core` to `options`.
+   Mechanical file moves + import updates + doc/test path updates.
+   Every existing test must pass before moving on.
+2. `bscalltheta` + `bsputtheta` — one file `bstheta.py`.
+3. `bscallcharm` + `bsputcharm` — one file `bscharm.py`.
+4. `impvolbisection` — sits alongside `impvol` in `kuant.options`.
 
-Docs go in `docs/kernels/core/` (theta, charm) and
-`docs/kernels/options/` (impvolbisection, optionchain).
+Docs go in `docs/kernels/options/`. Tests in `tests/options/`.
+
+## `kuant.options` scope going forward
+
+After tomorrow's work, `kuant.options` will hold:
+
+- Existing: `impvol`
+- Added: `bsputdelta`, `bscalldelta`, `bsputrho`, `bscallrho`,
+  `bsgamma`, `bsvega`, `bscalltheta`, `bsputtheta`, `bscallcharm`,
+  `bsputcharm`, `impvolbisection`
+- Later: multi-leg spreads (`bullcallspread`, `strangleprice`, ...),
+  chain filters (`optionchainbuild`), auto-hedging (`deltahedge`)
 
 ## Rough estimate
 
-- Theta pair: 1 hour (formula + tests + docs)
-- Charm pair: 1 hour
-- `impvolbisection`: 1.5 hours (need robust bracket logic)
-- `optionchain`: 1 hour if we keep it minimal
+- Step 1 refactor — 1 hour (careful mechanical file moves, import
+  updates, doc/test path fixes)
+- Theta pair — 1 hour
+- Charm pair — 1 hour
+- `impvolbisection` — 1.5 hours
 
-Total: 4.5 hours if all four ship. Realistic to complete tomorrow.
+Total: 4.5 hours if all four ship. Realistic for tomorrow.
