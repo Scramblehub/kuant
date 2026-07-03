@@ -20,11 +20,11 @@ discovery — not just an implementation of textbook indicators.
 
 ## Status
 
-Alpha. **887 tests** across 5 shipped subpackages:
+Alpha. **955 tests** across 5 shipped subpackages:
 
 | Subpackage | Kernels | Highlights |
-|---|---|---|
-| `kuant.core` | 13 | BS pricing (bscall/bsput) + full Gaussian family (normcdf/normpdf/normppf + log-tails) + Student-t (tcdf/tpdf/tppf + log-tails) + logsumexp |
+| --- | --- | --- |
+| `kuant.core` | 16 | BS pricing (bscall/bsput) + full Gaussian family (normcdf/normpdf/normppf + log-tails) + Student-t (tcdf/tpdf/tppf + log-tails) + Generalized Pareto (gpdcdf/gpdpdf/gpdppf) + logsumexp |
 | `kuant.options` | 21 | First-order Greeks (delta/gamma/vega/rho/theta/charm) + second-order (vanna/volga/speed/zomma/color) + payoffs + chain filters + Newton and bisection implied-vol solvers |
 | `kuant.stats` | 19 | Rolling primitives with strict-window NaN, plus Hurst (R/S) and rolling Hurst |
 | `kuant.qm` | 5 + `hmm`/`ghmm` subpackages | HMM/GHMM inference (forward/backward/viterbi/posterior) + belltest, zenoscan, posteriorentropy, nocloningscan, decoherencescan |
