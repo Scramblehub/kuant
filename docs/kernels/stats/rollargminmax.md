@@ -52,7 +52,7 @@ V1.
 ## Edge cases
 
 | Condition | Output |
-|---|---|
+| --- | --- |
 | `window == 1` | all 0 (single-element window's argmax is 0) |
 | `window > len(x)` | all NaN |
 | `window <= 0` | raises `ValueError` |
