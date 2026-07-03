@@ -13,10 +13,19 @@ because they are option-specific quantities rather than general math.
 """
 from .bscall import bscall
 from .bsput import bsput
+from .lognormccdf import lognormccdf
+from .lognormcdf import lognormcdf
+from .logsumexp import logsumexp
 from .normcdf import normcdf
 from .normpdf import normpdf
+from .normppf import normppf
 
 __all__ = [
+    # Black-Scholes primitives
     "bscall", "bsput",
-    "normcdf", "normpdf",
+    # Gaussian family
+    "normcdf", "normpdf", "normppf",
+    "lognormcdf", "lognormccdf",
+    # log-space arithmetic
+    "logsumexp",
 ]
