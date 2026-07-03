@@ -52,6 +52,15 @@ ENV/
 data/
 raw/
 
+# Secrets — API tokens, credentials (NEVER commit)
+secret
+secrets/
+.secrets/
+.env.local
+*.token
+*.credentials
+.pypirc
+
 # Docs build
 docs/_build/
 docs/_static/
