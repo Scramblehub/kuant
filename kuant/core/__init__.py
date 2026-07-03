@@ -19,6 +19,9 @@ from .logsumexp import logsumexp
 from .normcdf import normcdf
 from .normpdf import normpdf
 from .normppf import normppf
+from .tcdf import tcdf
+from .tpdf import tpdf
+from .tppf import tppf
 
 __all__ = [
     # Black-Scholes primitives
@@ -26,6 +29,8 @@ __all__ = [
     # Gaussian family
     "normcdf", "normpdf", "normppf",
     "lognormcdf", "lognormccdf",
+    # Student-t family (fat-tail)
+    "tcdf", "tpdf", "tppf",
     # log-space arithmetic
     "logsumexp",
 ]
