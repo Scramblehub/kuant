@@ -1,4 +1,4 @@
-'''Bonferroni-corrected Granger-causality scan over many candidates.
+"""Bonferroni-corrected Granger-causality scan over many candidates.
 
 Motivation. Given a target time series and a library of N candidate
 predictors × H horizons, test which candidates Granger-cause the
@@ -16,7 +16,8 @@ Cheap to run (statsmodels' grangercausalitytests is compiled),
 useful even when the ultimate gate ends up being borderline.
 
 Design: docs/tools/grangerscan.md.
-'''
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -27,7 +28,8 @@ import numpy as np
 
 @dataclass
 class GrangerHit:
-    '''A single (candidate, horizon) pass at the Bonferroni threshold.'''
+    """A single (candidate, horizon) pass at the Bonferroni threshold."""
+
     candidate: str
     horizon: int
     f_stat: float
@@ -42,27 +44,29 @@ class GrangerScanResult:
 
     def summary(self) -> str:
         lines = [
-            '=== Granger causality scan ===',
-            f'Tests run:                {self.n_tests}',
-            f'Bonferroni α threshold:   {self.bonferroni_alpha:.6f}',
-            f'Candidates passing:       {len(self.hits)}',
+            "=== Granger causality scan ===",
+            f"Tests run:                {self.n_tests}",
+            f"Bonferroni α threshold:   {self.bonferroni_alpha:.6f}",
+            f"Candidates passing:       {len(self.hits)}",
         ]
         if self.hits:
-            lines.append('')
+            lines.append("")
             lines.append(f'{"Candidate":<30s} {"Horizon":>7s} {"F":>8s} {"p":>12s}')
             for h in sorted(self.hits, key=lambda x: x.p_value):
-                lines.append(f'{h.candidate:<30s} {h.horizon:>7d} {h.f_stat:>8.3f} {h.p_value:>12.2e}')
-        return '\n'.join(lines)
+                lines.append(
+                    f"{h.candidate:<30s} {h.horizon:>7d} {h.f_stat:>8.3f} {h.p_value:>12.2e}"
+                )
+        return "\n".join(lines)
 
 
 def _require_statsmodels():
     try:
         from statsmodels.tsa.stattools import grangercausalitytests
+
         return grangercausalitytests
     except ImportError as e:
         raise ImportError(
-            'kuant.sindy.grangerscan requires statsmodels. '
-            'Install with: pip install statsmodels'
+            "kuant.sindy.grangerscan requires statsmodels. " "Install with: pip install statsmodels"
         ) from e
 
 
@@ -73,7 +77,7 @@ def grangerscan(
     alpha: float = 0.05,
     verbose: bool = False,
 ) -> GrangerScanResult:
-    '''Bonferroni-corrected Granger F-test scan.
+    """Bonferroni-corrected Granger F-test scan.
 
     For each (candidate, horizon) pair, fit a bivariate VAR and F-test
     whether adding the candidate's `horizon`-lagged values reduces the
@@ -114,7 +118,7 @@ def grangerscan(
     >>> result = grangerscan(y, {'x': x, 'noise': rng.normal(size=500)})
     >>> 'x' in [h.candidate for h in result.hits]
     True
-    '''
+    """
     grangercausalitytests = _require_statsmodels()
 
     if horizons is None:
@@ -135,24 +139,35 @@ def grangerscan(
         data_clean = data[mask]
         if len(data_clean) < 30:
             if verbose:
-                print(f'{name}: too few clean observations ({len(data_clean)}), skipping')
+                print(f"{name}: too few clean observations ({len(data_clean)}), skipping")
             continue
 
         for h in horizons:
             try:
-                res = grangercausalitytests(data_clean, maxlag=[h], verbose=False)
-                f_stat = res[h][0]['ssr_ftest'][0]
-                p_value = res[h][0]['ssr_ftest'][1]
+                # `verbose=False` is deprecated in statsmodels >=0.14; the
+                # function no longer prints internally, so we omit the kwarg.
+                # Silence any remaining warnings from statsmodels internals.
+                import warnings
+
+                with warnings.catch_warnings():
+                    warnings.filterwarnings("ignore", category=FutureWarning)
+                    res = grangercausalitytests(data_clean, maxlag=[h])
+                f_stat = res[h][0]["ssr_ftest"][0]
+                p_value = res[h][0]["ssr_ftest"][1]
                 if verbose:
-                    print(f'{name:<30s} h={h} F={f_stat:.3f} p={p_value:.2e}')
+                    print(f"{name:<30s} h={h} F={f_stat:.3f} p={p_value:.2e}")
                 if p_value < bonferroni_alpha:
-                    result.hits.append(GrangerHit(
-                        candidate=name, horizon=h,
-                        f_stat=f_stat, p_value=p_value,
-                    ))
+                    result.hits.append(
+                        GrangerHit(
+                            candidate=name,
+                            horizon=h,
+                            f_stat=f_stat,
+                            p_value=p_value,
+                        )
+                    )
             except Exception as exc:
                 if verbose:
-                    print(f'{name} h={h} failed: {exc}')
+                    print(f"{name} h={h} failed: {exc}")
                 continue
 
     return result
