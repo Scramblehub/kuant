@@ -1,4 +1,4 @@
-'''Implied volatility solver via vectorized bisection.
+"""Implied volatility solver via vectorized bisection.
 
 Complement to `impvol` (Newton-Raphson). Bisection is slower per
 iteration but is BULLETPROOF: it cannot diverge, and it works even when
@@ -19,18 +19,23 @@ Bisection convergence rate: ~log2((hi-lo)/tol) iterations.
 For default lo=1e-6, hi=10, tol=1e-8: ~30 iterations.
 
 Design: docs/kernels/options/impvolbisection.md.
-'''
+"""
+
 from __future__ import annotations
 
 from typing import Any
 
 import numpy as np
 
+from kuant._validation import require_positive
+from kuant.errors import KuantValueError
+
 from ..core import bscall, bsput
 
 cp: Any
 try:
     import cupy as cp
+
     _CUPY_NDARRAY = cp.ndarray
 except ImportError:
     cp = None
@@ -48,10 +53,20 @@ def _detect_backend(*args) -> Any:
     return np
 
 
-def impvolbisection(price, S, K, T, r, is_call=False, q=0.0,
-                    tol=1e-8, max_iter=100,
-                    sigma_lo=_SIGMA_MIN_DEFAULT, sigma_hi=_SIGMA_MAX_DEFAULT):
-    '''Vectorized bisection implied-vol solver.
+def impvolbisection(
+    price,
+    S,
+    K,
+    T,
+    r,
+    is_call=False,
+    q=0.0,
+    tol=1e-8,
+    max_iter=100,
+    sigma_lo=_SIGMA_MIN_DEFAULT,
+    sigma_hi=_SIGMA_MAX_DEFAULT,
+):
+    """Vectorized bisection implied-vol solver.
 
     Parameters
     ----------
@@ -91,7 +106,19 @@ def impvolbisection(price, S, K, T, r, is_call=False, q=0.0,
     >>> price = bsput(100.0, 100.0, 1.0, 0.05, sigma_true)
     >>> abs(impvolbisection(price, 100.0, 100.0, 1.0, 0.05) - sigma_true) < 1e-6
     True
-    '''
+    """
+    require_positive(max_iter, "max_iter", kernel="impvolbisection", kind="int")
+    require_positive(tol, "tol", kernel="impvolbisection")
+    require_positive(sigma_lo, "sigma_lo", kernel="impvolbisection")
+    require_positive(sigma_hi, "sigma_hi", kernel="impvolbisection")
+    if float(sigma_lo) >= float(sigma_hi):
+        raise KuantValueError(
+            f"kuant.impvolbisection: 'sigma_lo' ({sigma_lo}) must be strictly "
+            f"less than 'sigma_hi' ({sigma_hi}).  [KE-VAL-RANGE]\n"
+            f"  → Fix: pass a non-degenerate bracket, e.g. sigma_lo=1e-6, "
+            f"sigma_hi=10.0"
+        )
+
     xp = _detect_backend(price, S, K, T, r, sigma_lo, sigma_hi)
     price_arr = xp.asarray(price)
     S_arr = xp.asarray(S)
@@ -99,9 +126,8 @@ def impvolbisection(price, S, K, T, r, is_call=False, q=0.0,
     T_arr = xp.asarray(T)
     r_arr = xp.asarray(r)
 
-    out_dtype = xp.result_type(price_arr.dtype, S_arr.dtype, K_arr.dtype,
-                                T_arr.dtype, r_arr.dtype)
-    if out_dtype.kind in 'iub':
+    out_dtype = xp.result_type(price_arr.dtype, S_arr.dtype, K_arr.dtype, T_arr.dtype, r_arr.dtype)
+    if out_dtype.kind in "iub":
         out_dtype = xp.dtype(xp.float64)
 
     q_arr = xp.asarray(q, dtype=out_dtype)
@@ -136,7 +162,7 @@ def impvolbisection(price, S, K, T, r, is_call=False, q=0.0,
             break
 
     sigma = 0.5 * (lo + hi)
-    nan_val = xp.asarray(float('nan'), dtype=out_dtype)
+    nan_val = xp.asarray(float("nan"), dtype=out_dtype)
     sigma = xp.where(bracketed, sigma, nan_val)
 
     if sigma.ndim == 0:

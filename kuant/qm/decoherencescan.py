@@ -29,7 +29,8 @@ from typing import Any, Callable
 
 import numpy as np
 
-from kuant._validation import require_range
+from kuant._validation import require_2d, require_positive, require_range
+from kuant.errors import KuantValueError
 
 
 @dataclass
@@ -110,6 +111,16 @@ def decoherencescan(
         lo=2,
         hi=float("inf"),
     )
+    require_positive(train_window, "train_window", kernel="decoherencescan", kind="int")
+    require_2d(X, "X", kernel="decoherencescan")
+    if train_window + predict_window > T:
+        raise KuantValueError(
+            f"kuant.decoherencescan: need train_window ({train_window}) + "
+            f"predict_window ({predict_window}) <= len(y) ({T}), got "
+            f"{train_window + predict_window} > {T}.  [KE-VAL-RANGE]\n"
+            f"  → Fix: shorten train_window/predict_window, or provide more "
+            f"data"
+        )
 
     if buckets is None:
         step = predict_window // 5 if predict_window >= 5 else 1

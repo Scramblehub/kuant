@@ -18,7 +18,12 @@ from __future__ import annotations
 
 import numpy as np
 
-from kuant._validation import require_1d, require_expected_shape
+from kuant._validation import (
+    require_1d,
+    require_expected_shape,
+    require_stochastic,
+    require_stochastic_rows,
+)
 from kuant.errors import KuantValueError
 
 from ..hmm.forward import _logsumexp_axis  # reuse
@@ -44,6 +49,8 @@ def _prepare_ghmm_inputs(obs, pi, A, mu, sigma):
     require_expected_shape(A_arr, "A", (N, N), kernel="ghmm")
     require_expected_shape(mu_arr, "mu", (N,), kernel="ghmm")
     require_expected_shape(sigma_arr, "sigma", (N,), kernel="ghmm")
+    require_stochastic(pi_arr, "pi", kernel="ghmm")
+    require_stochastic_rows(A_arr, "A", kernel="ghmm")
     if np.any(sigma_arr <= 0):
         bad_idx = int(np.argmin(sigma_arr))
         raise KuantValueError(

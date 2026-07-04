@@ -29,7 +29,14 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from kuant._validation import require_dep, require_equal_length, require_min_clean
+from kuant._validation import (
+    require_dep,
+    require_equal_length,
+    require_min_clean,
+    require_positive,
+    require_range,
+)
+from kuant.errors import KuantValueError
 
 from .permtest import permtest
 
@@ -117,6 +124,10 @@ def pinnscan(
     """
     GradientBoostingRegressor, KFold = _require_sklearn()
 
+    require_range(n_splits, "n_splits", kernel="pinnscan", lo=2, hi=float("inf"))
+    require_positive(n_perms, "n_perms", kernel="pinnscan", kind="int")
+    require_positive(n_estimators, "n_estimators", kernel="pinnscan", kind="int")
+
     feature_names = list(library.keys())
     X = np.column_stack([np.asarray(library[k], dtype=np.float64) for k in feature_names])
     y = np.asarray(target, dtype=np.float64)
@@ -125,6 +136,18 @@ def pinnscan(
 
     mask = np.isfinite(np.column_stack([X, y[:, None]])).all(axis=1)
     X_clean, y_clean = X[mask], y[mask]
+
+    # A5 — n < 2·p underdetermined trap
+    n_samp, n_feat = X_clean.shape
+    if n_samp < 2 * n_feat:
+        raise KuantValueError(
+            f"kuant.pinnscan: only {n_samp} clean samples for {n_feat} "
+            f"features; GBR + permutation is unreliable when "
+            f"n_samples < 2·n_features.  [KE-VAL-UNDERDET]\n"
+            f"  → Fix: raise n_samples above {2 * n_feat}, or narrow the "
+            f"library"
+        )
+
     require_min_clean(
         y_clean, "target", kernel="pinnscan", min_count=30, purpose="fit the GBR + permutation null"
     )

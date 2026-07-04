@@ -24,6 +24,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from kuant._validation import require_1d
 from kuant.errors import KuantValueError
 
 
@@ -71,7 +72,8 @@ def dfa(x, min_w: int = 10, max_w: int | None = None, n_windows: int = 20) -> DF
     >>> 0.35 < result.H < 0.65
     True
     """
-    arr = np.asarray(x, dtype=np.float64).ravel()
+    arr = np.asarray(x, dtype=np.float64)
+    require_1d(arr, "x", kernel="dfa")
     arr = arr[np.isfinite(arr)]
     n = arr.size
     if n < 4 * min_w:

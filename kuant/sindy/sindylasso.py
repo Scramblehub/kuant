@@ -26,7 +26,15 @@ from typing import Optional
 
 import numpy as np
 
-from kuant._validation import require_dep, require_equal_length, require_min_clean
+from kuant._validation import (
+    require_dep,
+    require_equal_length,
+    require_min_clean,
+    require_positive,
+    require_range,
+    warn_kuant,
+)
+from kuant.errors import KuantNumericWarning, KuantValueError
 
 
 @dataclass
@@ -134,6 +142,9 @@ def sindylasso(
     """
     LassoCV, KFold = _require_sklearn()
 
+    require_range(n_splits, "n_splits", kernel="sindylasso", lo=2, hi=float("inf"))
+    require_positive(max_iter, "max_iter", kernel="sindylasso", kind="int")
+
     if alpha_grid is None:
         alpha_grid = np.logspace(-5, -1, 30)
 
@@ -149,6 +160,18 @@ def sindylasso(
     require_min_clean(
         y_clean, "target", kernel="sindylasso", min_count=30, purpose="fit LASSO with CV"
     )
+
+    # n < 2·p is the underdetermined trap: LASSO CV picks endpoint alpha
+    # because the system is singular, features look overfit-selected.
+    n_samp, n_feat = X_clean.shape
+    if n_samp < 2 * n_feat:
+        raise KuantValueError(
+            f"kuant.sindylasso: only {n_samp} clean samples for {n_feat} "
+            f"features; LASSO CV is unreliable when n_samples < 2·n_features.  "
+            f"[KE-VAL-UNDERDET]\n"
+            f"  → Fix: raise n_samples above {2 * n_feat}, or narrow the "
+            f"library (drop features you don't have a prior on)"
+        )
 
     kf = KFold(n_splits=n_splits, shuffle=False)
     model = LassoCV(
@@ -175,6 +198,39 @@ def sindylasso(
     ss_res = float(np.sum((y_clean - oof) ** 2))
     ss_tot = float(np.sum((y_clean - y_clean.mean()) ** 2))
     r2 = 1.0 - ss_res / ss_tot if ss_tot > 0 else 0.0
+
+    # B2 — warn if CV picked either endpoint of the alpha grid.
+    a_lo, a_hi = float(alpha_grid.min()), float(alpha_grid.max())
+    a_sel = float(model.alpha_)
+    if abs(a_sel - a_lo) < 1e-12:
+        warn_kuant(
+            kernel="sindylasso",
+            code="KW-CV-ENDPOINT-LOW",
+            what=(
+                f"CV picked the weakest regularization α={a_sel:g} at the "
+                f"bottom of the grid [{a_lo:g}, {a_hi:g}]"
+            ),
+            fix=(
+                "expand alpha_grid downward (e.g. np.logspace(-8, -1, 40)) — "
+                "the true optimum may be smaller and selected features may "
+                "be overfit"
+            ),
+            category=KuantNumericWarning,
+        )
+    elif abs(a_sel - a_hi) < 1e-12:
+        warn_kuant(
+            kernel="sindylasso",
+            code="KW-CV-ENDPOINT-HIGH",
+            what=(
+                f"CV picked the strongest regularization α={a_sel:g} at the "
+                f"top of the grid; {len(selected)} feature(s) selected"
+            ),
+            fix=(
+                "if 0 features selected this is a clean null result; "
+                "otherwise expand alpha_grid upward to confirm the plateau"
+            ),
+            category=KuantNumericWarning,
+        )
 
     return SindyLassoResult(
         selected_features=selected,

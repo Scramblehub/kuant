@@ -31,7 +31,10 @@ from kuant._validation import (
     require_equal_length,
     require_min_clean,
     require_positive,
+    require_range,
+    warn_kuant,
 )
+from kuant.errors import KuantNumericWarning, KuantValueError
 
 
 @dataclass
@@ -140,6 +143,8 @@ def symbolicscan(
     Lasso, LassoCV, KFold, PolynomialFeatures = _require_sklearn()
 
     require_positive(degree, "degree", kernel="symbolicscan", kind="int")
+    require_range(n_splits, "n_splits", kernel="symbolicscan", lo=2, hi=float("inf"))
+    require_positive(max_iter, "max_iter", kernel="symbolicscan", kind="int")
 
     if alpha_grid is None:
         alpha_grid = np.logspace(-5, -1, 30)
@@ -165,6 +170,20 @@ def symbolicscan(
     X_poly = poly.fit_transform(X_raw_clean)
     term_names = list(poly.get_feature_names_out(feature_names))
 
+    # A5 — n < 2·p check on the EXPANDED library (polynomial widens the
+    # design matrix; degree=2 on 10 features gives 65 columns).
+    n_samp = X_poly.shape[0]
+    n_expanded = X_poly.shape[1]
+    if n_samp < 2 * n_expanded:
+        raise KuantValueError(
+            f"kuant.symbolicscan: only {n_samp} clean samples for "
+            f"{n_expanded} polynomial terms (degree={degree} on "
+            f"{len(feature_names)} base features); LASSO CV is unreliable "
+            f"when n_samples < 2·n_expanded_terms.  [KE-VAL-UNDERDET]\n"
+            f"  → Fix: raise n_samples above {2 * n_expanded}, lower "
+            f"`degree`, or drop base features"
+        )
+
     kf = KFold(n_splits=n_splits, shuffle=False)
     model = LassoCV(alphas=alpha_grid, cv=kf, max_iter=max_iter, n_jobs=1)
     model.fit(X_poly, y_clean)
@@ -182,6 +201,38 @@ def symbolicscan(
     ss_res = float(np.sum((y_clean - oof) ** 2))
     ss_tot = float(np.sum((y_clean - y_clean.mean()) ** 2))
     r2 = 1.0 - ss_res / ss_tot if ss_tot > 0 else 0.0
+
+    # B2 — CV endpoint warnings
+    a_lo, a_hi = float(alpha_grid.min()), float(alpha_grid.max())
+    a_sel = float(model.alpha_)
+    if abs(a_sel - a_lo) < 1e-12:
+        warn_kuant(
+            kernel="symbolicscan",
+            code="KW-CV-ENDPOINT-LOW",
+            what=(
+                f"CV picked the weakest regularization α={a_sel:g} at the "
+                f"bottom of the grid [{a_lo:g}, {a_hi:g}]"
+            ),
+            fix=(
+                "expand alpha_grid downward — the true optimum may be smaller "
+                "and selected polynomial terms may be overfit"
+            ),
+            category=KuantNumericWarning,
+        )
+    elif abs(a_sel - a_hi) < 1e-12:
+        warn_kuant(
+            kernel="symbolicscan",
+            code="KW-CV-ENDPOINT-HIGH",
+            what=(
+                f"CV picked the strongest regularization α={a_sel:g} at the "
+                f"top of the grid; {len(selected)} term(s) selected"
+            ),
+            fix=(
+                "if 0 terms selected this is a clean null result; otherwise "
+                "expand alpha_grid upward to confirm the plateau"
+            ),
+            category=KuantNumericWarning,
+        )
 
     return SymbolicScanResult(
         selected_terms=selected,

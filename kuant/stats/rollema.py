@@ -30,8 +30,7 @@ from typing import Any
 import numpy as np
 from scipy.signal import lfilter
 
-from kuant._validation import require_1d, require_range
-from kuant.errors import KuantValueError
+from kuant._validation import require_1d, require_mutex_pair, require_range
 
 cp: Any
 try:
@@ -85,14 +84,15 @@ def rollema(x, span=None, alpha=None):
     >>> rollema(x, alpha=0.5)
     array([1.    , 1.5   , 2.25  , 3.125 , 4.0625])
     """
-    if (span is None) == (alpha is None):
-        both = span is not None
-        raise KuantValueError(
-            "kuant.rollema: provide exactly one of `span` or `alpha`, got "
-            f"{'both' if both else 'neither'}.  [KE-VAL-MUTEX]\n"
-            "  → Fix: `span=21` (pandas-style, alpha = 2/(span+1)) OR "
-            "`alpha=0.1` (direct smoothing factor)"
-        )
+    require_mutex_pair(
+        span,
+        "span",
+        alpha,
+        "alpha",
+        kernel="rollema",
+        a_example="span=21",
+        b_example="alpha=0.1",
+    )
 
     if span is not None:
         require_range(span, "span", kernel="rollema", lo=1.0, hi=float("inf"))

@@ -30,7 +30,8 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from kuant._validation import require_dep, require_positive
+from kuant._validation import require_dep, require_positive, warn_kuant
+from kuant.errors import KuantNumericWarning
 
 
 @dataclass
@@ -198,6 +199,22 @@ def persistenthomology(
             max_dim=dim,
             embedding_dim=emb_d,
             delay=d_delay,
+        )
+
+    # B4 — PH's asymptotics kick in around 30-50 points depending on
+    # intrinsic dimension. Below ~20 the diagram is dominated by
+    # boundary effects and the persistence pairs shouldn't be trusted.
+    if cloud.shape[0] < 20:
+        emb_desc = f"d={emb_d}, τ={d_delay}" if emb_d is not None else "point cloud"
+        warn_kuant(
+            kernel="persistenthomology",
+            code="KW-TOPO-FEW-POINTS",
+            what=(f"only {int(cloud.shape[0])} points in the cloud " f"({emb_desc})"),
+            fix=(
+                "results are dominated by boundary effects below ~20 points; "
+                "shorten delay/embedding_dim or widen the window"
+            ),
+            category=KuantNumericWarning,
         )
 
     kwargs = {"maxdim": dim}

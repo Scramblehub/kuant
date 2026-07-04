@@ -13,7 +13,13 @@ from __future__ import annotations
 
 import numpy as np
 
-from kuant._validation import require_dep, require_equal_length, require_positive
+from kuant._validation import (
+    require_dep,
+    require_equal_length,
+    require_positive,
+    require_range,
+)
+from kuant.errors import KuantValueError
 
 
 def rollcoherence(
@@ -79,6 +85,19 @@ def rollcoherence(
     n = x_arr.size
     w = int(window)
     require_positive(w, "window", kernel="rollcoherence", kind="int")
+    require_positive(fs, "fs", kernel="rollcoherence")
+    lo_band, hi_band = band
+    require_range(lo_band, "band[0]", kernel="rollcoherence", lo=0.0, hi=fs / 2)
+    require_range(hi_band, "band[1]", kernel="rollcoherence", lo=0.0, hi=fs / 2)
+    if lo_band >= hi_band:
+        raise KuantValueError(
+            f"kuant.rollcoherence: 'band' lo={lo_band} must be strictly less "
+            f"than hi={hi_band}.  [KE-VAL-RANGE]\n"
+            f"  → Fix: pass (lo, hi) with lo < hi in cycles/sample "
+            f"(Nyquist = fs/2 = {fs / 2})"
+        )
+    if nperseg is not None:
+        require_positive(nperseg, "nperseg", kernel="rollcoherence", kind="int")
     if nperseg is None:
         nperseg = max(8, w // 2)
 

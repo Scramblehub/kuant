@@ -31,10 +31,13 @@ import numpy as np
 
 from kuant._validation import (
     require_1d,
+    require_expected_shape,
     require_positive,
-    require_probability,
+    require_stochastic,
+    require_stochastic_rows,
+    warn_kuant,
 )
-from kuant.errors import KuantValueError
+from kuant.errors import KuantConvergenceWarning, KuantValueError, KuantWarning
 
 from .posterior import posterior
 
@@ -174,19 +177,24 @@ def baumwelch(
         )
 
     require_positive(max_iter, "max_iter", kernel="baumwelch", kind="int")
-    require_probability(tol, "tol", kernel="baumwelch")
+    require_positive(tol, "tol", kernel="baumwelch")
 
     # Determine initialization mode.
     have_init = pi_init is not None and A_init is not None and B_init is not None
+    have_counts = n_states is not None and n_symbols is not None
+    # Custom mutex: init-side is a triple, counts-side is a pair.
+    # Treat "all-of-triple present" and "both-counts present" as the two
+    # valid modes; anything else is a mutex error.
+    if have_init == have_counts:
+        got = "both modes set" if have_init else "neither mode set"
+        raise KuantValueError(
+            f"kuant.baumwelch: provide exactly one of "
+            f"(pi_init, A_init, B_init) OR (n_states, n_symbols); "
+            f"got {got}.  [KE-VAL-MUTEX]\n"
+            f"  → Fix: `baumwelch(obs, n_states=3, n_symbols=4)` "
+            f"for random init, OR pass all of `pi_init`, `A_init`, `B_init`"
+        )
     if not have_init:
-        if n_states is None or n_symbols is None:
-            raise KuantValueError(
-                "kuant.baumwelch: must supply either all of "
-                "(pi_init, A_init, B_init) OR both n_states and n_symbols.  "
-                "[KE-VAL-MUTEX]\n"
-                "  → Fix: `baumwelch(obs, n_states=3, n_symbols=4)` for "
-                "random init, or pass explicit initial matrices"
-            )
         require_positive(n_states, "n_states", kernel="baumwelch", kind="int")
         require_positive(n_symbols, "n_symbols", kernel="baumwelch", kind="int")
 
@@ -196,7 +204,13 @@ def baumwelch(
         pi = np.asarray(pi_init, dtype=np.float64).copy()
         A = np.asarray(A_init, dtype=np.float64).copy()
         B = np.asarray(B_init, dtype=np.float64).copy()
+        require_1d(pi, "pi_init", kernel="baumwelch")
         N = pi.size
+        require_expected_shape(A, "A_init", (N, N), kernel="baumwelch")
+        require_expected_shape(B, "B_init", (N, "M"), kernel="baumwelch")
+        require_stochastic(pi, "pi_init", kernel="baumwelch")
+        require_stochastic_rows(A, "A_init", kernel="baumwelch")
+        require_stochastic_rows(B, "B_init", kernel="baumwelch")
     else:
         N = int(n_states)
         M = int(n_symbols)
@@ -281,6 +295,42 @@ def baumwelch(
 
         A = A_new
         B = B_new
+
+    # Warnings for post-hoc conditions that don't fail the fit but tell
+    # the user the returned parameters may be unreliable.
+    if not converged:
+        last_improvement = (
+            log_lik_history[-1] - log_lik_history[-2] if len(log_lik_history) >= 2 else float("nan")
+        )
+        warn_kuant(
+            kernel="baumwelch",
+            code="KW-CONV-MAX-ITER",
+            what=(
+                f"EM did not converge after {len(log_lik_history)} iterations "
+                f"(last ΔlogL {last_improvement:+.2e}, tol {tol:g})"
+            ),
+            fix=(
+                f"raise `max_iter` (currently {max_iter}) or loosen `tol`; "
+                f"the result is returned but parameters are still improving"
+            ),
+            category=KuantConvergenceWarning,
+        )
+    if reseeded_states:
+        # De-dup while preserving order.
+        unique_reseeded = list(dict.fromkeys(reseeded_states))
+        warn_kuant(
+            kernel="baumwelch",
+            code="KW-HMM-STATE-COLLAPSE",
+            what=(
+                f"{len(unique_reseeded)} state(s) had zero responsibility "
+                f"during EM and were re-seeded: {unique_reseeded}"
+            ),
+            fix=(
+                "effective state count is lower than n_states; refit with a "
+                "different seed, fewer states, or a longer observation sequence"
+            ),
+            category=KuantWarning,
+        )
 
     return BaumWelchResult(
         pi=pi,

@@ -1,4 +1,4 @@
-'''Permutation null-hypothesis test — universal utility.
+"""Permutation null-hypothesis test — universal utility.
 
 Motivation. Cross-validated R² and Granger F-tests give you a
 "probability of chance" number that assumes clean statistical
@@ -18,7 +18,8 @@ research pipeline. Ran hundreds of these on our own strategies; without them
 we would have shipped garbage signals.
 
 Design: docs/tools/permtest.md.
-'''
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -26,26 +27,29 @@ from typing import Callable
 
 import numpy as np
 
+from kuant._validation import require_positive
+
 
 @dataclass
 class PermutationTestResult:
-    '''Outcome of a permutation null-hypothesis test.'''
+    """Outcome of a permutation null-hypothesis test."""
+
     real_metric: float
     permuted_metrics: np.ndarray
-    p_value: float                # fraction of perm metrics >= real
+    p_value: float  # fraction of perm metrics >= real
     n_perms: int
     at_least_as_extreme: int
 
     def summary(self) -> str:
         return (
-            f'=== Permutation test ===\n'
-            f'Real metric:       {self.real_metric:.6f}\n'
-            f'Perm median:       {np.median(self.permuted_metrics):.6f}\n'
-            f'Perm 95%ile:       {np.quantile(self.permuted_metrics, 0.95):.6f}\n'
-            f'Perm 99%ile:       {np.quantile(self.permuted_metrics, 0.99):.6f}\n'
-            f'At-least-as-extreme: {self.at_least_as_extreme} / {self.n_perms}\n'
-            f'p-value:           {self.p_value:.4f}\n'
-            f'Signal is real:    {self.p_value < 0.05}'
+            f"=== Permutation test ===\n"
+            f"Real metric:       {self.real_metric:.6f}\n"
+            f"Perm median:       {np.median(self.permuted_metrics):.6f}\n"
+            f"Perm 95%ile:       {np.quantile(self.permuted_metrics, 0.95):.6f}\n"
+            f"Perm 99%ile:       {np.quantile(self.permuted_metrics, 0.99):.6f}\n"
+            f"At-least-as-extreme: {self.at_least_as_extreme} / {self.n_perms}\n"
+            f"p-value:           {self.p_value:.4f}\n"
+            f"Signal is real:    {self.p_value < 0.05}"
         )
 
 
@@ -58,7 +62,7 @@ def permtest(
     seed: int = 0,
     higher_is_better: bool = True,
 ) -> PermutationTestResult:
-    '''Run a permutation null-hypothesis test.
+    """Run a permutation null-hypothesis test.
 
     Parameters
     ----------
@@ -102,7 +106,9 @@ def permtest(
     >>> result = permtest(real_r2, r2_fn, x, y, n_perms=100)
     >>> result.p_value < 0.05  # signal is real
     True
-    '''
+    """
+    require_positive(n_perms, "n_perms", kernel="permtest", kind="int")
+
     rng = np.random.default_rng(seed)
     perm_metrics = np.empty(n_perms)
     for i in range(n_perms):

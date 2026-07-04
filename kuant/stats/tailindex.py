@@ -16,6 +16,9 @@ from __future__ import annotations
 
 import numpy as np
 
+from kuant._validation import warn_kuant
+from kuant.errors import KuantNumericWarning
+
 
 def tailindex(x, k_frac: float = 0.10, min_k: int = 10) -> float:
     """Hill estimator on the top-k order statistics of `x`.
@@ -47,14 +50,55 @@ def tailindex(x, k_frac: float = 0.10, min_k: int = 10) -> float:
     arr = np.asarray(x, dtype=np.float64).ravel()
     arr = arr[np.isfinite(arr) & (arr > 0)]
     if arr.size < min_k + 2:
+        warn_kuant(
+            kernel="tailindex",
+            code="KW-VAL-INSUFFICIENT-TAIL",
+            what=(
+                f"only {arr.size} positive finite values, need >= {min_k + 2} "
+                f"for a Hill estimate at min_k={min_k}"
+            ),
+            fix=(
+                "provide more data, lower `min_k`, or check that the input "
+                "contains positive loss magnitudes (not signed returns)"
+            ),
+            category=KuantNumericWarning,
+        )
         return float("nan")
 
     k = max(min_k, int(np.ceil(k_frac * arr.size)))
     if k >= arr.size:
+        warn_kuant(
+            kernel="tailindex",
+            code="KW-VAL-INSUFFICIENT-TAIL",
+            what=(
+                f"k={k} (from k_frac={k_frac} on n={arr.size}) exceeds "
+                f"available tail size; need k < n"
+            ),
+            fix="lower `k_frac`, or provide more data",
+            category=KuantNumericWarning,
+        )
         return float("nan")
 
     sorted_desc = np.sort(arr)[::-1]
     top = sorted_desc[:k]
     threshold = sorted_desc[k]
     log_ratios = np.log(top) - np.log(threshold)
-    return float(np.mean(log_ratios))
+    xi_hat = float(np.mean(log_ratios))
+
+    if xi_hat < 0:
+        warn_kuant(
+            kernel="tailindex",
+            code="KW-HILL-NEGATIVE",
+            what=(
+                f"Hill estimate ξ={xi_hat:.3f} is negative (bounded-support "
+                f"regime); rarely correct on financial loss data"
+            ),
+            fix=(
+                "check that x is positive loss magnitudes, not signed returns; "
+                "raise `k_frac`; or use a POT/EVT fit that estimates ξ and σ "
+                "jointly"
+            ),
+            category=KuantNumericWarning,
+        )
+
+    return xi_hat

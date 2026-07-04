@@ -1,4 +1,4 @@
-'''Implied volatility solver via vectorized Newton-Raphson.
+"""Implied volatility solver via vectorized Newton-Raphson.
 
 Given market prices and (S, K, T, r, q), find the sigma that reproduces
 each price under Black-Scholes:
@@ -21,12 +21,15 @@ Failure modes → NaN:
   - Max iterations without converging to `tol * 10`
 
 Design: docs/kernels/impvol.md.
-'''
+"""
+
 from __future__ import annotations
 
 from typing import Any
 
 import numpy as np
+
+from kuant._validation import require_positive
 
 from ..core import bscall, bsput
 from .bsvega import bsvega
@@ -34,6 +37,7 @@ from .bsvega import bsvega
 cp: Any
 try:
     import cupy as cp
+
     _CUPY_NDARRAY = cp.ndarray
 except ImportError:
     cp = None
@@ -41,9 +45,9 @@ except ImportError:
 
 
 # Solver knobs (module-level constants — override at call site if needed)
-_SIGMA_MIN = 1e-6    # smallest sigma we'll consider (essentially zero vol)
-_SIGMA_MAX = 10.0    # largest sigma we'll consider (1000% annualized)
-_VEGA_MIN = 1e-8     # below this, Newton step is unusable
+_SIGMA_MIN = 1e-6  # smallest sigma we'll consider (essentially zero vol)
+_SIGMA_MAX = 10.0  # largest sigma we'll consider (1000% annualized)
+_VEGA_MIN = 1e-8  # below this, Newton step is unusable
 _FINAL_TOL_MULT = 10  # widen tol by this factor for final validation
 
 
@@ -55,7 +59,7 @@ def _detect_backend(*args) -> Any:
 
 
 def impvol(price, S, K, T, r, is_call=False, q=0.0, tol=1e-8, max_iter=100):
-    '''Vectorized implied-vol solver.
+    """Vectorized implied-vol solver.
 
     Parameters
     ----------
@@ -88,7 +92,10 @@ def impvol(price, S, K, T, r, is_call=False, q=0.0, tol=1e-8, max_iter=100):
     >>> sigma_iv = impvol(price, 100.0, 105.0, 0.5, 0.05)
     >>> abs(sigma_iv - sigma_true) < 1e-8
     True
-    '''
+    """
+    require_positive(max_iter, "max_iter", kernel="impvol", kind="int")
+    require_positive(tol, "tol", kernel="impvol")
+
     xp = _detect_backend(price, S, K, T, r, q)
 
     # Coerce and broadcast all inputs.
@@ -102,7 +109,7 @@ def impvol(price, S, K, T, r, is_call=False, q=0.0, tol=1e-8, max_iter=100):
     # Pick dtype from required args; q's default 0.0 shouldn't force float64.
     required_dtypes = [price.dtype, S.dtype, K.dtype, T.dtype, r.dtype]
     out_dtype = xp.result_type(*required_dtypes)
-    if out_dtype.kind in 'iub':
+    if out_dtype.kind in "iub":
         out_dtype = xp.dtype(xp.float64)
 
     # Cast every input to out_dtype, then broadcast to common shape.
@@ -118,10 +125,14 @@ def impvol(price, S, K, T, r, is_call=False, q=0.0, tol=1e-8, max_iter=100):
 
     # No-arbitrage bounds.
     if is_call:
-        lower = xp.maximum(S * xp.exp(-q * T) - K * xp.exp(-r * T), xp.asarray(0.0, dtype=out_dtype))
+        lower = xp.maximum(
+            S * xp.exp(-q * T) - K * xp.exp(-r * T), xp.asarray(0.0, dtype=out_dtype)
+        )
         upper = S * xp.exp(-q * T)
     else:
-        lower = xp.maximum(K * xp.exp(-r * T) - S * xp.exp(-q * T), xp.asarray(0.0, dtype=out_dtype))
+        lower = xp.maximum(
+            K * xp.exp(-r * T) - S * xp.exp(-q * T), xp.asarray(0.0, dtype=out_dtype)
+        )
         upper = K * xp.exp(-r * T)
 
     in_bounds = (price >= lower) & (price <= upper) & (T > 0) & (S > 0) & (K > 0)

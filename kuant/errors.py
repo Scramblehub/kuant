@@ -114,6 +114,21 @@ class KuantNumericWarning(KuantWarning):
     """
 
 
+class KuantOverflowWarning(KuantWarning):
+    """A computation overflowed or underflowed to ±inf.
+
+    Distinct from `KuantNumericWarning` because the failure mode is
+    structural (input magnitude), not statistical (input pattern). The
+    result is typically `inf`, `-inf`, or `nan`; callers who want to
+    hard-fail on this can promote:
+
+        warnings.filterwarnings("error", category=KuantOverflowWarning)
+
+    Examples: Black-Scholes on S=1e20 (exp(...) → inf), log-space
+    accumulator hitting float64's finite range.
+    """
+
+
 __all__ = [
     "KuantError",
     "KuantValueError",
@@ -124,4 +139,5 @@ __all__ = [
     "KuantWarning",
     "KuantConvergenceWarning",
     "KuantNumericWarning",
+    "KuantOverflowWarning",
 ]

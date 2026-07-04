@@ -29,7 +29,12 @@ from typing import Any
 import numpy as np
 from scipy.special import logsumexp
 
-from kuant._validation import require_1d, require_expected_shape
+from kuant._validation import (
+    require_1d,
+    require_expected_shape,
+    require_stochastic,
+    require_stochastic_rows,
+)
 
 cp: Any
 try:
@@ -69,6 +74,9 @@ def _prepare_hmm_inputs(obs, pi, A, B):
     N = pi_arr.size
     require_expected_shape(A_arr, "A", (N, N), kernel="hmm.forward")
     require_expected_shape(B_arr, "B", (N, "M"), kernel="hmm.forward")
+    require_stochastic(pi_arr, "pi", kernel="hmm.forward")
+    require_stochastic_rows(A_arr, "A", kernel="hmm.forward")
+    require_stochastic_rows(B_arr, "B", kernel="hmm.forward")
 
     # Move to log-space. Guard against log(0) with a floor of -inf.
     with np.errstate(divide="ignore") if xp is np else _null_context():

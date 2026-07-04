@@ -28,10 +28,13 @@ import numpy as np
 
 from kuant._validation import (
     require_1d,
+    require_expected_shape,
     require_positive,
-    require_probability,
+    require_stochastic,
+    require_stochastic_rows,
+    warn_kuant,
 )
-from kuant.errors import KuantValueError
+from kuant.errors import KuantConvergenceWarning, KuantValueError, KuantWarning
 
 from .posterior import posterior
 
@@ -193,18 +196,20 @@ def baumwelch(
         )
 
     require_positive(max_iter, "max_iter", kernel="ghmm.baumwelch", kind="int")
-    require_probability(tol, "tol", kernel="ghmm.baumwelch")
+    require_positive(tol, "tol", kernel="ghmm.baumwelch")
 
     have_init = all(x is not None for x in (pi_init, A_init, mu_init, sigma_init))
+    have_counts = n_states is not None
+    if have_init == have_counts:
+        got = "both modes set" if have_init else "neither mode set"
+        raise KuantValueError(
+            f"kuant.ghmm.baumwelch: provide exactly one of "
+            f"(pi_init, A_init, mu_init, sigma_init) OR `n_states`; "
+            f"got {got}.  [KE-VAL-MUTEX]\n"
+            f"  → Fix: `baumwelch(obs, n_states=2)` for auto init, "
+            f"OR pass all four initial arrays"
+        )
     if not have_init:
-        if n_states is None:
-            raise KuantValueError(
-                "kuant.ghmm.baumwelch: must supply either all of "
-                "(pi_init, A_init, mu_init, sigma_init) OR n_states.  "
-                "[KE-VAL-MUTEX]\n"
-                "  → Fix: `baumwelch(obs, n_states=2)` for auto init, "
-                "or pass explicit initial arrays"
-            )
         require_positive(n_states, "n_states", kernel="ghmm.baumwelch", kind="int")
 
     rng = np.random.default_rng(seed)
@@ -214,7 +219,13 @@ def baumwelch(
         A = np.asarray(A_init, dtype=np.float64).copy()
         mu = np.asarray(mu_init, dtype=np.float64).copy()
         sigma = np.asarray(sigma_init, dtype=np.float64).copy()
+        require_1d(pi, "pi_init", kernel="ghmm.baumwelch")
         N = pi.size
+        require_expected_shape(A, "A_init", (N, N), kernel="ghmm.baumwelch")
+        require_expected_shape(mu, "mu_init", (N,), kernel="ghmm.baumwelch")
+        require_expected_shape(sigma, "sigma_init", (N,), kernel="ghmm.baumwelch")
+        require_stochastic(pi, "pi_init", kernel="ghmm.baumwelch")
+        require_stochastic_rows(A, "A_init", kernel="ghmm.baumwelch")
     else:
         N = int(n_states)
         pi = _random_stochastic((N,), rng)
@@ -308,6 +319,54 @@ def baumwelch(
         A = A_new
         mu = mu_new
         sigma = sigma_new
+
+    # Post-hoc warnings for unreliable-result conditions.
+    if not converged:
+        last_improvement = (
+            log_lik_history[-1] - log_lik_history[-2] if len(log_lik_history) >= 2 else float("nan")
+        )
+        warn_kuant(
+            kernel="ghmm.baumwelch",
+            code="KW-CONV-MAX-ITER",
+            what=(
+                f"EM did not converge after {len(log_lik_history)} iterations "
+                f"(last ΔlogL {last_improvement:+.2e}, tol {tol:g})"
+            ),
+            fix=(
+                f"raise `max_iter` (currently {max_iter}) or loosen `tol`; "
+                f"the result is returned but parameters are still improving"
+            ),
+            category=KuantConvergenceWarning,
+        )
+    if reseeded_states:
+        unique_reseeded = list(dict.fromkeys(reseeded_states))
+        warn_kuant(
+            kernel="ghmm.baumwelch",
+            code="KW-HMM-STATE-COLLAPSE",
+            what=(
+                f"{len(unique_reseeded)} state(s) had zero responsibility "
+                f"during EM and were re-seeded: {unique_reseeded}"
+            ),
+            fix=(
+                "effective state count is lower than n_states; refit with a "
+                "different seed, fewer states, or a longer observation sequence"
+            ),
+            category=KuantWarning,
+        )
+    if sigma_floor_hits > 0:
+        warn_kuant(
+            kernel="ghmm.baumwelch",
+            code="KW-HMM-SIGMA-FLOOR",
+            what=(
+                f"σ hit its floor ({min_sigma:.3e}) on {sigma_floor_hits} "
+                f"M-step(s); a state was pulling toward variance collapse"
+            ),
+            fix=(
+                "raise `min_sigma`, reduce `n_states`, or provide more data — "
+                "the fit is bounded but sits in a degenerate regime"
+            ),
+            category=KuantWarning,
+        )
 
     return GHMMBaumWelchResult(
         pi=pi,
