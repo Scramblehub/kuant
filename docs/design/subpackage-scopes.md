@@ -61,6 +61,27 @@ others will reuse. `lmdict`, `tickernorm`, `filingdate` follow in v1.1.
 - `KuantValueError` on malformed input for the parsers.
 - `KuantNumericWarning` on `lmdict` when the tokenized text has
   fewer than N words (dictionary counts become noisy).
+- **`KuantEncodingError(KuantValueError)`** — bytes passed where str
+  expected; UTF-8 decode failure inside a text kernel. Added to
+  `kuant/errors.py` when `kuant.text` v1 lands, not before.
+- **`KuantEncodingWarning(KuantWarning)`** — input string contains
+  `U+FFFD` replacement chars, NUL bytes, or control chars in a field
+  where they shouldn't appear. This is the "your upstream decode
+  silently failed" signal — the input LOOKS valid but the counts
+  will be wrong. Actionable ("re-decode with the correct source
+  encoding upstream").
+
+Both classes ship with the same message contract as everything else:
+
+```
+kuant.<kernel>: <what happened>.  [KE-ENCODING-* or KW-ENCODING-*]
+  → Fix: <concrete remedy>.
+```
+
+Skipped `KuantSymbolWarning` as a distinct class — "non-UTF-8 symbol
+as warning-not-error" has no clean semantic: if we tolerate it we
+shouldn't warn; if it's actionable it's an error. The replacement-
+char case above IS actionable in a specific way, hence its own class.
 
 ---
 
