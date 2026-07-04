@@ -22,6 +22,7 @@ code that catches `ValueError` or `RuntimeError` continues to work:
 Design intent: users who care can catch specifically; users who don't
 still see natural stdlib types in tracebacks.
 """
+
 from __future__ import annotations
 
 
@@ -71,6 +72,48 @@ class KuantDependencyError(KuantError, ImportError):
     """
 
 
+# ---------- warnings --------------------------------------------------------
+#
+# Errors are for "we can't continue". Warnings are for "we're returning
+# something, but you should know it may be unreliable". Distinct hierarchy
+# so users can filter with `warnings.filterwarnings('error', category=...)`
+# to convert to hard failure without touching the kernel.
+#
+# Every warning follows the same message shape as errors:
+#     kuant.<kernel>: <what happened>.  [<code>]
+#       → Fix: <remedy>.
+# Codes start with `KW-` to distinguish from error codes (`KE-`).
+
+
+class KuantWarning(UserWarning):
+    """Base class for every warning kuant emits.
+
+    Subclasses:
+      KuantConvergenceWarning — solver returned a result but did not converge.
+      KuantNumericWarning     — result is likely unreliable due to input
+                                constraints (few samples, degenerate estimate,
+                                CV endpoint hit, etc.).
+    """
+
+
+class KuantConvergenceWarning(KuantWarning):
+    """Iterative solver hit `max_iter` without meeting `tol`.
+
+    Distinct from `KuantConvergenceError`: raised by kernels that
+    deliberately return a partial fit rather than failing outright
+    (e.g. Baum-Welch, which surfaces `converged=False` on the result).
+    """
+
+
+class KuantNumericWarning(KuantWarning):
+    """A numeric result was computed but is likely unreliable.
+
+    Examples: LASSO CV picked the endpoint of the alpha grid (search
+    range too narrow), Hill tail estimate went negative, persistent
+    homology on <20 points.
+    """
+
+
 __all__ = [
     "KuantError",
     "KuantValueError",
@@ -78,4 +121,7 @@ __all__ = [
     "KuantConvergenceError",
     "KuantBackendError",
     "KuantDependencyError",
+    "KuantWarning",
+    "KuantConvergenceWarning",
+    "KuantNumericWarning",
 ]

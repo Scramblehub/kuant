@@ -15,9 +15,12 @@ import pytest
 from kuant import _validation as V
 from kuant.errors import (
     KuantConvergenceError,
+    KuantConvergenceWarning,
     KuantDependencyError,
+    KuantNumericWarning,
     KuantShapeError,
     KuantValueError,
+    KuantWarning,
 )
 
 
@@ -192,6 +195,179 @@ def test_require_window_rejects_too_large():
     m = str(exc.value)
     _assert_message_contract(m, kernel="rollmean", code="KE-VAL-WINDOW", name="window")
     assert "500" in m and "100" in m
+
+
+# ---------- stochastic validators -----------------------------------------
+
+
+def test_require_stochastic_accepts_valid_distribution():
+    V.require_stochastic(np.array([0.3, 0.5, 0.2]), "p", kernel="fit")
+
+
+def test_require_stochastic_accepts_int_input():
+    # e.g. one-hot vector as int array.
+    V.require_stochastic(np.array([0, 1, 0]), "p", kernel="fit")
+
+
+def test_require_stochastic_rejects_negative():
+    with pytest.raises(KuantValueError) as exc:
+        V.require_stochastic(np.array([0.5, -0.1, 0.6]), "pi", kernel="hmm")
+    m = str(exc.value)
+    _assert_message_contract(m, kernel="hmm", code="KE-VAL-STOCHASTIC", name="pi")
+    assert "-0.1" in m
+
+
+def test_require_stochastic_rejects_bad_sum():
+    with pytest.raises(KuantValueError) as exc:
+        V.require_stochastic(np.array([0.3, 0.3, 0.3]), "pi", kernel="hmm")
+    m = str(exc.value)
+    _assert_message_contract(m, kernel="hmm", code="KE-VAL-STOCHASTIC", name="pi")
+    assert "sum=0.9" in m
+
+
+def test_require_stochastic_rejects_empty():
+    with pytest.raises(KuantValueError):
+        V.require_stochastic(np.array([]), "pi", kernel="hmm")
+
+
+def test_require_stochastic_rows_accepts_valid_matrix():
+    A = np.array([[0.9, 0.1], [0.2, 0.8]])
+    V.require_stochastic_rows(A, "A", kernel="hmm")
+
+
+def test_require_stochastic_rows_rejects_bad_row_sum():
+    A = np.array([[0.9, 0.1], [0.4, 0.4]])  # row 1 sums to 0.8
+    with pytest.raises(KuantValueError) as exc:
+        V.require_stochastic_rows(A, "A", kernel="hmm")
+    m = str(exc.value)
+    _assert_message_contract(m, kernel="hmm", code="KE-VAL-STOCHASTIC-ROWS", name="A")
+    assert "row 1" in m and "0.8" in m
+
+
+def test_require_stochastic_rows_rejects_negative():
+    A = np.array([[1.1, -0.1], [0.5, 0.5]])
+    with pytest.raises(KuantValueError) as exc:
+        V.require_stochastic_rows(A, "A", kernel="hmm")
+    assert "-0.1" in str(exc.value) or "outside [0, 1]" in str(exc.value)
+
+
+def test_require_stochastic_rows_silent_on_non_2d():
+    """Shape errors are the shape helper's job; non-2D → return without raising."""
+    # Should NOT raise — caller is expected to have run require_expected_shape.
+    V.require_stochastic_rows(np.array([0.5, 0.5]), "A", kernel="hmm")
+
+
+# ---------- mutex-pair -----------------------------------------------------
+
+
+def test_require_mutex_pair_accepts_a_only():
+    V.require_mutex_pair(
+        21,
+        "span",
+        None,
+        "alpha",
+        kernel="rollema",
+        a_example="span=21",
+        b_example="alpha=0.1",
+    )
+
+
+def test_require_mutex_pair_accepts_b_only():
+    V.require_mutex_pair(
+        None,
+        "span",
+        0.1,
+        "alpha",
+        kernel="rollema",
+        a_example="span=21",
+        b_example="alpha=0.1",
+    )
+
+
+def test_require_mutex_pair_rejects_both():
+    with pytest.raises(KuantValueError) as exc:
+        V.require_mutex_pair(
+            21,
+            "span",
+            0.1,
+            "alpha",
+            kernel="rollema",
+            a_example="span=21",
+            b_example="alpha=0.1",
+        )
+    m = str(exc.value)
+    _assert_message_contract(m, kernel="rollema", code="KE-VAL-MUTEX")
+    assert "both" in m
+    assert "span=21" in m and "alpha=0.1" in m
+
+
+def test_require_mutex_pair_rejects_neither():
+    with pytest.raises(KuantValueError) as exc:
+        V.require_mutex_pair(
+            None,
+            "span",
+            None,
+            "alpha",
+            kernel="rollema",
+            a_example="span=21",
+            b_example="alpha=0.1",
+        )
+    assert "neither" in str(exc.value)
+
+
+# ---------- warn_kuant -----------------------------------------------------
+
+
+def test_warn_kuant_default_category():
+    with pytest.warns(KuantWarning) as record:
+        V.warn_kuant(
+            kernel="baumwelch",
+            code="KW-CONV-MAX-ITER",
+            what="EM did not converge after 100 iters",
+            fix="raise max_iter",
+        )
+    assert len(record) == 1
+    m = str(record[0].message)
+    assert "kuant.baumwelch" in m
+    assert "[KW-CONV-MAX-ITER]" in m
+    assert "→ Fix:" in m
+
+
+def test_warn_kuant_convergence_category():
+    with pytest.warns(KuantConvergenceWarning):
+        V.warn_kuant(
+            kernel="baumwelch",
+            code="KW-CONV-MAX-ITER",
+            what="not converged",
+            fix="raise max_iter",
+            category=KuantConvergenceWarning,
+        )
+
+
+def test_warn_kuant_numeric_category():
+    with pytest.warns(KuantNumericWarning):
+        V.warn_kuant(
+            kernel="tailindex",
+            code="KW-HILL-NEGATIVE",
+            what="ξ went negative",
+            fix="check input sign",
+            category=KuantNumericWarning,
+        )
+
+
+def test_warn_kuant_promotable_to_error():
+    """Users should be able to filterwarnings('error') to make warnings hard-fail."""
+    import warnings as _w
+
+    with _w.catch_warnings():
+        _w.simplefilter("error", KuantWarning)
+        with pytest.raises(KuantWarning):
+            V.warn_kuant(
+                kernel="test",
+                code="KW-TEST",
+                what="something",
+                fix="do X",
+            )
 
 
 # ---------- NaN / finite validators ----------------------------------------

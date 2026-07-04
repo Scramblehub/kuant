@@ -34,6 +34,7 @@ from kuant.errors import (
     KuantDependencyError,
     KuantShapeError,
     KuantValueError,
+    KuantWarning,
 )
 
 
@@ -282,6 +283,158 @@ def require_window(w: Any, n: int, *, kernel: str, name: str = "window") -> None
         )
 
 
+# ---------- stochastic constraint validators -------------------------------
+
+
+def require_stochastic(vec: Any, name: str, *, kernel: str, atol: float = 1e-6) -> None:
+    """Reject a vector that isn't a probability distribution.
+
+    Enforces: (a) every entry in [0, 1] (within `atol`), and (b) the
+    entries sum to 1 (within `atol`). Used for HMM initial-state π and
+    other probability-vector inputs.
+    """
+    arr = _to_ndarray(vec)
+    if arr.dtype.kind not in "fc":
+        arr = arr.astype(np.float64)
+    if arr.size == 0:
+        raise KuantValueError(
+            _msg(
+                kernel,
+                "KE-VAL-STOCHASTIC",
+                f"'{name}' is empty; expected a probability distribution",
+                "pass a non-empty 1D array of probabilities that sums to 1",
+            )
+        )
+    a_min = float(arr.min())
+    a_max = float(arr.max())
+    if a_min < -atol or a_max > 1.0 + atol:
+        bad_idx = int(np.argmin(arr)) if a_min < -atol else int(np.argmax(arr))
+        raise KuantValueError(
+            _msg(
+                kernel,
+                "KE-VAL-STOCHASTIC",
+                f"'{name}' must lie in [0, 1] (probability distribution); "
+                f"entry {bad_idx} = {float(arr.flat[bad_idx]):.6g}",
+                f"clip to [0, 1] and renormalize — "
+                f"`np.clip({name}, 0, 1) / np.clip({name}, 0, 1).sum()`",
+            )
+        )
+    s = float(arr.sum())
+    if abs(s - 1.0) > atol:
+        raise KuantValueError(
+            _msg(
+                kernel,
+                "KE-VAL-STOCHASTIC",
+                f"'{name}' must sum to 1 (probability distribution), got sum={s:.6g}",
+                f"renormalize before calling — `{name} = {name} / {name}.sum()`",
+            )
+        )
+
+
+def require_stochastic_rows(mat: Any, name: str, *, kernel: str, atol: float = 1e-6) -> None:
+    """Reject a 2D matrix whose rows aren't probability distributions.
+
+    Used for HMM transition and emission matrices. Delegates the ndim
+    check to `require_expected_shape` — callers should validate shape
+    first, then hand the matrix to this helper.
+    """
+    arr = _to_ndarray(mat)
+    if arr.dtype.kind not in "fc":
+        arr = arr.astype(np.float64)
+    if arr.ndim != 2:
+        # Shape errors are the shape helper's job; assume caller checked.
+        return
+    a_min = float(arr.min())
+    a_max = float(arr.max())
+    if a_min < -atol or a_max > 1.0 + atol:
+        raise KuantValueError(
+            _msg(
+                kernel,
+                "KE-VAL-STOCHASTIC-ROWS",
+                f"'{name}' contains values outside [0, 1] " f"(min={a_min:.3g}, max={a_max:.3g})",
+                f"clip and renormalize each row — "
+                f"`np.clip({name}, 0, 1) / np.clip({name}, 0, 1).sum(axis=1, keepdims=True)`",
+            )
+        )
+    row_sums = arr.sum(axis=1)
+    bad = np.where(np.abs(row_sums - 1.0) > atol)[0]
+    if bad.size:
+        r = int(bad[0])
+        raise KuantValueError(
+            _msg(
+                kernel,
+                "KE-VAL-STOCHASTIC-ROWS",
+                f"'{name}' row {r} must sum to 1, got sum={float(row_sums[r]):.6g}",
+                f"renormalize each row before calling — "
+                f"`{name} = {name} / {name}.sum(axis=1, keepdims=True)`",
+            )
+        )
+
+
+# ---------- mutex-pair validator -------------------------------------------
+
+
+def require_mutex_pair(
+    a: Any,
+    name_a: str,
+    b: Any,
+    name_b: str,
+    *,
+    kernel: str,
+    a_example: str,
+    b_example: str,
+) -> None:
+    """Reject when neither or both of a mutually-exclusive arg pair are set.
+
+    Use for XOR constraints on optional args: (span XOR alpha) in the EMA
+    kernels; (n_states XOR full-init) in Baum-Welch. Both cases send
+    exactly one of the two to `None`; passing both or neither is a bug.
+
+    `a_example` and `b_example` are appended to the fix line so users
+    see the two valid forms.
+    """
+    a_set = a is not None
+    b_set = b is not None
+    if a_set ^ b_set:
+        return
+    got = "both" if a_set and b_set else "neither"
+    raise KuantValueError(
+        _msg(
+            kernel,
+            "KE-VAL-MUTEX",
+            f"provide exactly one of `{name_a}` or `{name_b}`, got {got}",
+            f"`{a_example}` OR `{b_example}`",
+        )
+    )
+
+
+# ---------- warnings -------------------------------------------------------
+
+
+def warn_kuant(
+    *,
+    kernel: str,
+    code: str,
+    what: str,
+    fix: str,
+    category: type = KuantWarning,
+    stacklevel: int = 3,
+) -> None:
+    """Emit a KuantWarning with the standard two-line message shape.
+
+    Errors are for "we can't continue". Warnings are for "we returned
+    something, but you should know it may be unreliable". `stacklevel=3`
+    aims the warning at the kernel's caller, not the kernel itself.
+
+    Users can promote any warning to an exception with:
+        import warnings, kuant.errors
+        warnings.filterwarnings("error", category=kuant.errors.KuantWarning)
+    """
+    import warnings as _warnings
+
+    _warnings.warn(_msg(kernel, code, what, fix), category, stacklevel=stacklevel)
+
+
 # ---------- NaN / finite validators ----------------------------------------
 
 
@@ -441,9 +594,13 @@ __all__ = [
     "require_probability",
     "require_range",
     "require_window",
+    "require_stochastic",
+    "require_stochastic_rows",
+    "require_mutex_pair",
     "require_nonnan",
     "require_finite",
     "require_min_clean",
     "require_dep",
     "did_not_converge",
+    "warn_kuant",
 ]
