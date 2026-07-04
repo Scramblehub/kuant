@@ -49,8 +49,10 @@ ENV/
 *.hdf5
 *.h5
 *.csv
-data/
-raw/
+# Root-anchored so kuant/data/ (the subpackage) and tests/data/
+# (its tests) aren't masked. Unanchored `data/` used to hide both.
+/data/
+/raw/
 
 # Secrets — API tokens, credentials (NEVER commit)
 secret
