@@ -94,6 +94,18 @@ class Order:
                     f"requires a limit_price.  [KE-VAL-CONTRACT]\n"
                     f"  → Fix: pass limit_price=<float>"
                 )
+            import math
+
+            if not math.isfinite(self.limit_price) or self.limit_price <= 0.0:
+                raise KuantValueError(
+                    f"kuant.Order: limit_price must be finite and "
+                    f"strictly positive for {self.order_type.value} "
+                    f"orders, got {self.limit_price}.  "
+                    f"[KE-ORDER-LIMIT-INVALID]\n"
+                    f"  → Fix: compute a real limit level from a "
+                    f"reference price; None-or-positive is the only "
+                    f"valid combination"
+                )
 
     @property
     def signed_size(self) -> float:

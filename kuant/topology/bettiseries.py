@@ -23,6 +23,7 @@ from __future__ import annotations
 import numpy as np
 
 from kuant._validation import require_1d, require_nonnegative, require_positive
+from kuant.errors import KuantValueError
 
 from .persistenthomology import persistenthomology
 
@@ -103,10 +104,13 @@ def bettiseries(
     n = arr.size
     w = int(window)
     s = int(stride)
-    out = np.full(n, np.nan)
-
     if w > n:
-        return out
+        raise KuantValueError(
+            f"kuant.bettiseries: 'window' ({w}) is larger than len(x) "
+            f"({n}); no anchor can be evaluated.  [KE-VAL-RANGE]\n"
+            f"  → Fix: lower window or provide a longer series"
+        )
+    out = np.full(n, np.nan)
 
     for t in range(w - 1, n, s):
         segment = arr[t - w + 1 : t + 1]

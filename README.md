@@ -3,7 +3,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/kuant.svg)](https://pypi.org/project/kuant/)
 [![Python versions](https://img.shields.io/pypi/pyversions/kuant.svg)](https://pypi.org/project/kuant/)
 [![CI](https://github.com/Scramblehub/kuant/actions/workflows/ci.yml/badge.svg)](https://github.com/Scramblehub/kuant/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/badge/coverage-89%25-brightgreen.svg)](https://github.com/Scramblehub/kuant/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-91%25-brightgreen.svg)](https://github.com/Scramblehub/kuant/actions/workflows/ci.yml)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![License](https://img.shields.io/pypi/l/kuant.svg)](https://github.com/Scramblehub/kuant/blob/main/LICENSE)
 
@@ -12,7 +12,7 @@ Works on numpy, dispatches transparently to cupy when available.
 
 ## What's in the box
 
-Fifteen subpackages, 1656 tests, ~90 benchmarks. Alpha stability.
+Fifteen subpackages, 1814 tests, ~90 benchmarks. Alpha stability.
 
 | Subpackage | Kernels | Contents |
 |---|---|---|
@@ -59,48 +59,6 @@ enforced by an adversarial test suite in
 `tests/stats/test_numerical_stability.py` that covers near-constant
 series, large additive offsets, long slow drifts, alternating signs,
 higher moments, and pandas-parity guardrails.
-
-## What's new in v0.3.x
-
-- **v0.3.0** (yanked): `kuant.text.tickernorm`, `kuant.signals.factorscoring`,
-  tearsheet parity across `kuant.portfolio`, `kuant.stats.realizedvol`,
-  `kuant.stats.stationarity`, and the initial `kuant.nulltest` cluster
-  (bootstrap, MHT correction, SPA test).
-- **v0.3.1**: lifecycle primitives land with `SecurityLifecycle`,
-  `TerminalAction`, `apply_lifecycle`, `tradeable_mask`,
-  `lifecycle_returns`, `detect_delistings`, and a paired identifier
-  scrub in `kuant.text` for tickernorm plus CUSIP validation.
-- **v0.3.2**: `rollemastd` picks up the shifted-cumsum fix that
-  eliminates catastrophic cancellation on near-constant inputs, and
-  ships alongside the adversarial numerical-stability test suite
-  described in Positioning.
-- **v0.4.0**: lifecycle moves from `kuant.lifecycle` to
-  `kuant.backtest.lifecycle` under the new `kuant.backtest` umbrella
-  for correctness-first backtest primitives. `kuant.lifecycle` remains
-  as a deprecation shim through 0.4.x and is removed in 0.5.0.
-- **v0.4.1**: `kuant.backtest.liquidity` lands with `LiquidityProfile`
-  (ADV, spread, min_size, max_participation), three fill models
-  (`FlatSlippage`, `LinearImpact`, `SquareRootImpact` for Almgren-Chriss),
-  `execute_fill` + `execute_fill_panel` with categorical `FillResult`
-  reasons (OK, CAPPED_PARTICIPATION, BELOW_MIN_SIZE, NO_LIQUIDITY,
-  MISSING_DATE), and `liquidity_mask` for composing with lifecycle's
-  `tradeable_mask`.
-- **v0.4.2**: `kuant.backtest.fill` and `kuant.backtest.position` land.
-  `fill` ships an `Order` dataclass with explicit `OrderSide` /
-  `OrderType` / `OrderStatus` enums, `FillReport` for reconciliation,
-  and `submit_order` routing MARKET orders through the liquidity layer.
-  `position` ships `Position` (signed size, volume-weighted `avg_cost`,
-  cumulative `realized_pnl`) with netting semantics, `PortfolioState`
-  (cash + per-symbol positions with atomic fill application), and
-  `EquitySnapshot` for mark-to-market reporting.
-- **v0.4.3**: `kuant.backtest.warmup` lands. `Warmup(prices, mode)`
-  registers indicators, universe membership, lifecycle maps, and
-  liquidity profiles; `materialize()` produces a `WarmupCache` with
-  a uniform `.get(name, timestamp, symbol)` interface plus
-  `.tradeable`, `.liquid`, `.universe` gate queries. Three modes
-  (`WarmupMode.EAGER` / `LAZY` / `OFF`) trade memory vs setup cost,
-  with a per-indicator `cache=True|False|None` override for mixed
-  slow-moving-cached + fast-moving-live strategies.
 
 ## Install
 
@@ -167,6 +125,7 @@ you can queue additions while a run is in progress. See
 - [`docs/kernels/`](docs/kernels/): one API doc per kernel, grouped by subpackage.
 - [`docs/design/`](docs/design/): cross-cutting design decisions.
 - [`docs/examples/`](docs/examples/): worked examples.
+- [`CHANGELOG.md`](CHANGELOG.md): release history.
 
 Start at [`docs/README.md`](docs/README.md).
 
@@ -227,8 +186,12 @@ kuant/
 ├── portfolio/    P&L contribution, drawdown, Sharpe, Sortino, risk metrics
 ├── text/         tickernorm, cusipvalidate, occparse, secformparse
 ├── nulltest/     bootstrap, MHT correction, White/Hansen SPA test
-├── lifecycle/    SecurityLifecycle, tradeable_mask, lifecycle_returns
-├── backtest/     Simulation engine (scaffold; v1 next)
+├── backtest/     Correctness-first backtest primitives:
+│                   lifecycle (SecurityLifecycle, tradeable_mask, ...)
+│                   liquidity (LiquidityProfile, FillModel, execute_fill)
+│                   fill (Order, submit_order, FillReport)
+│                   position (Position, PortfolioState, EquitySnapshot)
+│                   warmup (Warmup, WarmupCache, WarmupMode)
 ├── queueing/     Hardware throttle and coordination layer
 ├── errors.py     KuantError + KuantWarning hierarchies
 └── _validation.py  Central validators used by every kernel
@@ -238,7 +201,7 @@ docs/
 ├── design/       Cross-cutting design decisions
 └── examples/     Worked examples
 
-tests/            1:1 with kernel files; 1656 tests total
+tests/            1:1 with kernel files; 1814 tests total
 ```
 
 ## Contributing

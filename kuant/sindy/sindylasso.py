@@ -148,6 +148,12 @@ def sindylasso(
     if alpha_grid is None:
         alpha_grid = np.logspace(-5, -1, 30)
 
+    if not library:
+        raise KuantValueError(
+            "kuant.sindylasso: 'library' is empty; at least one candidate "
+            "feature is required.  [KE-VAL-EMPTY]\n"
+            "  → Fix: add at least one entry to the `library` dict"
+        )
     feature_names = list(library.keys())
     X = np.column_stack([np.asarray(library[k], dtype=np.float64) for k in feature_names])
     y = np.asarray(target, dtype=np.float64)

@@ -249,6 +249,18 @@ def corpaction(
     split_pos, split_ratio = _resolve_events(split_positions, split_ratios, "split", n)
     div_pos, div_amt = _resolve_events(dividend_positions, dividend_amounts, "dividend", n)
 
+    if split_ratio.size and float(split_ratio.min()) <= 0.0:
+        bad = int(np.argmin(split_ratio))
+        raise KuantValueError(
+            f"kuant.corpaction: split ratio at event {bad} = "
+            f"{float(split_ratio[bad])} is non-positive; a legitimate "
+            f"split ratio is strictly positive (2-for-1 forward is 2.0, "
+            f"1-for-10 reverse is 0.1).  [KE-CORP-SPLIT-NONPOSITIVE]\n"
+            f"  → Fix: drop the malformed event or repair its sign; a "
+            f"zero ratio would produce division by zero in backward mode "
+            f"and a negative ratio flips price sign"
+        )
+
     # Sanity warning on outlandish split ratios.
     if split_ratio.size and (float(split_ratio.max()) > 100.0 or float(split_ratio.min()) < 0.001):
         warn_kuant(

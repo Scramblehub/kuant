@@ -584,6 +584,159 @@ def did_not_converge(
     raise KuantConvergenceError(_msg(kernel, "KE-CONV-MAX-ITER", what, fix))
 
 
+# ---------- structural / relational validators ------------------------------
+
+
+def require_non_empty(arr: Any, name: str, *, kernel: str) -> None:
+    """Reject zero-size arrays or empty containers.
+
+    Complements `require_1d` / `require_2d`, which don't catch the
+    `size == 0` case cleanly. Empty inputs to statistical kernels
+    almost always indicate an upstream filter that ate the data.
+    """
+    if hasattr(arr, "size"):
+        n = int(arr.size)
+    else:
+        try:
+            n = len(arr)
+        except TypeError as exc:
+            raise KuantValueError(
+                _msg(
+                    kernel,
+                    "KE-VAL-EMPTY",
+                    f"'{name}' has no size or length; expected a non-empty array or container",
+                    f"pass a non-empty value for `{name}`",
+                )
+            ) from exc
+    if n > 0:
+        return
+    raise KuantValueError(
+        _msg(
+            kernel,
+            "KE-VAL-EMPTY",
+            f"'{name}' is empty (size 0)",
+            f"pass a non-empty `{name}`; upstream filters may have eaten the data",
+        )
+    )
+
+
+def require_monotone_increasing(arr: Any, name: str, *, kernel: str, strict: bool = True) -> None:
+    """Reject arrays whose values do not increase (strictly by default).
+
+    Used by kernels that consume bin edges, sorted probabilities, or
+    thresholds where a non-monotone order silently misclassifies rows
+    (e.g. `numpy.digitize`).
+    """
+    a = _to_ndarray(arr)
+    if a.ndim != 1:
+        raise KuantShapeError(
+            _msg(
+                kernel,
+                "KE-SHAPE-1D",
+                f"'{name}' must be 1D to check monotonicity, got shape {a.shape}",
+                f"flatten `{name}` before calling",
+            )
+        )
+    if a.size < 2:
+        return
+    diffs = np.diff(a)
+    if strict:
+        ok = bool((diffs > 0).all())
+        rel = "strictly increasing"
+    else:
+        ok = bool((diffs >= 0).all())
+        rel = "non-decreasing"
+    if ok:
+        return
+    bad_idx = int(np.flatnonzero(diffs <= 0 if strict else diffs < 0)[0])
+    raise KuantValueError(
+        _msg(
+            kernel,
+            "KE-VAL-RANGE",
+            f"'{name}' must be {rel}; first violation at index "
+            f"{bad_idx} ({a[bad_idx]:.6g} then {a[bad_idx + 1]:.6g})",
+            f"sort `{name}` ascending and remove duplicates before calling",
+        )
+    )
+
+
+def require_ohlc_ordering(
+    open_arr: Any,
+    high_arr: Any,
+    low_arr: Any,
+    close_arr: Any,
+    *,
+    kernel: str,
+) -> None:
+    """Reject bars whose OHLC values violate `L <= min(O, C) <= max(O, C) <= H`.
+
+    Realized-volatility estimators (Parkinson, Garman-Klass, Rogers-
+    Satchell, Yang-Zhang) are only defined on well-ordered bars. Silent
+    acceptance of `H < L` or `O` outside `[L, H]` produces plausible-
+    looking vol readings that mask a data-quality bug upstream.
+    """
+    O_ = _to_ndarray(open_arr)
+    H = _to_ndarray(high_arr)
+    L = _to_ndarray(low_arr)
+    C = _to_ndarray(close_arr)
+    if not (O_.shape == H.shape == L.shape == C.shape):
+        raise KuantShapeError(
+            _msg(
+                kernel,
+                "KE-SHAPE-EQUAL-LEN",
+                f"OHLC arrays must share shape; got O={O_.shape}, "
+                f"H={H.shape}, L={L.shape}, C={C.shape}",
+                "align the OHLC arrays before calling",
+            )
+        )
+    if O_.dtype.kind not in "fc":
+        O_ = O_.astype(np.float64)
+        H = H.astype(np.float64)
+        L = L.astype(np.float64)
+        C = C.astype(np.float64)
+    finite = np.isfinite(O_) & np.isfinite(H) & np.isfinite(L) & np.isfinite(C)
+    if not bool(finite.any()):
+        return
+    # H must be the bar high; L must be the bar low.
+    hl_bad = np.where(finite & (H < L))[0]
+    if hl_bad.size:
+        i = int(hl_bad[0])
+        raise KuantValueError(
+            _msg(
+                kernel,
+                "KE-VAL-RANGE",
+                f"OHLC ordering violated: H < L at index {i} " f"(H={H[i]:.6g}, L={L[i]:.6g})",
+                "verify the OHLC panel; H must be >= L on every bar",
+            )
+        )
+    top = np.maximum(O_, C)
+    bot = np.minimum(O_, C)
+    hi_bad = np.where(finite & (top > H))[0]
+    if hi_bad.size:
+        i = int(hi_bad[0])
+        raise KuantValueError(
+            _msg(
+                kernel,
+                "KE-VAL-RANGE",
+                f"OHLC ordering violated: max(O, C) > H at index {i} "
+                f"(O={O_[i]:.6g}, C={C[i]:.6g}, H={H[i]:.6g})",
+                "verify the OHLC panel; H must be >= max(O, C) on every bar",
+            )
+        )
+    lo_bad = np.where(finite & (bot < L))[0]
+    if lo_bad.size:
+        i = int(lo_bad[0])
+        raise KuantValueError(
+            _msg(
+                kernel,
+                "KE-VAL-RANGE",
+                f"OHLC ordering violated: min(O, C) < L at index {i} "
+                f"(O={O_[i]:.6g}, C={C[i]:.6g}, L={L[i]:.6g})",
+                "verify the OHLC panel; L must be <= min(O, C) on every bar",
+            )
+        )
+
+
 __all__ = [
     "require_1d",
     "require_2d",
@@ -600,6 +753,9 @@ __all__ = [
     "require_nonnan",
     "require_finite",
     "require_min_clean",
+    "require_non_empty",
+    "require_monotone_increasing",
+    "require_ohlc_ordering",
     "require_dep",
     "did_not_converge",
     "warn_kuant",

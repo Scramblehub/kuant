@@ -207,6 +207,13 @@ def varianceratiotest(series, lags: int = 2, alpha: float = 0.05) -> Stationarit
             cause=e,
         )
     require_probability(alpha, "alpha", kernel="varianceratiotest")
+    if int(lags) < 2:
+        raise KuantValueError(
+            f"kuant.varianceratiotest: 'lags' must be >= 2; got "
+            f"lags={int(lags)}. The variance ratio at lag=1 is "
+            f"trivially 1 by construction.  [KE-VAL-RANGE]\n"
+            f"  → Fix: increase lags to at least 2"
+        )
     finite = _prep(series, "varianceratiotest")
     vr = VarianceRatio(finite, lags=int(lags))
     return StationarityResult(

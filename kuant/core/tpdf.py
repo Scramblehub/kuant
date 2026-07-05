@@ -1,29 +1,33 @@
-'''Student-t probability density function, batched.
+"""Student-t probability density function, batched.
 
     tpdf(x, df) = Γ((ν+1)/2) / (√(νπ) Γ(ν/2)) · (1 + x²/ν)^(-(ν+1)/2)
 
 Uses log-space evaluation via `gammaln` to avoid overflow at large df.
 
 Design: docs/kernels/core/tpdf.md.
-'''
+"""
+
 from __future__ import annotations
 
 from typing import Any
 
 import numpy as np
 
+from kuant.errors import KuantValueError
+
 from ._special_bridge import gammaln
 
 cp: Any
 try:
     import cupy as cp
+
     _CUPY_NDARRAY = cp.ndarray
 except ImportError:
     cp = None
     _CUPY_NDARRAY = type(None)
 
 
-_LOG_PI = 1.1447298858494002   # log(π)
+_LOG_PI = 1.1447298858494002  # log(π)
 
 
 def _detect_backend(*args) -> Any:
@@ -36,7 +40,7 @@ def _detect_backend(*args) -> Any:
 
 
 def tpdf(x, df):
-    '''Student-t PDF with `df` degrees of freedom.
+    """Student-t PDF with `df` degrees of freedom.
 
     Parameters
     ----------
@@ -54,13 +58,20 @@ def tpdf(x, df):
     --------
     >>> abs(tpdf(0.0, 5.0) - 0.3796066898463724) < 1e-14
     True
-    '''
+    """
     xp = _detect_backend(x, df)
     x_arr = xp.asarray(x)
     df_arr = xp.asarray(df)
+    if bool((xp.asarray(df_arr).ravel() <= 0).any()):
+        raise KuantValueError(
+            "kuant.tpdf: degrees of freedom 'df' must be strictly "
+            "positive; got df <= 0 in one or more cells.  "
+            "[KE-VAL-POSITIVE]\n"
+            "  → Fix: pass df > 0 (Student-t is undefined for df <= 0)"
+        )
 
     out_dtype = xp.result_type(x_arr.dtype, df_arr.dtype)
-    if out_dtype.kind in 'iub':
+    if out_dtype.kind in "iub":
         out_dtype = xp.dtype(xp.float64)
     x_arr = x_arr.astype(out_dtype, copy=False)
     df_arr = df_arr.astype(out_dtype, copy=False)

@@ -19,6 +19,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from kuant.errors import KuantValueError
+
 
 @dataclass
 class Position:
@@ -62,9 +64,9 @@ class Position:
         ----------
         size_filled : float
             Signed quantity filled. Positive = bought, negative = sold.
-            Zero is a no-op.
+            Zero is a no-op. Must be finite.
         price : float
-            The fill price.
+            The fill price. Must be finite and strictly positive.
 
         Notes
         -----
@@ -78,6 +80,23 @@ class Position:
            quantity, keep avg_cost on the remainder, or reset avg_cost
            to `price` on the flipped remainder.
         """
+        import math
+
+        if not math.isfinite(size_filled):
+            raise KuantValueError(
+                f"kuant.Position.apply_fill: 'size_filled' must be "
+                f"finite, got {size_filled}.  [KE-POS-SIZE-INVALID]\n"
+                f"  → Fix: reject NaN sizes upstream in execute_fill or "
+                f"clean the signal via kuant.edgecases.nanpolicies"
+            )
+        if not math.isfinite(price) or price <= 0.0:
+            raise KuantValueError(
+                f"kuant.Position.apply_fill: 'price' must be finite and "
+                f"strictly positive, got {price}.  [KE-POS-PRICE-INVALID]\n"
+                f"  → Fix: gate NaN prices at the liquidity layer "
+                f"(execute_fill already returns reason='MISSING_DATE' or "
+                f"'NO_LIQUIDITY' on unpriced fills)"
+            )
         if size_filled == 0.0:
             return
         if self.size == 0.0:

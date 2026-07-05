@@ -1,4 +1,4 @@
-'''Zeno-effect scan: does less-frequent retraining help?
+"""Zeno-effect scan: does less-frequent retraining help?
 
 Motivation. The quantum Zeno effect: repeated measurement "freezes"
 a system's state, preventing evolution. In finance, a model that's
@@ -18,7 +18,8 @@ function, and a list of retrain frequencies, and it returns metrics
 per frequency.
 
 Design: docs/tools/zenoscan.md.
-'''
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -26,24 +27,26 @@ from typing import Any, Callable
 
 import numpy as np
 
+from kuant.errors import KuantShapeError, KuantValueError
+
 
 @dataclass
 class ZenoScanResult:
     retrain_freqs: list[int]
-    metrics: dict[int, dict[str, float]]         # freq -> metric name -> value
+    metrics: dict[int, dict[str, float]]  # freq -> metric name -> value
     retrain_counts: dict[int, int]
 
     def summary(self, metric_order: list[str] | None = None) -> str:
         if not self.retrain_freqs:
-            return '(empty result)'
+            return "(empty result)"
         keys = metric_order or list(next(iter(self.metrics.values())).keys())
-        header = f'{"Freq":>6s} ' + ' '.join(f'{k:>12s}' for k in keys) + ' n_retrain'
-        lines = ['=== Zeno-effect retrain-frequency scan ===', header, '-' * len(header)]
+        header = f'{"Freq":>6s} ' + " ".join(f"{k:>12s}" for k in keys) + " n_retrain"
+        lines = ["=== Zeno-effect retrain-frequency scan ===", header, "-" * len(header)]
         for freq in self.retrain_freqs:
             row = self.metrics[freq]
-            values = ' '.join(f'{row.get(k, float("nan")):>12.4f}' for k in keys)
-            lines.append(f'{freq:>6d} {values} {self.retrain_counts[freq]:>9d}')
-        return '\n'.join(lines)
+            values = " ".join(f'{row.get(k, float("nan")):>12.4f}' for k in keys)
+            lines.append(f"{freq:>6d} {values} {self.retrain_counts[freq]:>9d}")
+        return "\n".join(lines)
 
 
 def zenoscan(
@@ -55,7 +58,7 @@ def zenoscan(
     retrain_freqs: list[int],
     train_window: int,
 ) -> ZenoScanResult:
-    '''Walk-forward retrain-frequency scan.
+    """Walk-forward retrain-frequency scan.
 
     Parameters
     ----------
@@ -101,8 +104,30 @@ def zenoscan(
     ... )
     >>> len(result.metrics) == 3
     True
-    '''
+    """
+    if len(X) != len(y):
+        raise KuantShapeError(
+            f"kuant.zenoscan: 'X' and 'y' must have equal length along "
+            f"the time axis; got len(X)={len(X)}, len(y)={len(y)}.  "
+            f"[KE-SHAPE-EQUAL-LEN]\n"
+            f"  → Fix: align X and y to the same time index before calling"
+        )
     T = len(y)
+    if train_window >= T:
+        raise KuantValueError(
+            f"kuant.zenoscan: 'train_window' ({train_window}) is >= "
+            f"len(y) ({T}); no walk-forward predictions can be made.  "
+            f"[KE-VAL-RANGE]\n"
+            f"  → Fix: lower train_window, or provide a longer series"
+        )
+    for freq in retrain_freqs:
+        if not isinstance(freq, (int, np.integer)) or int(freq) <= 0:
+            raise KuantValueError(
+                f"kuant.zenoscan: 'retrain_freqs' must be strictly "
+                f"positive ints; got {freq}.  [KE-VAL-POSITIVE]\n"
+                f"  → Fix: pass positive integer retrain frequencies "
+                f"(e.g. [21, 63, 126])"
+            )
     result = ZenoScanResult(retrain_freqs=list(retrain_freqs), metrics={}, retrain_counts={})
 
     for freq in retrain_freqs:
@@ -118,7 +143,7 @@ def zenoscan(
                 n_retrain += 1
 
             # Predict at t using the currently-active model.
-            y_pred_full[t] = predict_fn(current_model, X[t:t+1])[0]
+            y_pred_full[t] = predict_fn(current_model, X[t : t + 1])[0]
 
         # Evaluate on the range where we made predictions.
         valid = ~np.isnan(y_pred_full)

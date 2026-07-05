@@ -21,7 +21,8 @@ from typing import Any
 
 import numpy as np
 
-from kuant._validation import require_1d
+from kuant._validation import require_1d, require_monotone_increasing
+from kuant.errors import KuantValueError
 
 cp: Any
 try:
@@ -87,6 +88,14 @@ def moneynessbucket(S, K, T, r, q=0.0, edges=None):
     K_arr = xp.asarray(K)
     T_arr = xp.asarray(T)
     r_arr = xp.asarray(r)
+    if bool((xp.asarray(S_arr).ravel() <= 0).any()) or bool((xp.asarray(K_arr).ravel() <= 0).any()):
+        raise KuantValueError(
+            "kuant.moneynessbucket: 'S' and 'K' must be strictly positive "
+            "to compute log-forward moneyness; got S <= 0 or K <= 0 in "
+            "one or more cells.  [KE-VAL-POSITIVE]\n"
+            "  → Fix: filter non-positive S/K upstream, or drop those "
+            "cells before bucketing"
+        )
 
     out_dtype = xp.result_type(S_arr.dtype, K_arr.dtype, T_arr.dtype, r_arr.dtype)
     if out_dtype.kind in "iub":
@@ -107,6 +116,7 @@ def moneynessbucket(S, K, T, r, q=0.0, edges=None):
     else:
         edges_arr = xp.asarray(edges, dtype=out_dtype)
         require_1d(edges_arr, "edges", kernel="moneynessbucket")
+        require_monotone_increasing(edges_arr, "edges", kernel="moneynessbucket")
 
     # digitize: returns index in [0, len(edges)]
     return xp.digitize(m, edges_arr)

@@ -28,6 +28,7 @@ from typing import Callable, Optional
 import numpy as np
 
 from kuant._validation import require_dep
+from kuant.errors import KuantValueError
 
 
 def _require_sklearn():
@@ -131,6 +132,13 @@ def belltest(
     """
     GradientBoostingRegressor, LinearRegression, Ridge, GaussianMixture, KFold = _require_sklearn()
 
+    if not features:
+        raise KuantValueError(
+            "kuant.belltest: 'features' is empty; belltest needs at least "
+            "one named feature to compute a classical bound.  "
+            "[KE-VAL-EMPTY]\n"
+            "  → Fix: pass at least one entry in the `features` dict"
+        )
     feature_names = list(features.keys())
     X = np.column_stack([features[k].astype(np.float64) for k in feature_names])
     y = target.astype(np.float64)
@@ -169,13 +177,25 @@ def belltest(
         kf = KFold(n_splits=n_splits, shuffle=False)
         oof = np.zeros_like(y)
         for tr, te in kf.split(X):
-            oof[te] = (
-                joint_model_fn(X[tr], y[tr])[te]
-                if len(joint_model_fn(X[tr], y[tr])) == len(y)
-                else joint_model_fn(X[tr], y[tr])
-            )
-        # Note: user-supplied model_fn is expected to return either full-length
-        # out-of-fold predictions or fold-specific ones; we assume full-length.
+            pred = joint_model_fn(X[tr], y[tr])
+            n_pred = len(pred)
+            if n_pred == len(y):
+                oof[te] = pred[te]
+            elif n_pred == len(te):
+                oof[te] = pred
+            else:
+                raise KuantValueError(
+                    f"kuant.belltest: joint_model_fn returned length "
+                    f"{n_pred} which matches neither len(y)={len(y)} "
+                    f"(full OOF) nor len(test_fold)={len(te)} (fold-only). "
+                    f" [KE-VAL-CONTRACT]\n"
+                    f"  → Fix: joint_model_fn(X_train, y_train) must "
+                    f"return either a full-length OOF prediction "
+                    f"array or a fold-only prediction with length "
+                    f"len(X_test); document the contract you chose"
+                )
+        # user-supplied model_fn either returns full-length out-of-fold
+        # predictions or fold-specific ones; length check picks the right branch.
 
     ss_res = np.sum((y - oof) ** 2)
     ss_tot = np.sum((y - y.mean()) ** 2)

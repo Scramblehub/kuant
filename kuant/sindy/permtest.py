@@ -28,6 +28,7 @@ from typing import Callable
 import numpy as np
 
 from kuant._validation import require_positive
+from kuant.errors import KuantValueError
 
 
 @dataclass
@@ -108,6 +109,16 @@ def permtest(
     True
     """
     require_positive(n_perms, "n_perms", kernel="permtest", kind="int")
+    if not np.isfinite(real_metric):
+        raise KuantValueError(
+            f"kuant.permtest: 'real_metric' must be finite, got "
+            f"{real_metric}; comparison to the permuted distribution is "
+            f"undefined (all comparisons against NaN are False, yielding a "
+            f"falsely-significant p-value of 1/(n_perms+1)).  "
+            f"[KE-VAL-FINITE]\n"
+            f"  → Fix: compute a finite metric on the unshuffled data "
+            f"before calling permtest"
+        )
 
     rng = np.random.default_rng(seed)
     perm_metrics = np.empty(n_perms)

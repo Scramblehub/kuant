@@ -102,10 +102,11 @@ def test_reject_2d_input():
 # ---------- empty + all-NaN edge cases -----------------------------------
 
 
-def test_empty_input_returns_empty_series():
-    r = drawdown(np.array([]))
-    assert r.series.size == 0
-    assert r.max_dd == 0.0
+def test_empty_input_raises():
+    from kuant.errors import KuantValueError
+
+    with pytest.raises(KuantValueError, match="KE-VAL-EMPTY"):
+        drawdown(np.array([]))
 
 
 def test_all_nan_input_yields_nan_max_dd():

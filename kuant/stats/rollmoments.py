@@ -29,6 +29,7 @@ from typing import Any
 import numpy as np
 
 from kuant._validation import require_1d, require_positive
+from kuant.errors import KuantValueError
 
 cp: Any
 try:
@@ -153,11 +154,17 @@ def rollskew(x, window):
     >>> rollskew(np.array([1.0, 2, 4, 8, 16]), 5)  # right-skewed → positive
     array([nan, nan, nan, nan, 1.375...])
     """
+    require_positive(window, "window", kernel="rollskew", kind="int")
+    if int(window) < 3:
+        raise KuantValueError(
+            f"kuant.rollskew: 'window' must be >= 3 (the bias correction "
+            f"sqrt(w(w-1))/(w-2) is undefined for w < 3); got "
+            f"window={int(window)}.  [KE-VAL-RANGE]\n"
+            f"  → Fix: increase window to at least 3"
+        )
     xp, out_dtype, w, n, nnan, mu, m2, m3, _m4, result = _rolling_moments_setup(x, window, 3)
     if nnan is None:
         return result  # window > n or w <= 0 handled by setup
-    if w < 3:
-        return result  # all NaN
     assert m2 is not None and m3 is not None  # up_to_order=3 → guaranteed non-None
 
     valid_var = m2 > 0
@@ -190,10 +197,16 @@ def rollkurt(x, window):
     >>> import numpy as np
     >>> rollkurt(np.random.default_rng(0).normal(size=100), 50)[-1]  # ~ 0 for N(0,1)
     """
+    require_positive(window, "window", kernel="rollkurt", kind="int")
+    if int(window) < 4:
+        raise KuantValueError(
+            f"kuant.rollkurt: 'window' must be >= 4 (the bias correction "
+            f"(w-1)/((w-2)(w-3)) is undefined for w < 4); got "
+            f"window={int(window)}.  [KE-VAL-RANGE]\n"
+            f"  → Fix: increase window to at least 4"
+        )
     xp, out_dtype, w, n, nnan, mu, m2, m3, m4, result = _rolling_moments_setup(x, window, 4)
     if nnan is None:
-        return result
-    if w < 4:
         return result
     assert m2 is not None and m4 is not None  # up_to_order=4 → guaranteed non-None
 

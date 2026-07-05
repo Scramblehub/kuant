@@ -33,6 +33,7 @@ from typing import Any
 import numpy as np
 
 from kuant._validation import require_1d, require_equal_length, require_positive
+from kuant.errors import KuantValueError
 
 cp: Any
 try:
@@ -101,10 +102,14 @@ def rollcorr(x, y, window):
     w = int(window)
 
     require_positive(w, "window", kernel="rollcorr", kind="int")
-    if w > n:
-        return xp.full(n, xp.nan, dtype=out_dtype)
     if w < 2:
-        # No dispersion in a single-element window; correlation undefined.
+        raise KuantValueError(
+            f"kuant.rollcorr: 'window' must be >= 2 (correlation is "
+            f"undefined for a 1-element window); got window={w}.  "
+            f"[KE-VAL-RANGE]\n"
+            f"  → Fix: increase window to at least 2"
+        )
+    if w > n:
         return xp.full(n, xp.nan, dtype=out_dtype)
 
     # Union NaN mask.

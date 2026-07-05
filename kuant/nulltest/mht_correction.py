@@ -63,6 +63,17 @@ def mht_correction(p_values, method: str = "bh") -> np.ndarray:
     p = np.asarray(p_values, dtype=np.float64).ravel()
     if not scalar_input:
         require_1d(p, "p_values", kernel="mht_correction")
+    nan_mask = np.isnan(p)
+    if bool(nan_mask.any()):
+        bad = int(np.argmax(nan_mask))
+        raise KuantValueError(
+            f"kuant.mht_correction: p-value at index {bad} is NaN; "
+            f"adjusted values would be arbitrary because sort order of "
+            f"NaN is undefined.  [KE-VAL-NAN-PVALUES]\n"
+            f"  → Fix: drop or impute NaN p-values before correction; "
+            f"NaN typically comes from a failed t-test on a constant "
+            f"series upstream"
+        )
     if bool((p < 0).any()) or bool((p > 1).any()):
         bad = int(np.argmax((p < 0) | (p > 1)))
         raise KuantValueError(

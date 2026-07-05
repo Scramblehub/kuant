@@ -1,4 +1,4 @@
-'''Generalized Pareto distribution — probability density.
+"""Generalized Pareto distribution — probability density.
 
     f(x; ξ, σ) = (1/σ) · (1 + ξ·x/σ)^(-1/ξ - 1)          for ξ ≠ 0
                = (1/σ) · exp(-x/σ)                        for ξ = 0
@@ -24,16 +24,20 @@ GPD is the LIMITING distribution of exceedances above a high threshold
 Peaks-Over-Threshold (POT) tail modeling.
 
 Design: docs/kernels/core/gpdpdf.md.
-'''
+"""
+
 from __future__ import annotations
 
 from typing import Any
 
 import numpy as np
 
+from kuant.errors import KuantValueError
+
 cp: Any
 try:
     import cupy as cp
+
     _CUPY_NDARRAY = cp.ndarray
 except ImportError:
     cp = None
@@ -50,7 +54,7 @@ def _detect_backend(*args) -> Any:
 
 
 def gpdpdf(x, xi, scale):
-    '''Generalized Pareto PDF, batched.
+    """Generalized Pareto PDF, batched.
 
     Parameters
     ----------
@@ -72,14 +76,21 @@ def gpdpdf(x, xi, scale):
     True
     >>> gpdpdf(-1.0, 0.0, 1.0)   # x < 0 outside support
     0.0
-    '''
+    """
     xp = _detect_backend(x, xi, scale)
     x_arr = xp.asarray(x)
     xi_arr = xp.asarray(xi)
     scale_arr = xp.asarray(scale)
+    if bool((xp.asarray(scale_arr).ravel() <= 0).any()):
+        raise KuantValueError(
+            "kuant.gpdpdf: 'scale' must be strictly positive (GPD scale σ "
+            "is defined on (0, +inf)); got scale <= 0 in one or more cells."
+            "  [KE-VAL-POSITIVE]\n"
+            "  → Fix: pass scale > 0"
+        )
 
     out_dtype = xp.result_type(x_arr.dtype, xi_arr.dtype, scale_arr.dtype)
-    if out_dtype.kind in 'iub':
+    if out_dtype.kind in "iub":
         out_dtype = xp.dtype(xp.float64)
     x_arr = x_arr.astype(out_dtype, copy=False)
     xi_arr = xi_arr.astype(out_dtype, copy=False)
@@ -87,9 +98,11 @@ def gpdpdf(x, xi, scale):
     x_arr, xi_arr, scale_arr = xp.broadcast_arrays(x_arr, xi_arr, scale_arr)
 
     # Support: x >= 0 always; upper bound x <= -scale/xi when xi < 0.
-    upper = xp.where(xi_arr < 0, -scale_arr / xp.where(xi_arr != 0, xi_arr,
-                                                       xp.asarray(-1.0, dtype=out_dtype)),
-                      xp.asarray(np.inf, dtype=out_dtype))
+    upper = xp.where(
+        xi_arr < 0,
+        -scale_arr / xp.where(xi_arr != 0, xi_arr, xp.asarray(-1.0, dtype=out_dtype)),
+        xp.asarray(np.inf, dtype=out_dtype),
+    )
     in_support = (x_arr >= 0) & (x_arr <= upper) & (scale_arr > 0)
 
     # Safe placeholder for the argument to log/pow.
@@ -97,17 +110,18 @@ def gpdpdf(x, xi, scale):
     y_safe = xp.where(in_support, y, xp.asarray(0.0, dtype=out_dtype))
 
     # ξ = 0 branch: exponential
-    exp_branch = xp.exp(-y_safe) / xp.where(scale_arr > 0, scale_arr,
-                                             xp.asarray(1.0, dtype=out_dtype))
+    exp_branch = xp.exp(-y_safe) / xp.where(
+        scale_arr > 0, scale_arr, xp.asarray(1.0, dtype=out_dtype)
+    )
     # ξ ≠ 0 branch: (1 + ξ·y)^(-1/ξ - 1) / σ
     xi_safe = xp.where(xi_arr != 0, xi_arr, xp.asarray(1.0, dtype=out_dtype))
     one_plus = 1.0 + xi_safe * y_safe
     # Guard against 1+ξy <= 0 in inactive cells (shouldn't happen in-support,
     # but xp.where masks it out regardless)
-    with np.errstate(invalid='ignore', divide='ignore'):
-        pow_branch = xp.power(xp.maximum(one_plus, 1e-300),
-                              -1.0 / xi_safe - 1.0) / \
-                     xp.where(scale_arr > 0, scale_arr, xp.asarray(1.0, dtype=out_dtype))
+    with np.errstate(invalid="ignore", divide="ignore"):
+        pow_branch = xp.power(xp.maximum(one_plus, 1e-300), -1.0 / xi_safe - 1.0) / xp.where(
+            scale_arr > 0, scale_arr, xp.asarray(1.0, dtype=out_dtype)
+        )
 
     # ξ = 0 is a distinct case (limiting exponential).
     # Numerically, ξ within 1e-8 of 0 is safer to route to the exponential branch.

@@ -107,9 +107,21 @@ class PortfolioState:
         Cash is debited on buys and credited on sells; the fill's
         `size_filled` carries the sign.
         """
+        import math
+
         fill = report.fill
         if fill.size_filled == 0.0:
             return
+        if not math.isfinite(fill.price):
+            raise KuantValueError(
+                f"kuant.PortfolioState.apply_fill: fill has non-finite "
+                f"price ({fill.price}) but size_filled={fill.size_filled} "
+                f"is nonzero; cash would become NaN.  "
+                f"[KE-PORTFOLIO-FILL-PRICE-INVALID]\n"
+                f"  → Fix: liquidity.execute_fill sets price=NaN only on "
+                f"rejected fills (size_filled=0). A hand-built FillReport "
+                f"or a custom model violated this invariant"
+            )
         # Cash: on a buy (size_filled > 0), cash decreases by fill_price *
         # size_filled. On a sell, cash increases. Sign handles both.
         self.cash -= fill.size_filled * fill.price

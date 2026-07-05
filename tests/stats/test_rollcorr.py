@@ -107,12 +107,14 @@ def test_zero_variance_returns_nan():
     assert np.all(np.isnan(result))
 
 
-def test_window_1_all_nan():
-    """Correlation of single points is undefined."""
+def test_window_lt_2_raises():
+    """Correlation is undefined for windows < 2 — raise loudly."""
+    from kuant.errors import KuantValueError
+
     x = np.array([1.0, 2, 3, 4])
     y = np.array([2.0, 3, 4, 5])
-    result = rollcorr(x, y, 1)
-    assert np.all(np.isnan(result))
+    with pytest.raises(KuantValueError, match="KE-VAL-RANGE"):
+        rollcorr(x, y, 1)
 
 
 def test_window_larger_than_length():

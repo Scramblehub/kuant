@@ -1,4 +1,4 @@
-'''Generalized Pareto distribution — inverse CDF (quantile function).
+"""Generalized Pareto distribution — inverse CDF (quantile function).
 
     x(p; ξ, σ) = σ · ((1-p)^(-ξ) - 1) / ξ                 for ξ ≠ 0
                = -σ · log(1-p)                            for ξ = 0
@@ -8,16 +8,20 @@ Domain: p in [0, 1]. Boundary conventions:
     p = 1 → +inf (if ξ >= 0) or -σ/ξ (upper support bound, if ξ < 0)
 
 Design: docs/kernels/core/gpdppf.md.
-'''
+"""
+
 from __future__ import annotations
 
 from typing import Any
 
 import numpy as np
 
+from kuant.errors import KuantValueError
+
 cp: Any
 try:
     import cupy as cp
+
     _CUPY_NDARRAY = cp.ndarray
 except ImportError:
     cp = None
@@ -34,7 +38,7 @@ def _detect_backend(*args) -> Any:
 
 
 def gpdppf(p, xi, scale):
-    '''Generalized Pareto inverse CDF, batched.
+    """Generalized Pareto inverse CDF, batched.
 
     Parameters
     ----------
@@ -57,11 +61,17 @@ def gpdppf(p, xi, scale):
     --------
     >>> abs(gpdppf(0.5, 0.2, 1.0) - 0.7434917749851755) < 1e-14
     True
-    '''
+    """
     xp = _detect_backend(p, xi, scale)
     p_arr = xp.asarray(p, dtype=xp.float64)
     xi_arr = xp.asarray(xi, dtype=xp.float64)
     scale_arr = xp.asarray(scale, dtype=xp.float64)
+    if bool((scale_arr.ravel() <= 0).any()):
+        raise KuantValueError(
+            "kuant.gpdppf: 'scale' must be strictly positive; got scale "
+            "<= 0 in one or more cells.  [KE-VAL-POSITIVE]\n"
+            "  → Fix: pass scale > 0"
+        )
     p_arr, xi_arr, scale_arr = xp.broadcast_arrays(p_arr, xi_arr, scale_arr)
 
     # Safe placeholder to avoid log(0) or power on invalid inputs.
@@ -74,7 +84,7 @@ def gpdppf(p, xi, scale):
 
     # ξ ≠ 0 branch: σ · ((1-p)^(-ξ) - 1) / ξ
     xi_safe = xp.where(xi_arr != 0, xi_arr, xp.asarray(1.0, dtype=xp.float64))
-    with np.errstate(invalid='ignore', divide='ignore'):
+    with np.errstate(invalid="ignore", divide="ignore"):
         pow_branch = scale_arr * (xp.power(one_minus_p, -xi_safe) - 1.0) / xi_safe
 
     is_zero = xp.abs(xi_arr) < 1e-8
@@ -86,16 +96,23 @@ def gpdppf(p, xi, scale):
     nan_val = xp.asarray(xp.nan, dtype=xp.float64)
 
     # Upper support at p=1
-    upper_bound = xp.where(xi_arr < 0,
-                            -scale_arr / xp.where(xi_arr != 0, xi_arr,
-                                                   xp.asarray(-1.0, dtype=xp.float64)),
-                            pos_inf)
+    upper_bound = xp.where(
+        xi_arr < 0,
+        -scale_arr / xp.where(xi_arr != 0, xi_arr, xp.asarray(-1.0, dtype=xp.float64)),
+        pos_inf,
+    )
     result = xp.where(p_arr == 0.0, zero_val, result)
     result = xp.where(p_arr == 1.0, upper_bound, result)
 
     # Out of range or invalid inputs → NaN
-    out_of_range = ((p_arr < 0.0) | (p_arr > 1.0) | xp.isnan(p_arr)
-                     | (scale_arr <= 0) | xp.isnan(scale_arr) | xp.isnan(xi_arr))
+    out_of_range = (
+        (p_arr < 0.0)
+        | (p_arr > 1.0)
+        | xp.isnan(p_arr)
+        | (scale_arr <= 0)
+        | xp.isnan(scale_arr)
+        | xp.isnan(xi_arr)
+    )
     result = xp.where(out_of_range, nan_val, result)
 
     if result.ndim == 0:

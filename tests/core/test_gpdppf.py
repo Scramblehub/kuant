@@ -1,4 +1,5 @@
-'''Test suite for kuant.core.gpdppf.'''
+"""Test suite for kuant.core.gpdppf."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -9,10 +10,13 @@ from kuant.core import gpdcdf, gpdppf
 
 
 @pytest.mark.parametrize(
-    'p, xi, scale',
+    "p, xi, scale",
     [
-        (0.1, 0.5, 1.0), (0.5, 0.0, 1.0), (0.9, -0.3, 1.0),
-        (0.99, 0.5, 2.0), (0.05, 0.2, 1.0),
+        (0.1, 0.5, 1.0),
+        (0.5, 0.0, 1.0),
+        (0.9, -0.3, 1.0),
+        (0.99, 0.5, 2.0),
+        (0.05, 0.2, 1.0),
     ],
 )
 def test_matches_scipy(p, xi, scale):
@@ -46,10 +50,19 @@ def test_p_one_returns_upper_support():
 
 
 def test_out_of_range_returns_nan():
+    # p outside [0, 1] still returns NaN (probability-domain violation).
     assert np.isnan(gpdppf(-0.1, 0.3, 1.0))
     assert np.isnan(gpdppf(1.5, 0.3, 1.0))
-    assert np.isnan(gpdppf(0.5, 0.3, -1.0))   # scale ≤ 0
     assert np.isnan(gpdppf(np.nan, 0.3, 1.0))
+
+
+def test_nonpositive_scale_raises():
+    from kuant.errors import KuantValueError
+
+    with pytest.raises(KuantValueError, match="KE-VAL-POSITIVE"):
+        gpdppf(0.5, 0.3, -1.0)
+    with pytest.raises(KuantValueError, match="KE-VAL-POSITIVE"):
+        gpdppf(0.5, 0.3, 0.0)
 
 
 def test_exponential_limit():
@@ -69,6 +82,7 @@ def test_batched(rng):
 
 def test_gpu_matches_cpu(skip_no_gpu, rng):
     import cupy as cp
+
     ps = rng.uniform(0.05, 0.95, 30)
     xis = rng.uniform(-0.3, 0.5, 30)
     scales = rng.uniform(0.5, 2.0, 30)

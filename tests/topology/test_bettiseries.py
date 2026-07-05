@@ -67,11 +67,13 @@ def test_nan_segment_yields_nan_anchor():
             assert np.isnan(b[t]), f"anchor {t} should be NaN (window covers NaN at 50)"
 
 
-def test_window_larger_than_input_returns_all_nan():
+def test_window_larger_than_input_raises():
+    import pytest
+    from kuant.errors import KuantValueError
+
     x = np.arange(20.0)
-    b = bettiseries(x, window=100, dim=0)
-    assert np.isnan(b).all()
-    assert b.size == 20
+    with pytest.raises(KuantValueError, match="KE-VAL-RANGE"):
+        bettiseries(x, window=100, dim=0)
 
 
 # ---------- error contract ------------------------------------------------

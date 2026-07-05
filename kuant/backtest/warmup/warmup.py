@@ -81,6 +81,16 @@ class Warmup:
                 f"  → Fix: wrap the price panel in "
                 f"`pd.DataFrame(values, index=dates, columns=symbols)`"
             )
+        if len(prices) == 0 or prices.shape[1] == 0:
+            raise KuantValueError(
+                f"kuant.Warmup: 'prices' has shape {prices.shape}; "
+                f"materialization on an empty panel produces empty "
+                f"caches with no observable failure.  "
+                f"[KE-WARMUP-EMPTY-PANEL]\n"
+                f"  → Fix: load a non-empty panel; a zero-row DataFrame "
+                f"is a loader bug, a zero-column one is a universe-"
+                f"filter bug"
+            )
         if isinstance(mode, str):
             try:
                 mode = WarmupMode(mode)

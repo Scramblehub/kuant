@@ -25,7 +25,12 @@ from __future__ import annotations
 
 import numpy as np
 
-from kuant._validation import require_1d, require_equal_length, require_positive
+from kuant._validation import (
+    require_1d,
+    require_equal_length,
+    require_ohlc_ordering,
+    require_positive,
+)
 from kuant.errors import KuantValueError
 
 
@@ -126,6 +131,16 @@ def parkinson(high, low) -> float:
             "[KE-VAL-POSITIVE]\n"
             "  → Fix: this estimator is defined on price levels, not returns"
         )
+    finite = np.isfinite(H) & np.isfinite(L)
+    bad = np.where(finite & (H < L))[0]
+    if bad.size:
+        i = int(bad[0])
+        raise KuantValueError(
+            f"kuant.parkinson: OHLC ordering violated at index {i}: "
+            f"H={H[i]:.6g} < L={L[i]:.6g}. Parkinson is not defined on "
+            f"inverted bars.  [KE-VAL-RANGE]\n"
+            f"  → Fix: verify H >= L on every bar before calling"
+        )
     log_hl = np.log(H / L)
     finite = np.isfinite(log_hl)
     if not bool(finite.any()):
@@ -145,6 +160,7 @@ def garmanklass(open_, high, low, close) -> float:
             "[KE-VAL-POSITIVE]\n"
             "  → Fix: pass OHLC price levels"
         )
+    require_ohlc_ordering(O_, H, L, C, kernel="garmanklass")
     hl = np.log(H / L)
     co = np.log(C / O_)
     contrib = 0.5 * hl * hl - (2.0 * np.log(2.0) - 1.0) * co * co
@@ -166,6 +182,7 @@ def rogerssatchell(open_, high, low, close) -> float:
             "[KE-VAL-POSITIVE]\n"
             "  → Fix: pass OHLC price levels"
         )
+    require_ohlc_ordering(O_, H, L, C, kernel="rogerssatchell")
     log_ho = np.log(H / O_)
     log_hc = np.log(H / C)
     log_lo = np.log(L / O_)
@@ -204,6 +221,7 @@ def yangzhang(open_, high, low, close, prev_close=None) -> float:
             "[KE-VAL-POSITIVE]\n"
             "  → Fix: pass OHLC price levels"
         )
+    require_ohlc_ordering(O_, H, L, C, kernel="yangzhang")
     if prev_close is None:
         pc = np.empty(n)
         pc[0] = np.nan

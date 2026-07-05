@@ -26,6 +26,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from kuant._validation import require_equal_length, require_positive
+from kuant.errors import KuantValueError
 
 
 @dataclass
@@ -133,6 +134,13 @@ def accelerationscan(
     y_arr = np.asarray(target, dtype=np.float64)
 
     require_equal_length(x_arr, "x", y_arr, "target", kernel="accelerationscan")
+    if x_arr.size < 3:
+        raise KuantValueError(
+            f"kuant.accelerationscan: 'x' must have length >= 3 to "
+            f"compute a second difference; got {x_arr.size}.  "
+            f"[KE-VAL-RANGE]\n"
+            f"  → Fix: provide a longer series"
+        )
 
     correlations: dict[int, float] = {}
     ns: dict[int, int] = {}

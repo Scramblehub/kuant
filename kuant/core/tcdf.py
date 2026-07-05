@@ -1,4 +1,4 @@
-'''Student-t cumulative distribution function, batched.
+"""Student-t cumulative distribution function, batched.
 
 Uses the incomplete-beta identity:
 
@@ -9,18 +9,22 @@ Uses the incomplete-beta identity:
 where I_z(a, b) is the regularized incomplete beta function.
 
 Design: docs/kernels/core/tcdf.md.
-'''
+"""
+
 from __future__ import annotations
 
 from typing import Any
 
 import numpy as np
 
+from kuant.errors import KuantValueError
+
 from ._special_bridge import betainc
 
 cp: Any
 try:
     import cupy as cp
+
     _CUPY_NDARRAY = cp.ndarray
 except ImportError:
     cp = None
@@ -37,7 +41,7 @@ def _detect_backend(*args) -> Any:
 
 
 def tcdf(x, df):
-    '''Student-t CDF: P(T <= x) where T has `df` degrees of freedom.
+    """Student-t CDF: P(T <= x) where T has `df` degrees of freedom.
 
     Parameters
     ----------
@@ -56,13 +60,20 @@ def tcdf(x, df):
     True
     >>> abs(tcdf(2.015, 5.0) - 0.9500000000000001) < 1e-4
     True
-    '''
+    """
     xp = _detect_backend(x, df)
     x_arr = xp.asarray(x)
     df_arr = xp.asarray(df)
+    if bool((xp.asarray(df_arr).ravel() <= 0).any()):
+        raise KuantValueError(
+            "kuant.tcdf: degrees of freedom 'df' must be strictly "
+            "positive; got df <= 0 in one or more cells.  "
+            "[KE-VAL-POSITIVE]\n"
+            "  → Fix: pass df > 0 (Student-t is undefined for df <= 0)"
+        )
 
     out_dtype = xp.result_type(x_arr.dtype, df_arr.dtype)
-    if out_dtype.kind in 'iub':
+    if out_dtype.kind in "iub":
         out_dtype = xp.dtype(xp.float64)
     x_arr = x_arr.astype(out_dtype, copy=False)
     df_arr = df_arr.astype(out_dtype, copy=False)

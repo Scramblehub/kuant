@@ -26,6 +26,7 @@ from typing import Optional
 import numpy as np
 
 from kuant._validation import require_dep
+from kuant.errors import KuantValueError
 
 
 @dataclass
@@ -129,6 +130,13 @@ def grangerscan(
     if horizons is None:
         horizons = [1, 2, 5]
 
+    for h in horizons:
+        if not isinstance(h, (int, np.integer)) or int(h) <= 0:
+            raise KuantValueError(
+                f"kuant.grangerscan: 'horizons' must be strictly positive "
+                f"ints; got {h}.  [KE-VAL-POSITIVE]\n"
+                f"  → Fix: pass positive horizon lags"
+            )
     n_tests = len(candidates) * len(horizons)
     bonferroni_alpha = alpha / n_tests
     result = GrangerScanResult(n_tests=n_tests, bonferroni_alpha=bonferroni_alpha)

@@ -34,6 +34,7 @@ from kuant._validation import (
     require_positive,
     require_probability,
 )
+from kuant.errors import KuantValueError
 
 
 def dispersioncollapse(
@@ -102,6 +103,13 @@ def dispersioncollapse(
     require_positive(n_consecutive, "n_consecutive", kernel="dispersioncollapse", kind="int")
 
     n_bars, n_names = arr.shape
+    if int(window) > n_bars:
+        raise KuantValueError(
+            f"kuant.dispersioncollapse: 'window' ({int(window)}) is "
+            f"larger than n_bars ({n_bars}); no bar can be evaluated.  "
+            f"[KE-VAL-RANGE]\n"
+            f"  → Fix: lower window or provide more bars"
+        )
 
     # Per-bar cross-sectional dispersion. nanstd emits a "Degrees of
     # freedom <= 0" RuntimeWarning when a row has fewer than 2 finite

@@ -1,4 +1,5 @@
-'''Test suite for kuant.stats.rollskew and rollkurt.'''
+"""Test suite for kuant.stats.rollskew and rollkurt."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -14,7 +15,7 @@ from kuant.stats import rollkurt, rollskew
 
 
 def test_skew_zero_for_symmetric():
-    '''Perfectly symmetric window → skew == 0.'''
+    """Perfectly symmetric window → skew == 0."""
     x = np.array([1.0, 2, 3, 4, 5])  # symmetric around 3
     result = rollskew(x, 5)
     assert abs(result[-1]) < 1e-12
@@ -50,16 +51,19 @@ def test_skew_matches_pandas_with_nans(rng):
 
 
 def test_skew_matches_pandas_large_magnitude(rng):
-    '''Shift trick should keep precision on price-scale inputs.'''
+    """Shift trick should keep precision on price-scale inputs."""
     x = rng.uniform(3900, 4100, size=300)
     result = rollskew(x, 20)
     reference = pd.Series(x).rolling(20, min_periods=20).skew().values
     np.testing.assert_allclose(result, reference, atol=1e-6, equal_nan=True)
 
 
-def test_skew_window_lt_3_all_nan():
+def test_skew_window_lt_3_raises():
+    from kuant.errors import KuantValueError
+
     x = np.arange(10, dtype=np.float64)
-    assert np.all(np.isnan(rollskew(x, 2)))
+    with pytest.raises(KuantValueError, match="KE-VAL-RANGE"):
+        rollskew(x, 2)
 
 
 def test_skew_shift_invariance(rng):
@@ -119,9 +123,12 @@ def test_kurt_matches_pandas_large_magnitude(rng):
     np.testing.assert_allclose(result, reference, atol=1e-6, equal_nan=True)
 
 
-def test_kurt_window_lt_4_all_nan():
+def test_kurt_window_lt_4_raises():
+    from kuant.errors import KuantValueError
+
     x = np.arange(10, dtype=np.float64)
-    assert np.all(np.isnan(rollkurt(x, 3)))
+    with pytest.raises(KuantValueError, match="KE-VAL-RANGE"):
+        rollkurt(x, 3)
 
 
 def test_kurt_shift_invariance(rng):
@@ -149,16 +156,16 @@ def test_kurt_constant_window_nan():
 
 
 def test_window_zero_raises():
-    with pytest.raises(ValueError, match='must be positive'):
+    with pytest.raises(ValueError, match="must be positive"):
         rollskew(np.array([1.0, 2, 3, 4]), 0)
-    with pytest.raises(ValueError, match='must be positive'):
+    with pytest.raises(ValueError, match="must be positive"):
         rollkurt(np.array([1.0, 2, 3, 4]), 0)
 
 
 def test_2d_input_raises():
-    with pytest.raises(ValueError, match='1D'):
+    with pytest.raises(ValueError, match="1D"):
         rollskew(np.array([[1.0, 2], [3, 4]]), 3)
-    with pytest.raises(ValueError, match='1D'):
+    with pytest.raises(ValueError, match="1D"):
         rollkurt(np.array([[1.0, 2], [3, 4]]), 4)
 
 
@@ -176,12 +183,17 @@ def test_int_input_promoted():
 
 def test_gpu_matches_cpu(skip_no_gpu, rng):
     import cupy as cp
+
     x = rng.uniform(-1, 1, size=200)
     np.testing.assert_allclose(
-        rollskew(x, 20), cp.asnumpy(rollskew(cp.asarray(x), 20)),
-        atol=1e-10, equal_nan=True,
+        rollskew(x, 20),
+        cp.asnumpy(rollskew(cp.asarray(x), 20)),
+        atol=1e-10,
+        equal_nan=True,
     )
     np.testing.assert_allclose(
-        rollkurt(x, 30), cp.asnumpy(rollkurt(cp.asarray(x), 30)),
-        atol=1e-9, equal_nan=True,
+        rollkurt(x, 30),
+        cp.asnumpy(rollkurt(cp.asarray(x), 30)),
+        atol=1e-9,
+        equal_nan=True,
     )

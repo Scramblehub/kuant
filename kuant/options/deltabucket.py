@@ -24,6 +24,7 @@ from typing import Any
 import numpy as np
 
 from kuant._validation import require_1d
+from kuant.errors import KuantValueError
 
 cp: Any
 try:
@@ -78,6 +79,13 @@ def deltabucket(deltas, targets):
     xp = _detect_backend(deltas, targets)
     deltas_arr = xp.asarray(deltas)
     require_1d(deltas_arr, "deltas", kernel="deltabucket")
+    if deltas_arr.size == 0:
+        raise KuantValueError(
+            "kuant.deltabucket: 'deltas' is empty; argmin has no index "
+            "to return.  [KE-VAL-EMPTY]\n"
+            "  → Fix: filter out empty chains upstream or return an "
+            "empty result explicitly"
+        )
     targets_arr = xp.asarray(targets)
     scalar_target = targets_arr.ndim == 0
     if scalar_target:

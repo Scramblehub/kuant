@@ -147,6 +147,13 @@ def execute_fill(
             f"  → Fix: gate zero and NaN prices out with "
             f"kuant.backtest.lifecycle.tradeable_mask before calling"
         )
+    if not np.isfinite(size):
+        raise KuantValueError(
+            f"kuant.execute_fill: 'size' must be finite, got {size}.  "
+            f"[KE-FILL-SIZE-NAN]\n"
+            f"  → Fix: clean the signal upstream (kuant.edgecases.nanpolicies) "
+            f"or gate NaN sizes at the strategy layer before submitting"
+        )
 
     ts = _as_date(timestamp)
     adv_series = profile.adv_series
@@ -309,6 +316,14 @@ def liquidity_mask(index, profile: LiquidityProfile, min_adv: float = 0.0):
         from kuant.backtest.liquidity import liquidity_mask
         can_trade = tradeable_mask(idx, lc) & liquidity_mask(idx, profile)
     """
+    if float(min_adv) < 0.0:
+        raise KuantValueError(
+            f"kuant.liquidity_mask: 'min_adv' must be zero or positive; "
+            f"got {min_adv}. A liquidity floor cannot be negative.  "
+            f"[KE-LIQ-MASK-MIN-ADV-NEGATIVE]\n"
+            f"  → Fix: pass min_adv=0.0 for the default (finite ADV "
+            f"only) or a positive share/notional floor"
+        )
     profile_dates = [_as_date(x) for x in profile.adv_series.index]
     profile_lookup = dict(zip(profile_dates, profile.adv_series.values))
     dates = [_as_date(x) for x in index]

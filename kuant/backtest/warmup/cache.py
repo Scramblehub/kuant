@@ -136,13 +136,22 @@ class WarmupCache:
         except ImportError as e:  # pragma: no cover
             raise KuantValueError("kuant.WarmupCache requires pandas.  [KE-DEP-MISSING]") from e
         prices = self.prices
-        if rec.per_symbol:
-            out = {}
-            for col in prices.columns:
-                out[col] = rec.kernel(prices[col].to_numpy(), **rec.kwargs)
-            # Return as a DataFrame indexed like the input.
-            return pd.DataFrame(out, index=prices.index)
-        return rec.kernel(prices, **rec.kwargs)
+        try:
+            if rec.per_symbol:
+                out = {}
+                for col in prices.columns:
+                    out[col] = rec.kernel(prices[col].to_numpy(), **rec.kwargs)
+                return pd.DataFrame(out, index=prices.index)
+            return rec.kernel(prices, **rec.kwargs)
+        except Exception as exc:
+            raise KuantValueError(
+                f"kuant.Warmup: indicator {rec.name!r} failed during "
+                f"materialization: {type(exc).__name__}: {exc}.  "
+                f"[KE-WARMUP-INDICATOR-FAILED]\n"
+                f"  → Fix: run the kernel standalone against the panel "
+                f"to reproduce, or register {rec.name} with cache=False "
+                f"to defer failure to first-access"
+            ) from exc
 
     def _slice(self, result, timestamp, symbol):
         """Uniform slicing of the kernel's output."""

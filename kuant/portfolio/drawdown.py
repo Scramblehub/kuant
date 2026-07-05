@@ -120,6 +120,14 @@ def drawdown(equity) -> DrawdownResult:
     """
     arr = np.asarray(equity, dtype=np.float64)
     require_1d(arr, "equity", kernel="drawdown")
+    if arr.size == 0:
+        raise KuantValueError(
+            "kuant.drawdown: 'equity' is empty; drawdown is undefined "
+            "on a zero-length series.  [KE-VAL-EMPTY]\n"
+            "  → Fix: pass at least one equity observation; typical "
+            "inputs are `np.cumprod(1 + returns)` from a non-empty "
+            "return series"
+        )
 
     finite_mask = np.isfinite(arr)
     if bool(finite_mask.any()) and bool((arr[finite_mask] <= 0).any()):
@@ -134,15 +142,6 @@ def drawdown(equity) -> DrawdownResult:
         )
 
     n = arr.size
-    if n == 0:
-        return DrawdownResult(
-            series=np.empty(0),
-            max_dd=0.0,
-            peak_position=0,
-            trough_position=0,
-            duration=0,
-            recovered=False,
-        )
 
     # Running max that ignores NaN via a fill-forward. NaN bars neither
     # update the running max nor contribute a drawdown value.

@@ -52,13 +52,23 @@ class FillReport:
         )
 
 
+_REJECTED_REASONS = frozenset({"BELOW_MIN_SIZE", "NO_LIQUIDITY", "MISSING_DATE"})
+
+
 def _status_from_reason(reason: str) -> OrderStatus:
     if reason == "OK":
         return OrderStatus.FILLED
     if reason == "CAPPED_PARTICIPATION":
         return OrderStatus.PARTIALLY_FILLED
-    # BELOW_MIN_SIZE, NO_LIQUIDITY, MISSING_DATE → REJECTED.
-    return OrderStatus.REJECTED
+    if reason in _REJECTED_REASONS:
+        return OrderStatus.REJECTED
+    raise KuantValueError(
+        f"kuant.submit_order: unknown FillResult.reason {reason!r}; the "
+        f"reason-to-status mapping is stale relative to the liquidity "
+        f"layer.  [KE-SUBMIT-UNKNOWN-REASON]\n"
+        f"  → Fix: extend _status_from_reason with the new reason, or "
+        f"reconcile the FillResult contract in kuant.backtest.liquidity"
+    )
 
 
 def submit_order(

@@ -137,6 +137,14 @@ def decoherencescan(
         model = fit_fn(X[t - train_window : t], y[t - train_window : t])
         pred = predict_fn(model, X[t : t + predict_window])
         pred = np.asarray(pred).ravel()
+        if pred.size != predict_window:
+            raise KuantValueError(
+                f"kuant.decoherencescan: predict_fn returned "
+                f"{pred.size} prediction(s) for a window of size "
+                f"{predict_window}.  [KE-VAL-CONTRACT]\n"
+                f"  → Fix: predict_fn(model, X_bar) must return one "
+                f"prediction per bar of the input window"
+            )
         y_pred_all[t : t + predict_window] = pred
         day_in_win_all[t : t + predict_window] = np.arange(predict_window)
         t += predict_window

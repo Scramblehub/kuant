@@ -18,6 +18,7 @@ from typing import Any
 import numpy as np
 
 from kuant._validation import require_1d, require_equal_length, require_positive
+from kuant.errors import KuantValueError
 
 cp: Any
 try:
@@ -82,7 +83,14 @@ def rollbeta(x, y, window):
     w = int(window)
 
     require_positive(w, "window", kernel="rollbeta", kind="int")
-    if w > n or w < 2:
+    if w < 2:
+        raise KuantValueError(
+            f"kuant.rollbeta: 'window' must be >= 2 (both variance and "
+            f"covariance are undefined for a 1-element window); got "
+            f"window={w}.  [KE-VAL-RANGE]\n"
+            f"  → Fix: increase window to at least 2"
+        )
+    if w > n:
         return xp.full(n, xp.nan, dtype=out_dtype)
 
     is_nan = xp.isnan(x) | xp.isnan(y)
