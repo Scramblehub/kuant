@@ -22,6 +22,6 @@ Import each primitive from its submodule; the umbrella deliberately
 does not flatten the namespace.
 """
 
-from kuant.backtest import lifecycle
+from kuant.backtest import lifecycle, liquidity
 
-__all__ = ["lifecycle"]
+__all__ = ["lifecycle", "liquidity"]

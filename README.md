@@ -29,7 +29,7 @@ Fifteen subpackages, 1656 tests, ~90 benchmarks. Alpha stability.
 | `kuant.text` | 4 | tickernorm, cusipvalidate, occparse (option symbols), secformparse. |
 | `kuant.nulltest` | 3 | bootstrap, multiple-hypothesis correction, White/Hansen SPA test. |
 | `kuant.queueing` | 2 | hardware throttle, request-coordination layer. |
-| `kuant.backtest` | 1 subpackage | `lifecycle` (SecurityLifecycle + TerminalAction + apply_lifecycle + tradeable_mask + lifecycle_returns + detect_delistings). `liquidity`, `fill`, `position`, `warmup`, `engine` planned. |
+| `kuant.backtest` | 2 subpackages | `lifecycle` (SecurityLifecycle + TerminalAction + apply_lifecycle + tradeable_mask + lifecycle_returns + detect_delistings); `liquidity` (LiquidityProfile + FlatSlippage / LinearImpact / SquareRootImpact + execute_fill + liquidity_mask). `fill`, `position`, `warmup`, `engine` planned. |
 
 Each kernel has: an API doc in [`docs/kernels/`](docs/kernels/), a numpy
 implementation, a cupy path where the math is batched, and a test suite
@@ -78,6 +78,13 @@ higher moments, and pandas-parity guardrails.
   `kuant.backtest.lifecycle` under the new `kuant.backtest` umbrella
   for correctness-first backtest primitives. `kuant.lifecycle` remains
   as a deprecation shim through 0.4.x and is removed in 0.5.0.
+- **v0.4.1**: `kuant.backtest.liquidity` lands with `LiquidityProfile`
+  (ADV, spread, min_size, max_participation), three fill models
+  (`FlatSlippage`, `LinearImpact`, `SquareRootImpact` for Almgren-Chriss),
+  `execute_fill` + `execute_fill_panel` with categorical `FillResult`
+  reasons (OK, CAPPED_PARTICIPATION, BELOW_MIN_SIZE, NO_LIQUIDITY,
+  MISSING_DATE), and `liquidity_mask` for composing with lifecycle's
+  `tradeable_mask`.
 
 ## Install
 
