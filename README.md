@@ -28,9 +28,8 @@ Fifteen subpackages, 1656 tests, ~90 benchmarks. Alpha stability.
 | `kuant.portfolio` | 5 | P&L contribution, drawdown, Sharpe, Sortino, aggregate risk metrics. |
 | `kuant.text` | 4 | tickernorm, cusipvalidate, occparse (option symbols), secformparse. |
 | `kuant.nulltest` | 3 | bootstrap, multiple-hypothesis correction, White/Hansen SPA test. |
-| `kuant.lifecycle` | 2 | `SecurityLifecycle` + `TerminalAction`, `apply_lifecycle`, `tradeable_mask`, `lifecycle_returns`, `detect_delistings`. |
 | `kuant.queueing` | 2 | hardware throttle, request-coordination layer. |
-| `kuant.backtest` | scaffold | Simulation engine (v1 next). |
+| `kuant.backtest` | 1 subpackage | `lifecycle` (SecurityLifecycle + TerminalAction + apply_lifecycle + tradeable_mask + lifecycle_returns + detect_delistings). `liquidity`, `fill`, `position`, `warmup`, `engine` planned. |
 
 Each kernel has: an API doc in [`docs/kernels/`](docs/kernels/), a numpy
 implementation, a cupy path where the math is batched, and a test suite
@@ -40,7 +39,7 @@ kernel, the offending value, a stable error code, and a one-line fix.
 
 ## Positioning
 
-**Lifecycle correctness.** `kuant.lifecycle` ships first-class
+**Lifecycle correctness.** `kuant.backtest.lifecycle` ships first-class
 listing and delisting semantics: `SecurityLifecycle` and
 `TerminalAction` (`LIQUIDATE_AT_LAST`, `MARK_TO_ZERO`,
 `PRORATE_RECOVERY`), plus `apply_lifecycle`, `tradeable_mask`,
@@ -67,7 +66,7 @@ higher moments, and pandas-parity guardrails.
   tearsheet parity across `kuant.portfolio`, `kuant.stats.realizedvol`,
   `kuant.stats.stationarity`, and the initial `kuant.nulltest` cluster
   (bootstrap, MHT correction, SPA test).
-- **v0.3.1**: `kuant.lifecycle` lands with `SecurityLifecycle`,
+- **v0.3.1**: lifecycle primitives land with `SecurityLifecycle`,
   `TerminalAction`, `apply_lifecycle`, `tradeable_mask`,
   `lifecycle_returns`, `detect_delistings`, and a paired identifier
   scrub in `kuant.text` for tickernorm plus CUSIP validation.
@@ -75,6 +74,10 @@ higher moments, and pandas-parity guardrails.
   eliminates catastrophic cancellation on near-constant inputs, and
   ships alongside the adversarial numerical-stability test suite
   described in Positioning.
+- **v0.4.0**: lifecycle moves from `kuant.lifecycle` to
+  `kuant.backtest.lifecycle` under the new `kuant.backtest` umbrella
+  for correctness-first backtest primitives. `kuant.lifecycle` remains
+  as a deprecation shim through 0.4.x and is removed in 0.5.0.
 
 ## Install
 
@@ -153,7 +156,7 @@ from kuant.core import bsput
 from kuant.stats import zscore
 from kuant.options import impvol
 from kuant.qm.hmm import viterbi
-from kuant.lifecycle import (
+from kuant.backtest.lifecycle import (
     SecurityLifecycle,
     TerminalAction,
     tradeable_mask,

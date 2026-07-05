@@ -1,4 +1,4 @@
-# kuant.lifecycle
+# kuant.backtest.lifecycle
 
 First-class listing and delisting semantics for point-in-time equity
 panels.
@@ -19,7 +19,7 @@ On a survivorship-adjusted panel, either behavior can flip the sign
 of long-short Sharpe. The corruption is invisible from the reports:
 the engine produces a positive PnL contribution from a dead name.
 
-`kuant.lifecycle` treats the tradeable window as a first-class
+`kuant.backtest.lifecycle` treats the tradeable window as a first-class
 primitive. A `SecurityLifecycle` records the listing date, the
 delisting date, the terminal action, and the recovery fraction for a
 held position. Every downstream kernel gates on the lifecycle rather
@@ -55,7 +55,7 @@ databases encode:
 
 ```python
 from datetime import date
-from kuant.lifecycle import (
+from kuant.backtest.lifecycle import (
     SecurityLifecycle,
     TerminalAction,
     lifecycle_panel_report,

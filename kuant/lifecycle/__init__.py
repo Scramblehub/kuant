@@ -1,43 +1,59 @@
-"""kuant.lifecycle — first-class listing / delisting semantics.
+"""Deprecated re-export path.
 
-The bug this closes: most backtest engines silently ignore orders on
-NaN prices and either drop the position or forward-fill the last live
-price forever. On a real point-in-time equity book, both behaviors
-quietly corrupt returns.
+`kuant.lifecycle` has moved to `kuant.backtest.lifecycle` as part of the
+0.4.0 reorganization that groups backtest-correctness primitives
+(lifecycle, liquidity, fill, position, warmup, engine) under a single
+umbrella subpackage. This module remains callable through 0.4.x so
+existing imports continue to work; it will be removed in 0.5.0.
 
-A `SecurityLifecycle` records listing_date, delisting_date, and a
-terminal_action ∈ {LIQUIDATE_AT_LAST, MARK_TO_ZERO, PRORATE_RECOVERY}
-matching typical delisting-return code schemas used by exchanges and
-vendor databases. Kernels then mask
-prices to the tradeable window, bake the terminal transition into a
-return series, or produce a boolean fill-gate a simulator can consult.
+Migration (mechanical rename):
 
-Kernels shipped:
+    # old (0.3.x)
+    from kuant.lifecycle import SecurityLifecycle, apply_lifecycle
+    from kuant.lifecycle.detect import detect_delistings
 
-- `SecurityLifecycle`, `TerminalAction`: the primitive and its enum.
-- `apply_lifecycle` (single-symbol Series) / `apply_lifecycle_panel`
-  (DataFrame): mask prices to the tradeable window.
-- `lifecycle_returns`: returns with the terminal transition baked in.
-- `tradeable_mask`: True/False per date — simulators should gate on
-  THIS instead of relying on NaN semantics.
-- `lifecycle_panel_report`: one-call bundle of the above for a panel.
-- `detect_delistings`, `lifecycles_from_panel`: heuristic fallback for
-  callers without a real lifecycle table (yfinance / alpaca panels).
+    # new (0.4.x and later)
+    from kuant.backtest.lifecycle import SecurityLifecycle, apply_lifecycle
+    from kuant.backtest.lifecycle.detect import detect_delistings
 
-Design: docs/kernels/lifecycle/security.md.
+Importing anything from this shim raises a `KuantDeprecationWarning`
+once per Python session. To promote to an error while you migrate:
+
+    import warnings
+    from kuant.errors import KuantDeprecationWarning
+    warnings.filterwarnings("error", category=KuantDeprecationWarning)
 """
 
-from kuant.lifecycle.detect import detect_delistings, lifecycles_from_panel
-from kuant.lifecycle.security import (
+import warnings as _warnings
+
+from kuant.errors import KuantDeprecationWarning as _KuantDeprecationWarning
+
+_warnings.warn(
+    "kuant.lifecycle has moved to kuant.backtest.lifecycle in v0.4.0 and "
+    "will be removed in v0.5.0.  [KW-DEPRECATION-MOVE]\n"
+    "  → Fix: rewrite `from kuant.lifecycle import X` as "
+    "`from kuant.backtest.lifecycle import X`",
+    category=_KuantDeprecationWarning,
+    stacklevel=2,
+)
+
+from kuant.backtest.lifecycle import (  # noqa: E402
     LifecyclePanelResult,
     SecurityLifecycle,
     TerminalAction,
     apply_lifecycle,
     apply_lifecycle_panel,
+    detect_delistings,
     lifecycle_panel_report,
     lifecycle_returns,
+    lifecycles_from_panel,
     tradeable_mask,
 )
+
+# Submodule shims so `from kuant.lifecycle.security import X` and
+# `from kuant.lifecycle.detect import X` continue to resolve.
+from kuant.backtest.lifecycle import detect as detect  # noqa: E402, F401
+from kuant.backtest.lifecycle import security as security  # noqa: E402, F401
 
 __all__ = [
     "LifecyclePanelResult",

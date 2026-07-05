@@ -1,4 +1,4 @@
-"""Tests for kuant.lifecycle.detect."""
+"""Tests for kuant.backtest.lifecycle.detect."""
 
 from __future__ import annotations
 
@@ -8,9 +8,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from kuant.backtest.lifecycle.detect import detect_delistings, lifecycles_from_panel
+from kuant.backtest.lifecycle.security import SecurityLifecycle, TerminalAction
 from kuant.errors import KuantShapeError, KuantValueError
-from kuant.lifecycle.detect import detect_delistings, lifecycles_from_panel
-from kuant.lifecycle.security import SecurityLifecycle, TerminalAction
 
 
 def test_detects_column_with_trailing_nans():

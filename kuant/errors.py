@@ -114,6 +114,23 @@ class KuantNumericWarning(KuantWarning):
     """
 
 
+class KuantDeprecationWarning(KuantWarning, DeprecationWarning):
+    """A kernel or import path has been deprecated.
+
+    Emitted from re-export shims when a subpackage has been moved to a
+    new location and the old import path still works but will be removed
+    in a future release. The message should name the new import path and
+    the target removal version. Subclasses `DeprecationWarning` so
+    standard `-W` filters and IDE tooling pick it up the same way they
+    handle stdlib deprecations, while still being catchable as
+    `KuantWarning` for kuant-specific filtering.
+
+    Example filter to promote to error before removal:
+
+        warnings.filterwarnings("error", category=KuantDeprecationWarning)
+    """
+
+
 class KuantOverflowWarning(KuantWarning):
     """A computation overflowed or underflowed to ±inf.
 
@@ -175,6 +192,7 @@ __all__ = [
     "KuantEncodingError",
     "KuantWarning",
     "KuantConvergenceWarning",
+    "KuantDeprecationWarning",
     "KuantNumericWarning",
     "KuantOverflowWarning",
     "KuantEncodingWarning",

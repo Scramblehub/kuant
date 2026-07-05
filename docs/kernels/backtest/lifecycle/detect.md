@@ -15,7 +15,7 @@ assumed across every detected symbol.
 ## Public API
 
 ```python
-from kuant.lifecycle import detect_delistings, lifecycles_from_panel
+from kuant.backtest.lifecycle import detect_delistings, lifecycles_from_panel
 ```
 
 - `detect_delistings(prices: pd.DataFrame, min_gap_days: int = 5) -> dict[str, date]`
@@ -114,7 +114,7 @@ them.
 ```python
 >>> import pandas as pd
 >>> import numpy as np
->>> from kuant.lifecycle import detect_delistings
+>>> from kuant.backtest.lifecycle import detect_delistings
 >>> idx = pd.date_range("2020-01-01", periods=20, freq="D")
 >>> panel = pd.DataFrame({
 ...     "STILL_LIVE":     np.arange(20, dtype=float),
@@ -135,7 +135,7 @@ one-row gap but resolves; its trailing-NaN count is zero. Only
 ### Composed into the panel report
 
 ```python
->>> from kuant.lifecycle import (
+>>> from kuant.backtest.lifecycle import (
 ...     lifecycles_from_panel,
 ...     lifecycle_panel_report,
 ...     TerminalAction,
@@ -178,7 +178,7 @@ of flagged names.
 
 ```python
 >>> from datetime import date
->>> from kuant.lifecycle import SecurityLifecycle, TerminalAction
+>>> from kuant.backtest.lifecycle import SecurityLifecycle, TerminalAction
 >>> auto = lifecycles_from_panel(panel, min_gap_days=3)
 >>> # Override the auto-detected entry with a known recovery ratio.
 >>> auto["SHORT_TAIL"] = SecurityLifecycle(
@@ -210,7 +210,7 @@ per-symbol overrides.
 
 ## Related kernels
 
-- `kuant.lifecycle.SecurityLifecycle`, `apply_lifecycle_panel`,
+- `kuant.backtest.lifecycle.SecurityLifecycle`, `apply_lifecycle_panel`,
   `lifecycle_panel_report` ([`security.md`](security.md)): consume
   the mapping returned here.
 - `kuant.data.align`: align feeds onto a common calendar before

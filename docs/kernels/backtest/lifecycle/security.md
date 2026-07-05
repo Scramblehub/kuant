@@ -12,7 +12,7 @@ naive engines mishandle NaN prices on delisted names; see
 
 ```python
 from datetime import date
-from kuant.lifecycle import (
+from kuant.backtest.lifecycle import (
     TerminalAction,
     SecurityLifecycle,
     LifecyclePanelResult,
@@ -182,7 +182,7 @@ malformed return series later.
 ```python
 >>> import pandas as pd
 >>> from datetime import date
->>> from kuant.lifecycle import (
+>>> from kuant.backtest.lifecycle import (
 ...     SecurityLifecycle, TerminalAction,
 ...     apply_lifecycle, lifecycle_returns, tradeable_mask,
 ... )
@@ -244,7 +244,7 @@ Two symbols; one live, one delisted mid-panel.
 >>> import pandas as pd
 >>> import numpy as np
 >>> from datetime import date
->>> from kuant.lifecycle import (
+>>> from kuant.backtest.lifecycle import (
 ...     SecurityLifecycle, TerminalAction,
 ...     lifecycle_panel_report,
 ... )
@@ -299,7 +299,7 @@ False on the same rows, and the terminal-return frame carries the
 
 ## Related kernels
 
-- `kuant.lifecycle.detect_delistings` and `lifecycles_from_panel`
+- `kuant.backtest.lifecycle.detect_delistings` and `lifecycles_from_panel`
   ([`detect.md`](detect.md)): heuristic inference when a real
   delisting table is not at hand.
 - `kuant.data.align`: align raw feeds onto a common calendar before

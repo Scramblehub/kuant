@@ -1,4 +1,4 @@
-"""Tests for kuant.lifecycle.security."""
+"""Tests for kuant.backtest.lifecycle.security."""
 
 from __future__ import annotations
 
@@ -8,8 +8,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from kuant.errors import KuantShapeError, KuantValueError
-from kuant.lifecycle.security import (
+from kuant.backtest.lifecycle.security import (
     LifecyclePanelResult,
     SecurityLifecycle,
     TerminalAction,
@@ -19,6 +18,7 @@ from kuant.lifecycle.security import (
     lifecycle_returns,
     tradeable_mask,
 )
+from kuant.errors import KuantShapeError, KuantValueError
 
 
 # ---------- SecurityLifecycle -----------------------------------------
