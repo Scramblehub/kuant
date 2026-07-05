@@ -30,6 +30,7 @@ from kuant._validation import (
     require_equal_length,
     require_ohlc_ordering,
     require_positive,
+    warn_window_exceeds_data,
 )
 from kuant.errors import KuantValueError
 
@@ -100,6 +101,7 @@ def atr(high, low, close, window: int = 14) -> np.ndarray:
     out = np.full(n, np.nan)
     w = int(window)
     if w > n:
+        warn_window_exceeds_data(w, n, kernel="atr")
         return out
     # Simple moving average.
     csum = np.concatenate([[0.0], np.cumsum(np.nan_to_num(tr, nan=0.0))])

@@ -23,8 +23,9 @@ from kuant._validation import (
     require_1d,
     require_equal_length,
     require_positive,
+    warn_kuant,
 )
-from kuant.errors import KuantValueError
+from kuant.errors import KuantNumericWarning, KuantValueError
 
 
 def stationary_bootstrap(series, mean_block_length: float, seed: int = 0) -> np.ndarray:
@@ -62,6 +63,20 @@ def stationary_bootstrap(series, mean_block_length: float, seed: int = 0) -> np.
             "kuant.stationary_bootstrap: need at least 2 elements.  "
             "[KE-VAL-RANGE]\n"
             "  → Fix: provide more data"
+        )
+    if float(mean_block_length) >= n:
+        warn_kuant(
+            kernel="stationary_bootstrap",
+            code="KW-BOOT-BLOCK-TOO-LONG",
+            what=(
+                f"mean_block_length ({mean_block_length:g}) is not smaller "
+                f"than n ({n}); the resample degenerates to near-perfect "
+                f"copies of the input starting at a random offset"
+            ),
+            fix=(
+                "set mean_block_length between 1 and about n^(1/3) for " "weakly-dependent series"
+            ),
+            category=KuantNumericWarning,
         )
     p = 1.0 / float(mean_block_length)
     if not 0.0 < p <= 1.0:
@@ -167,6 +182,21 @@ def bootstrap_ic(
     require_equal_length(sig, "signal", ret, "forward_returns", kernel="bootstrap_ic")
     require_positive(n_boot, "n_boot", kernel="bootstrap_ic", kind="int")
     require_positive(mean_block_length, "mean_block_length", kernel="bootstrap_ic")
+    if int(n_boot) < 100:
+        warn_kuant(
+            kernel="bootstrap_ic",
+            code="KW-BOOT-LOW-N-BOOT",
+            what=(
+                f"n_boot={int(n_boot)} is below 100; the resulting p-value "
+                f"has resolution worse than 1% and percentile CIs are "
+                f"unstable"
+            ),
+            fix=(
+                "use at least 1000 draws for a reasonable p-value; 100 is "
+                "the bare minimum, and only for quick diagnostics"
+            ),
+            category=KuantNumericWarning,
+        )
 
     mask = np.isfinite(sig) & np.isfinite(ret)
     sig_c = sig[mask]

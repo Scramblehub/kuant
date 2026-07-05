@@ -37,7 +37,12 @@ from kuant._validation import (
     require_stochastic_rows,
     warn_kuant,
 )
-from kuant.errors import KuantConvergenceWarning, KuantValueError, KuantWarning
+from kuant.errors import (
+    KuantConvergenceWarning,
+    KuantNumericWarning,
+    KuantValueError,
+    KuantWarning,
+)
 
 from .posterior import posterior
 
@@ -332,6 +337,20 @@ def baumwelch(
             category=KuantWarning,
         )
 
+    warn_kuant(
+        kernel="baumwelch",
+        code="KW-HMM-STATE-ORDER",
+        what=(
+            "returned state indices are not identifiable across "
+            "independent fits (Baum-Welch has permutation symmetry over "
+            "states)"
+        ),
+        fix=(
+            "align states across runs by matching stationary-distribution "
+            "mass or emission argmax before comparing"
+        ),
+        category=KuantNumericWarning,
+    )
     return BaumWelchResult(
         pi=pi,
         A=A,

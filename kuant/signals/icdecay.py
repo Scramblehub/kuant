@@ -226,8 +226,25 @@ def icdecay(
             stderr_out[i] = float(se)
             tstat_out[i] = float(rho / se)
 
-    # Noise-floor warning.
+    # No-clean-pairs warning: every horizon skipped.
     finite_ic = np.isfinite(ic_out)
+    if not finite_ic.any():
+        warn_kuant(
+            kernel="icdecay",
+            code="KW-ICDECAY-NO-CLEAN",
+            what=(
+                "no horizon produced 3+ clean overlapping (signal, "
+                "forward_return) pairs; all IC values are NaN"
+            ),
+            fix=(
+                "the signal and forward_return series do not overlap "
+                "cleanly for any tested horizon; check for a NaN block "
+                "covering the signal window or horizons that consume the "
+                "entire history"
+            ),
+            category=KuantNumericWarning,
+        )
+    # Noise-floor warning.
     if finite_ic.any():
         below_noise = np.abs(ic_out[finite_ic]) < stderr_out[finite_ic]
         if below_noise.any():

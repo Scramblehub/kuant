@@ -24,7 +24,7 @@ from typing import Any
 
 import numpy as np
 
-from kuant._validation import require_1d, require_positive
+from kuant._validation import require_1d, require_positive, warn_window_exceeds_data
 
 cp: Any
 try:
@@ -70,6 +70,7 @@ def _arg_over_windows(x, window, reducer_name):
 
     require_positive(w, "window", kernel="rollargminmax", kind="int")
     if w > n:
+        warn_window_exceeds_data(w, n, kernel="rollargminmax")
         return xp.full(n, xp.nan, dtype=out_dtype)
 
     windowed = _sliding_view(xp, arr, w)

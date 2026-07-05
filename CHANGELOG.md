@@ -4,6 +4,64 @@ All notable changes to `kuant` are tracked here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); dates are release dates
 on PyPI.
 
+## v0.4.5
+
+- **Tier-2 warnings sweep** (Session 5B): ~40 new `KuantNumericWarning`
+  paths across the library, closing silent-hides-bug patterns identified
+  by the audit. Every warning is catchable as `KuantNumericWarning` or
+  promotable to a hard error via
+  `warnings.filterwarnings("error", category=KuantNumericWarning)`.
+- **New shared helpers in `kuant._validation`:**
+  - `warn_window_exceeds_data(w, n, kernel)`: reused across ~14 rolling
+    kernels that returned silent all-NaN when the window exceeded the
+    input length.
+  - `warn_ddof_exceeds_window(ddof, w, kernel)`: `rollstd`, `rollcov`.
+  - `warn_zero_denominator(name, kernel)`: `sharperatio`, `sortinoratio`,
+    `kelly`, `rollsharpe`, `rollsortino`, `rollcalmar`.
+- **Portfolio silent-zero warnings:**
+  `KW-SHARPE-CONSTANT-RETURNS`, `KW-SORTINO-TINY-DOWNSIDE`,
+  `KW-DRAWDOWN-ALL-NAN`, `KW-ULCER-ALL-NAN`, `KW-KELLY-ZERO-VARIANCE`,
+  `KW-KELLY-NEGATIVE-EDGE`, `KW-CAPTURE-NO-UP-PERIODS`,
+  `KW-CAPTURE-NO-DOWN-PERIODS`, `KW-PSR-INVALID-MOMENTS`,
+  `KW-DSR-NO-TRIALS`.
+- **Signals silent-degenerate warnings:**
+  `KW-WINSORIZE-AGGRESSIVE-LIMITS`, `KW-FIC-SKIPPED-PERIODS`,
+  `KW-RANK-CONSTANT-FACTOR`, `KW-QUANTILE-THIN-BUCKETS`,
+  `KW-TURNOVER-DEGENERATE-FACTOR`, `KW-NEUTRALIZE-CONSTANT-SIGNAL`,
+  `KW-ICDECAY-NO-CLEAN`.
+- **Nulltest resolution warnings:**
+  `KW-BOOT-BLOCK-TOO-LONG` on `stationary_bootstrap` when the mean block
+  length degenerates the resample. `KW-BOOT-LOW-N-BOOT` on `bootstrap_ic`
+  below 100 draws.
+- **Stats window / ddof / zero-denom warnings** via shared helpers:
+  `rollstd`, `rollmean`, `rollsum`, `rollmoments` (rollskew, rollkurt),
+  `rollmad`, `rollmdd`, `rollminmax`, `rollargminmax`, `rollquantile`,
+  `rollrank`, `rollcov`, `rollcorr`, `rollbeta`, `atr` all warn on
+  window > n. `rollstd` and `rollcov` warn on ddof >= window.
+  `rollsharpe` (`KW-NUMERIC-ZERO-STD`), `rollsortino`
+  (`KW-NUMERIC-ZERO-DOWNSIDE`), and `rollcalmar`
+  (`KW-NUMERIC-ZERO-DRAWDOWN`) warn on zero-denominator windows.
+- **QM state-order permutation warnings:** both `kuant.qm.hmm.baumwelch`
+  and `kuant.qm.ghmm.baumwelch` warn `KW-HMM-STATE-ORDER` on every
+  successful fit. Baum-Welch is permutation-invariant over state indices,
+  and elementwise comparisons across independent fits are misleading
+  without an alignment step.
+- **Backtest / data warnings:**
+  `KW-ALIGN-EMPTY-INTERSECT` on inner joins with disjoint indices,
+  `KW-LIFECYCLE-UNKNOWN-SYMBOL` on `apply_lifecycle_panel` when the map
+  references symbols not in the panel, `KW-LIQ-MASK-ALL-FALSE` on
+  `liquidity_mask` when `min_adv` excludes every date.
+- **Test updates:** 33 new Tier-2 audit tests colocated at
+  `tests/test_tier2_audit.py`. One existing kelly test tightened to
+  assert the new warning fires alongside the return value.
+- Regression: 1814 -> 1847 pass (+33), 83 skip. Coverage 91% held.
+- Tier 2B remainders (impvol Newton non-convergence,
+  `deltabucket` no-match, `decoherencescan` bucket-small,
+  `grangerscan` sample-size, `execute_fill_panel` extra columns,
+  `PortfolioState.mark_to_market` NaN prices, `outlierpolicy`
+  extreme rate, Warmup timestamp-not-in-panel) queued for the next
+  minor.
+
 ## v0.4.4
 
 - **Tier-1 warnings/errors sweep across the full library** (39 new error

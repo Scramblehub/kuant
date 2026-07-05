@@ -32,7 +32,12 @@ from typing import Any
 
 import numpy as np
 
-from kuant._validation import require_1d, require_equal_length, require_positive
+from kuant._validation import (
+    require_1d,
+    require_equal_length,
+    require_positive,
+    warn_window_exceeds_data,
+)
 from kuant.errors import KuantValueError
 
 cp: Any
@@ -110,6 +115,7 @@ def rollcorr(x, y, window):
             f"  → Fix: increase window to at least 2"
         )
     if w > n:
+        warn_window_exceeds_data(w, n, kernel="rollcorr")
         return xp.full(n, xp.nan, dtype=out_dtype)
 
     # Union NaN mask.

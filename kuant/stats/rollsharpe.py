@@ -15,6 +15,9 @@ from typing import Any
 
 import numpy as np
 
+from kuant._validation import warn_kuant
+from kuant.errors import KuantNumericWarning
+
 from .rollmean import rollmean
 from .rollstd import rollstd
 
@@ -68,6 +71,20 @@ def rollsharpe(x, window: int, ann_factor: float = 1.0, rf: float = 0.0, ddof: i
     xp = cp if isinstance(mean, _CUPY_NDARRAY) else np
     excess = mean - rf
     # NaN where std==0 (constant window) or std is NaN.
+    zero_std_windows = int((std == 0).sum())
+    if zero_std_windows > 0:
+        warn_kuant(
+            kernel="rollsharpe",
+            code="KW-NUMERIC-ZERO-STD",
+            what=(
+                f"{zero_std_windows} windows had zero std; rolling Sharpe "
+                f"is undefined and set to NaN at those anchors"
+            ),
+            fix=(
+                "widen window to capture dispersion, or filter constant " "regimes before the call"
+            ),
+            category=KuantNumericWarning,
+        )
     safe_std = xp.where(std > 0, std, xp.asarray(xp.nan, dtype=mean.dtype))
     result = excess / safe_std
     if ann_factor != 1.0:

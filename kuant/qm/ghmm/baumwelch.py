@@ -34,7 +34,12 @@ from kuant._validation import (
     require_stochastic_rows,
     warn_kuant,
 )
-from kuant.errors import KuantConvergenceWarning, KuantValueError, KuantWarning
+from kuant.errors import (
+    KuantConvergenceWarning,
+    KuantNumericWarning,
+    KuantValueError,
+    KuantWarning,
+)
 
 from .posterior import posterior
 
@@ -368,6 +373,20 @@ def baumwelch(
             category=KuantWarning,
         )
 
+    warn_kuant(
+        kernel="baumwelch",
+        code="KW-HMM-STATE-ORDER",
+        what=(
+            "returned state indices are not identifiable across "
+            "independent fits (Gaussian-HMM Baum-Welch is permutation-"
+            "invariant over states)"
+        ),
+        fix=(
+            "align states by sorting on `mu` before comparing runs, or "
+            "supply pi_init/A_init/mu_init/sigma_init for a canonical order"
+        ),
+        category=KuantNumericWarning,
+    )
     return GHMMBaumWelchResult(
         pi=pi,
         A=A,

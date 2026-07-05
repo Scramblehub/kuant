@@ -28,7 +28,7 @@ from typing import Any
 
 import numpy as np
 
-from kuant._validation import require_1d, require_positive
+from kuant._validation import require_1d, require_positive, warn_window_exceeds_data
 from kuant.errors import KuantValueError
 
 cp: Any
@@ -71,6 +71,7 @@ def _rolling_moments_setup(x, window, up_to_order):
 
     require_positive(w, "window", kernel="rollmoments", kind="int")
     if w > n:
+        warn_window_exceeds_data(w, n, kernel="rollmoments")
         return (
             xp,
             out_dtype,

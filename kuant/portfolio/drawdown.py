@@ -21,8 +21,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from kuant._validation import require_1d, require_dep
-from kuant.errors import KuantValueError
+from kuant._validation import require_1d, require_dep, warn_kuant
+from kuant.errors import KuantNumericWarning, KuantValueError
 
 
 @dataclass
@@ -154,6 +154,20 @@ def drawdown(equity) -> DrawdownResult:
 
     # Locate the trough. For all-NaN series, everything is NaN.
     if not bool(np.isfinite(series).any()):
+        warn_kuant(
+            kernel="drawdown",
+            code="KW-DRAWDOWN-ALL-NAN",
+            what=(
+                "no finite equity observations; drawdown series returned "
+                "as all-NaN and summary fields are NaN"
+            ),
+            fix=(
+                "check upstream: the equity curve arrived as NaN, usually "
+                "because returns had NaN-fills that were fed to cumprod "
+                "without a fillna"
+            ),
+            category=KuantNumericWarning,
+        )
         return DrawdownResult(
             series=series,
             max_dd=float("nan"),

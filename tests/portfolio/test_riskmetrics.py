@@ -113,9 +113,12 @@ def test_kelly_rejects_cap_out_of_range():
 
 
 def test_kelly_constant_returns_zero():
-    """Zero variance → Kelly = 0 by convention."""
+    """Zero variance → Kelly = 0 by convention, with a warning."""
+    from kuant.errors import KuantNumericWarning
+
     r = np.full(100, 0.01)
-    assert kelly(r) == 0.0
+    with pytest.warns(KuantNumericWarning, match="KW-KELLY-ZERO-VARIANCE"):
+        assert kelly(r) == 0.0
 
 
 # ---------- up / down capture -----------------------------------------

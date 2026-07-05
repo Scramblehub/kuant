@@ -24,8 +24,9 @@ from kuant._validation import (
     require_dep,
     require_positive,
     require_range,
+    warn_kuant,
 )
-from kuant.errors import KuantShapeError, KuantValueError
+from kuant.errors import KuantNumericWarning, KuantShapeError, KuantValueError
 
 _ALLOWED_IC_METHODS = ("spearman", "pearson", "kendall")
 
@@ -159,6 +160,23 @@ def factor_ic(factor, forward_returns, method: str = "spearman") -> FactorICResu
 
     finite = ic_arr[np.isfinite(ic_arr)]
     n = finite.size
+    skipped = int(T - n)
+    if T > 0 and skipped / T > 0.25:
+        warn_kuant(
+            kernel="factor_ic",
+            code="KW-FIC-SKIPPED-PERIODS",
+            what=(
+                f"{skipped}/{T} periods had fewer than 3 clean pairs and "
+                f"were dropped from IC; downstream mean and IR are "
+                f"computed on the surviving periods only"
+            ),
+            fix=(
+                "check the panel for leading/trailing NaN blocks, a "
+                "wrong-sided forward-return shift, or a bad align; align "
+                "to a common non-NaN window before calling"
+            ),
+            category=KuantNumericWarning,
+        )
     mean = float(finite.mean()) if n > 0 else float("nan")
     std = float(finite.std(ddof=1)) if n > 1 else 0.0
     ir = mean / std * np.sqrt(n) if std > 0 and n > 0 else 0.0
@@ -286,6 +304,24 @@ def factor_rank_autocorr(factor, lag: int = 1) -> RankAutocorrResult:
                 autocorr[t] = float(rho)
 
     finite = autocorr[np.isfinite(autocorr)]
+    n_computable = T - lag
+    if n_computable > 0 and (n_computable - finite.size) / n_computable > 0.5:
+        warn_kuant(
+            kernel="factor_rank_autocorr",
+            code="KW-RANK-CONSTANT-FACTOR",
+            what=(
+                f"{n_computable - finite.size}/{n_computable} row-pairs "
+                f"produced NaN rank correlation, usually because the "
+                f"factor was constant across names; autocorr summary is "
+                f"over the remaining rows"
+            ),
+            fix=(
+                "check that the factor actually varies cross-sectionally; "
+                "constant rows produce zero-variance ranks and no "
+                "correlation is definable"
+            ),
+            category=KuantNumericWarning,
+        )
     mean = float(finite.mean()) if finite.size > 0 else float("nan")
     return RankAutocorrResult(
         autocorr=autocorr,
@@ -386,7 +422,24 @@ def mean_return_by_quantile(
             f"  → Fix: align both to a common (T, N) panel"
         )
 
-    T = F.shape[0]
+    T, N = F.shape
+    typical_bucket_size = N / int(n_quantiles)
+    if typical_bucket_size < 5.0:
+        warn_kuant(
+            kernel="mean_return_by_quantile",
+            code="KW-QUANTILE-THIN-BUCKETS",
+            what=(
+                f"typical bucket size is {typical_bucket_size:g} names "
+                f"({N}/{int(n_quantiles)}); per-period bucket means are "
+                f"dominated by idiosyncratic single-name noise"
+            ),
+            fix=(
+                "shrink n_quantiles, expand the cross-section (larger N), "
+                "or accept that the spread series has high period-to-"
+                "period noise"
+            ),
+            category=KuantNumericWarning,
+        )
     bins = _quantile_bins_per_row(F, int(n_quantiles))
     mean_by_q = np.full((T, int(n_quantiles)), np.nan)
     for t in range(T):
@@ -564,11 +617,28 @@ def quantile_turnover(factor, n_quantiles: int = 5) -> QuantileTurnoverResult:
 
     top_finite = top_turn[np.isfinite(top_turn)]
     bot_finite = bot_turn[np.isfinite(bot_turn)]
+    top_mean = float(top_finite.mean()) if top_finite.size else float("nan")
+    bot_mean = float(bot_finite.mean()) if bot_finite.size else float("nan")
+    if top_finite.size > 0 and bot_finite.size > 0 and top_mean == 0.0 and bot_mean == 0.0:
+        warn_kuant(
+            kernel="quantile_turnover",
+            code="KW-TURNOVER-DEGENERATE-FACTOR",
+            what=(
+                "top and bottom bucket membership never changes; turnover " "is 0 for every period"
+            ),
+            fix=(
+                "the factor is either constant across time or its cross-"
+                "sectional ranking is a fixed function of a static "
+                "attribute (industry code, size bucket); check for a "
+                "leaked static input"
+            ),
+            category=KuantNumericWarning,
+        )
     return QuantileTurnoverResult(
         top_turnover=top_turn,
         bottom_turnover=bot_turn,
-        top_mean=float(top_finite.mean()) if top_finite.size else float("nan"),
-        bottom_mean=float(bot_finite.mean()) if bot_finite.size else float("nan"),
+        top_mean=top_mean,
+        bottom_mean=bot_mean,
         n_periods=int(max(top_finite.size, bot_finite.size)),
         n_quantiles=int(n_quantiles),
     )

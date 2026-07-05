@@ -19,7 +19,7 @@ from typing import Any
 
 import numpy as np
 
-from kuant._validation import require_1d, require_positive
+from kuant._validation import require_1d, require_positive, warn_window_exceeds_data
 
 cp: Any
 try:
@@ -85,6 +85,7 @@ def rollmad(x, window):
 
     require_positive(w, "window", kernel="rollmad", kind="int")
     if w > n:
+        warn_window_exceeds_data(w, n, kernel="rollmad")
         return xp.full(n, xp.nan, dtype=out_dtype)
 
     windowed = _sliding_view(xp, arr, w)  # (n-w+1, w)

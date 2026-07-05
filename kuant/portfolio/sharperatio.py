@@ -23,7 +23,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from kuant._validation import require_1d, require_positive, warn_kuant
+from kuant._validation import require_1d, require_positive, warn_kuant, warn_zero_denominator
 from kuant.errors import KuantNumericWarning, KuantValueError
 
 
@@ -147,6 +147,7 @@ def sharperatio(
     # rather than exactly 0. Guard against dividing by that noise since it
     # would generate a nonsense huge Sharpe.
     if std < 1e-15:
+        warn_zero_denominator("std", "sharperatio", code="KW-SHARPE-CONSTANT-RETURNS")
         sharpe = 0.0
     else:
         sharpe = mean * np.sqrt(float(ann_factor)) / std

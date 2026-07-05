@@ -18,6 +18,9 @@ from typing import Any
 
 import numpy as np
 
+from kuant._validation import warn_kuant
+from kuant.errors import KuantNumericWarning
+
 from .rollmean import rollmean
 
 cp: Any
@@ -85,6 +88,19 @@ def rollsortino(x, window: int, ann_factor: float = 1.0, target: float = 0.0):
     excess = mean - target
 
     # NaN where downside_dev is 0 (no losses in window → Sortino undefined)
+    zero_dd_windows = int((downside_dev == 0).sum())
+    if zero_dd_windows > 0:
+        warn_kuant(
+            kernel="rollsortino",
+            code="KW-NUMERIC-ZERO-DOWNSIDE",
+            what=(
+                f"{zero_dd_windows} windows had zero downside deviation "
+                f"(no returns below target); Sortino set to NaN at those "
+                f"anchors"
+            ),
+            fix="lower the target, widen window, or accept NaN when no losses occurred",
+            category=KuantNumericWarning,
+        )
     safe_dd = xp.where(downside_dev > 0, downside_dev, xp.asarray(xp.nan, dtype=mean.dtype))
     result = excess / safe_dd
     if ann_factor != 1.0:

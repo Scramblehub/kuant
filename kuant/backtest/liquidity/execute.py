@@ -27,9 +27,10 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
+from kuant._validation import warn_kuant
 from kuant.backtest.lifecycle.security import _as_date
 from kuant.backtest.liquidity.profile import LiquidityProfile
-from kuant.errors import KuantShapeError, KuantValueError
+from kuant.errors import KuantNumericWarning, KuantShapeError, KuantValueError
 
 
 # ---------- FillResult -------------------------------------------------
@@ -336,6 +337,21 @@ def liquidity_mask(index, profile: LiquidityProfile, min_adv: float = 0.0):
             continue
         if adv > float(min_adv):
             mask[i] = True
+    if len(dates) > 0 and int(mask.sum()) == 0:
+        warn_kuant(
+            kernel="liquidity_mask",
+            code="KW-LIQ-MASK-ALL-FALSE",
+            what=(
+                f"min_adv={min_adv:g} excluded all {len(dates)} dates in "
+                f"the input index; every date is untradeable under this "
+                f"liquidity gate"
+            ),
+            fix=(
+                "lower min_adv, verify units (shares vs dollars), or "
+                "confirm the profile's adv_series covers the query index"
+            ),
+            category=KuantNumericWarning,
+        )
     return mask
 
 

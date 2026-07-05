@@ -20,6 +20,8 @@ from kuant._validation import (
     require_equal_length,
     require_nonnegative,
     require_positive,
+    warn_ddof_exceeds_window,
+    warn_window_exceeds_data,
 )
 
 cp: Any
@@ -80,9 +82,11 @@ def rollcov(x, y, window, ddof=1):
     require_positive(w, "window", kernel="rollcov", kind="int")
     require_nonnegative(ddof, "ddof", kernel="rollcov", kind="int")
     if w > n:
+        warn_window_exceeds_data(w, n, kernel="rollcov")
         return xp.full(n, xp.nan, dtype=out_dtype)
     denom = w - ddof
     if denom <= 0:
+        warn_ddof_exceeds_window(int(ddof), w, kernel="rollcov")
         return xp.full(n, xp.nan, dtype=out_dtype)
 
     is_nan = xp.isnan(x) | xp.isnan(y)

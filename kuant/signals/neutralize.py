@@ -215,6 +215,16 @@ def neutralize(
     fitted = X_clean @ beta
     ss_res = float(np.sum((y_clean - fitted) ** 2))
     ss_tot = float(np.sum((y_clean - y_clean.mean()) ** 2))
+    if ss_tot <= 0:
+        warn_kuant(
+            kernel="neutralize",
+            code="KW-NEUTRALIZE-CONSTANT-SIGNAL",
+            what=(
+                "signal has zero variance after the NaN drop; R^2 is " "undefined and reported as 0"
+            ),
+            fix=("the signal is constant on the rows used for the fit; " "nothing to neutralize"),
+            category=KuantNumericWarning,
+        )
     r2 = 1.0 - ss_res / ss_tot if ss_tot > 0 else 0.0
 
     # Reinsert residuals into the T-length output with NaN where dropped.

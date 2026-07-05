@@ -24,7 +24,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from kuant._validation import require_1d, require_positive, warn_kuant
+from kuant._validation import require_1d, require_positive, warn_kuant, warn_zero_denominator
 from kuant.errors import KuantNumericWarning, KuantValueError
 
 
@@ -172,6 +172,7 @@ def sortinoratio(
             sortino = 0.0
     elif downside_std < 1e-15:
         # Downside excursions exist but are tiny relative to mean.
+        warn_zero_denominator("downside_std", "sortinoratio", code="KW-SORTINO-TINY-DOWNSIDE")
         sortino = 0.0
     else:
         sortino = mean_excess * np.sqrt(float(ann_factor)) / downside_std

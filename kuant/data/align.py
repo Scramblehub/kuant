@@ -38,8 +38,9 @@ from kuant._validation import (
     require_dep,
     require_equal_length,
     require_range,
+    warn_kuant,
 )
-from kuant.errors import KuantShapeError, KuantValueError
+from kuant.errors import KuantNumericWarning, KuantShapeError, KuantValueError
 
 _ALLOWED_METHODS = ("inner", "outer", "forward")
 
@@ -271,6 +272,21 @@ def align(*series_pairs, method: str = "inner") -> AlignResult:
         shared = indices[0]
         for idx in indices[1:]:
             shared = np.intersect1d(shared, idx, assume_unique=True)
+        if shared.size == 0:
+            per_len = [len(idx) for idx in indices]
+            warn_kuant(
+                kernel="align",
+                code="KW-ALIGN-EMPTY-INTERSECT",
+                what=(
+                    f"inner join produced an empty shared index; per-input "
+                    f"lengths were {per_len} and none of the indices overlap"
+                ),
+                fix=(
+                    "verify the inputs cover a common period, or switch to "
+                    "method='outer' if disjoint coverage is intentional"
+                ),
+                category=KuantNumericWarning,
+            )
     else:
         # union1d is used for both outer and forward.
         shared = indices[0]

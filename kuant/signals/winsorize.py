@@ -26,8 +26,8 @@ import warnings
 
 import numpy as np
 
-from kuant._validation import require_probability
-from kuant.errors import KuantShapeError, KuantValueError
+from kuant._validation import require_probability, warn_kuant
+from kuant.errors import KuantNumericWarning, KuantShapeError, KuantValueError
 
 
 def winsorize(x, lo: float = 0.01, hi: float = 0.99, per_row: bool = True) -> np.ndarray:
@@ -74,6 +74,20 @@ def winsorize(x, lo: float = 0.01, hi: float = 0.99, per_row: bool = True) -> np
             f"({hi}).  [KE-VAL-RANGE]\n"
             f"  → Fix: pass lo < hi in [0, 1] — e.g. (0.01, 0.99) for the "
             f"standard 1st/99th-percentile cap"
+        )
+    if float(lo) > 0.25 or float(hi) < 0.75:
+        warn_kuant(
+            kernel="winsorize",
+            code="KW-WINSORIZE-AGGRESSIVE-LIMITS",
+            what=(
+                f"limits (lo={lo}, hi={hi}) clip more than 50% of the "
+                f"distribution to the boundary values"
+            ),
+            fix=(
+                "typical values are (0.01, 0.99) or (0.05, 0.95); "
+                "narrower limits closer to 0 and 1 keep the interior mass"
+            ),
+            category=KuantNumericWarning,
         )
 
     arr = np.asarray(x, dtype=np.float64)

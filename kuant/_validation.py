@@ -435,6 +435,75 @@ def warn_kuant(
     _warnings.warn(_msg(kernel, code, what, fix), category, stacklevel=stacklevel)
 
 
+# ---------- shared warning helpers -----------------------------------------
+
+
+def warn_window_exceeds_data(w: int, n: int, *, kernel: str) -> None:
+    """Warn that a rolling kernel's `window` is larger than the input length.
+
+    Every rolling kernel with strict-window semantics returns all-NaN
+    when `w > n`. That silent all-NaN result looks identical to warm-up
+    truncation downstream. This helper surfaces the mismatch once.
+    """
+    from kuant.errors import KuantNumericWarning
+
+    warn_kuant(
+        kernel=kernel,
+        code="KW-VAL-WINDOW-EXCEEDS-DATA",
+        what=(f"'window'={int(w)} exceeds input length n={int(n)}; entire " f"output is NaN"),
+        fix="lower window to at most len(x), or provide more data",
+        category=KuantNumericWarning,
+    )
+
+
+def warn_ddof_exceeds_window(ddof: int, w: int, *, kernel: str) -> None:
+    """Warn that `ddof` leaves no degrees of freedom for a rolling kernel.
+
+    `rollstd(ddof=1)` and `rollcov(ddof=1)` return all-NaN when
+    `w - ddof <= 0`. Same footgun class as `warn_window_exceeds_data`.
+    """
+    from kuant.errors import KuantNumericWarning
+
+    warn_kuant(
+        kernel=kernel,
+        code="KW-VAL-DDOF-EXCEEDS-WINDOW",
+        what=(
+            f"ddof={int(ddof)} leaves <= 0 degrees of freedom for "
+            f"window={int(w)}; entire output is NaN"
+        ),
+        fix="reduce ddof (0 for population, 1 for sample) or increase window",
+        category=KuantNumericWarning,
+    )
+
+
+def warn_zero_denominator(
+    denominator_name: str, kernel: str, *, code: str = "KW-NUMERIC-ZERO-DENOMINATOR"
+) -> None:
+    """Warn that a risk-adjusted return kernel divided by zero.
+
+    Sharpe / Sortino / Kelly / Calmar all return 0 or NaN on constant
+    (zero-dispersion) inputs. Callers commonly read that as "no edge"
+    when the real diagnosis is "input is degenerate."
+    """
+    from kuant.errors import KuantNumericWarning
+
+    warn_kuant(
+        kernel=kernel,
+        code=code,
+        what=(
+            f"'{denominator_name}' collapsed to zero on this input; "
+            f"result is 0 or NaN by convention and is not comparable to "
+            f"non-degenerate strategies"
+        ),
+        fix=(
+            "verify the input is not a constant or a rounding-flattened "
+            "series; a truly riskless positive stream has undefined "
+            "(not zero) risk-adjusted return"
+        ),
+        category=KuantNumericWarning,
+    )
+
+
 # ---------- NaN / finite validators ----------------------------------------
 
 
@@ -759,4 +828,7 @@ __all__ = [
     "require_dep",
     "did_not_converge",
     "warn_kuant",
+    "warn_window_exceeds_data",
+    "warn_ddof_exceeds_window",
+    "warn_zero_denominator",
 ]

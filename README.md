@@ -201,7 +201,7 @@ docs/
 ├── design/       Cross-cutting design decisions
 └── examples/     Worked examples
 
-tests/            1:1 with kernel files; 1814 tests total
+tests/            1:1 with kernel files; 1847 tests total
 ```
 
 ## Contributing

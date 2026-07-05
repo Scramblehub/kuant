@@ -25,7 +25,13 @@ from typing import Any
 
 import numpy as np
 
-from kuant._validation import require_1d, require_nonnegative, require_positive
+from kuant._validation import (
+    require_1d,
+    require_nonnegative,
+    require_positive,
+    warn_ddof_exceeds_window,
+    warn_window_exceeds_data,
+)
 
 cp: Any
 try:
@@ -102,11 +108,12 @@ def rollstd(x, window, ddof=1):
     require_positive(w, "window", kernel="rollstd", kind="int")
     require_nonnegative(ddof, "ddof", kernel="rollstd", kind="int")
     if w > n:
+        warn_window_exceeds_data(w, n, kernel="rollstd")
         return xp.full(n, xp.nan, dtype=out_dtype)
 
     denom = w - ddof
     if denom <= 0:
-        # No degrees of freedom left.
+        warn_ddof_exceeds_window(int(ddof), w, kernel="rollstd")
         return xp.full(n, xp.nan, dtype=out_dtype)
 
     is_nan = xp.isnan(arr)

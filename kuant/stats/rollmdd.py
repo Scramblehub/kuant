@@ -23,7 +23,7 @@ from typing import Any
 
 import numpy as np
 
-from kuant._validation import require_positive
+from kuant._validation import require_positive, warn_window_exceeds_data
 
 cp: Any
 try:
@@ -77,6 +77,7 @@ def rollmdd(x, window: int):
     w = int(window)
     require_positive(w, "window", kernel="rollmdd", kind="int")
     if n < w:
+        warn_window_exceeds_data(w, n, kernel="rollmdd")
         out_dtype = x_arr.dtype if x_arr.dtype.kind == "f" else np.float64
         empty = np.full(n, np.nan, dtype=out_dtype)
         return cp.asarray(empty) if is_cupy else empty

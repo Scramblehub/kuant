@@ -15,6 +15,9 @@ from typing import Any
 
 import numpy as np
 
+from kuant._validation import warn_kuant
+from kuant.errors import KuantNumericWarning
+
 from .rollmdd import rollmdd
 from .rollmean import rollmean
 
@@ -76,5 +79,20 @@ def rollcalmar(x, window: int, ann_factor: float = 1.0):
     annualized_return = mean * ann
     # MDD == 0 → undefined Calmar. NaN in that case.
     abs_mdd = xp.abs(mdd)
+    zero_dd_windows = int((abs_mdd == 0).sum())
+    if zero_dd_windows > 0:
+        warn_kuant(
+            kernel="rollcalmar",
+            code="KW-NUMERIC-ZERO-DRAWDOWN",
+            what=(
+                f"{zero_dd_windows} windows had zero drawdown; Calmar is "
+                f"undefined there and set to NaN"
+            ),
+            fix=(
+                "either accept NaN in monotonically-up regimes, or widen "
+                "the window so a drawdown is captured"
+            ),
+            category=KuantNumericWarning,
+        )
     safe_mdd = xp.where(abs_mdd > 0, abs_mdd, xp.asarray(xp.nan, dtype=mean.dtype))
     return annualized_return / safe_mdd

@@ -31,6 +31,7 @@ from kuant._validation import (
     require_positive,
     require_range,
     warn_kuant,
+    warn_zero_denominator,
 )
 from kuant.errors import KuantNumericWarning, KuantValueError
 
@@ -150,6 +151,19 @@ def ulcer_index(equity) -> UlcerResult:
     dd_pct = np.abs(dd) * 100.0  # convention: percent
     dd_clean = dd_pct[np.isfinite(dd_pct)]
     if dd_clean.size == 0:
+        warn_kuant(
+            kernel="ulcer_index",
+            code="KW-ULCER-ALL-NAN",
+            what=(
+                "no finite drawdown values could be computed; ulcer_index "
+                "and UPI returned as NaN"
+            ),
+            fix=(
+                "the equity curve is not usable (leading NaNs, no varying "
+                "values); provide a finite equity path"
+            ),
+            category=KuantNumericWarning,
+        )
         return UlcerResult(ulcer_index=float("nan"), upi=float("nan"), n=0)
     ui = float(np.sqrt(np.mean(dd_clean * dd_clean)))
     # UPI uses the mean per-bar return of the equity curve.
@@ -198,9 +212,25 @@ def kelly(returns, cap: float = 1.0) -> float:
     mu = float(finite.mean())
     var = float(finite.var(ddof=1))
     if var <= 1e-15:
+        warn_zero_denominator("var(returns)", "kelly", code="KW-KELLY-ZERO-VARIANCE")
         return 0.0
     f = mu / var
     if f <= 0:
+        warn_kuant(
+            kernel="kelly",
+            code="KW-KELLY-NEGATIVE-EDGE",
+            what=(
+                "Kelly fraction is non-positive (mean return is <= 0); "
+                "result clipped to 0 by convention (this kernel does not "
+                "short by default)"
+            ),
+            fix=(
+                "if you want a signed Kelly for a short position, flip "
+                "sign on the input; if the mean is genuinely negative the "
+                "strategy has no long edge"
+            ),
+            category=KuantNumericWarning,
+        )
         return 0.0
     return float(min(f, cap))
 
@@ -232,6 +262,16 @@ def up_capture(returns, benchmark) -> float:
     r, b = _align_finite(returns, benchmark, kernel="up_capture")
     up_mask = b > 0
     if int(up_mask.sum()) == 0:
+        warn_kuant(
+            kernel="up_capture",
+            code="KW-CAPTURE-NO-UP-PERIODS",
+            what="benchmark has no up periods; up_capture returned as 0 by convention",
+            fix=(
+                "check the benchmark: a monotone-non-positive series "
+                "usually means wrong sign, wrong column, or a truncated window"
+            ),
+            category=KuantNumericWarning,
+        )
         return 0.0
     return float(r[up_mask].mean() / b[up_mask].mean()) if b[up_mask].mean() != 0 else 0.0
 
@@ -241,6 +281,16 @@ def down_capture(returns, benchmark) -> float:
     r, b = _align_finite(returns, benchmark, kernel="down_capture")
     down_mask = b < 0
     if int(down_mask.sum()) == 0:
+        warn_kuant(
+            kernel="down_capture",
+            code="KW-CAPTURE-NO-DOWN-PERIODS",
+            what="benchmark has no down periods; down_capture returned as 0 by convention",
+            fix=(
+                "check the benchmark; a benchmark that never fell is "
+                "unusual and suggests a truncated window or a wrong sign"
+            ),
+            category=KuantNumericWarning,
+        )
         return 0.0
     return float(r[down_mask].mean() / b[down_mask].mean()) if b[down_mask].mean() != 0 else 0.0
 
@@ -313,9 +363,25 @@ def probabilistic_sharpe(
             category=KuantNumericWarning,
         )
     numer = (sharpe - float(sharpe_benchmark)) * np.sqrt(n - 1)
-    denom = np.sqrt(1 - float(skew) * sharpe + ((float(kurt) - 1) / 4.0) * sharpe * sharpe)
-    if denom <= 0:
+    denom_sq = 1 - float(skew) * sharpe + ((float(kurt) - 1) / 4.0) * sharpe * sharpe
+    if denom_sq <= 0:
+        warn_kuant(
+            kernel="probabilistic_sharpe",
+            code="KW-PSR-INVALID-MOMENTS",
+            what=(
+                "PSR denominator is non-positive; the (sharpe, skew, "
+                "kurt) triple is not consistent with any real distribution "
+                "and PSR is snapped to 0 or 1"
+            ),
+            fix=(
+                "recompute skew and kurt from the underlying return "
+                "series (kurt should be raw, not excess); ensure "
+                "kurt >= 1 + skew^2"
+            ),
+            category=KuantNumericWarning,
+        )
         return 0.0 if numer < 0 else 1.0
+    denom = np.sqrt(denom_sq)
     return float(norm.cdf(numer / denom))
 
 
@@ -368,6 +434,20 @@ def deflated_sharpe(
     # with γ = Euler-Mascheroni.
     gamma_euler = 0.5772156649015329
     if n_trials < 2:
+        warn_kuant(
+            kernel="deflated_sharpe",
+            code="KW-DSR-NO-TRIALS",
+            what=(
+                f"n_trials={n_trials} disables the multiple-testing "
+                f"correction (expected_max forced to 0); DSR reduces to PSR"
+            ),
+            fix=(
+                "pass the actual number of alternative configurations "
+                "tested; if you only tested one strategy use "
+                "probabilistic_sharpe directly"
+            ),
+            category=KuantNumericWarning,
+        )
         expected_max = 0.0
     else:
         z1 = norm.ppf(1.0 - 1.0 / float(n_trials))

@@ -26,7 +26,7 @@ from typing import Any
 
 import numpy as np
 
-from kuant._validation import require_1d, require_positive
+from kuant._validation import require_1d, require_positive, warn_window_exceeds_data
 
 cp: Any
 try:
@@ -88,6 +88,7 @@ def rollmean(x, window):
 
     require_positive(w, "window", kernel="rollmean", kind="int")
     if w > n:
+        warn_window_exceeds_data(w, n, kernel="rollmean")
         return xp.full(n, xp.nan, dtype=out_dtype)
 
     # Replace NaN with 0 for cumsum; track NaN positions separately.

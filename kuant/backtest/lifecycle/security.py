@@ -42,8 +42,8 @@ from enum import Enum
 
 import numpy as np
 
-from kuant._validation import require_dep, require_probability
-from kuant.errors import KuantShapeError, KuantValueError
+from kuant._validation import require_dep, require_probability, warn_kuant
+from kuant.errors import KuantNumericWarning, KuantShapeError, KuantValueError
 
 
 class TerminalAction(str, Enum):
@@ -302,6 +302,23 @@ def apply_lifecycle_panel(prices, lifecycles: Mapping[str, SecurityLifecycle]):
             f"pandas.Series"
         )
     out = prices.astype(np.float64).copy()
+    unknown = [sym for sym in lifecycles if sym not in out.columns]
+    if unknown:
+        sample = unknown[:5]
+        warn_kuant(
+            kernel="apply_lifecycle_panel",
+            code="KW-LIFECYCLE-UNKNOWN-SYMBOL",
+            what=(
+                f"{len(unknown)} lifecycle entries reference symbols not "
+                f"present in the price panel: {sample}"
+            ),
+            fix=(
+                "verify the price panel was loaded with the expected "
+                "universe, or drop the stale lifecycle entries before "
+                "calling"
+            ),
+            category=KuantNumericWarning,
+        )
     for sym, lc in lifecycles.items():
         if sym not in out.columns:
             continue
