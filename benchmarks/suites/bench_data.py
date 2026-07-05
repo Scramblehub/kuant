@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from kuant.data import align, baragg, corpaction
+from kuant.data import align, baragg, corpaction, panelize, resample, stitch
 
 
 # ---------- align ---------------------------------------------------------
@@ -92,3 +92,55 @@ def test_bench_corpaction_total_return_10y_20div(benchmark, rng=np.random.defaul
         mode="total_return",
         direction="backward",
     )
+
+
+# ---------- panelize -----------------------------------------------------
+
+
+def test_bench_panelize_50k_rows_100_names(benchmark, rng=np.random.default_rng(0)):
+    """50k source rows → 500 dates × 100 tickers panel."""
+    n = 50_000
+    idx = rng.integers(0, 500, size=n)
+    nm = rng.integers(0, 100, size=n)
+    val = rng.standard_normal(n)
+    # De-duplicate (idx, nm) so we don't hit the duplicate rejection.
+    combo = idx * 100 + nm
+    _, unique_pos = np.unique(combo, return_index=True)
+    benchmark(panelize, idx[unique_pos], nm[unique_pos], val[unique_pos])
+
+
+# ---------- resample -----------------------------------------------------
+
+
+def test_bench_resample_50k_mean(benchmark, rng=np.random.default_rng(0)):
+    """50k rows into ~500 buckets (100 rows/bucket), mean reduction."""
+    n = 50_000
+    bucket = np.arange(n) // 100
+    values = rng.standard_normal(n)
+    benchmark(resample, bucket, values, method="mean")
+
+
+def test_bench_resample_10k_panel_20col(benchmark, rng=np.random.default_rng(0)):
+    """10k row × 20 col panel into 100 buckets."""
+    n = 10_000
+    bucket = np.arange(n) // 100
+    values = rng.standard_normal((n, 20))
+    benchmark(resample, bucket, values, method="mean")
+
+
+# ---------- stitch -------------------------------------------------------
+
+
+def test_bench_stitch_2_panels_100x50(benchmark, rng=np.random.default_rng(0)):
+    """Stitch two 100 × 50 panels with 50% overlap on both axes."""
+    idx_a = np.repeat(np.arange(100), 50)
+    nm_a = np.tile(np.arange(50), 100)
+    val_a = rng.standard_normal(100 * 50)
+    a = panelize(idx_a, nm_a, val_a)
+
+    idx_b = np.repeat(np.arange(50, 150), 50)
+    nm_b = np.tile(np.arange(25, 75), 100)
+    val_b = rng.standard_normal(100 * 50)
+    b = panelize(idx_b, nm_b, val_b)
+
+    benchmark(stitch, a, b, method="first_wins")

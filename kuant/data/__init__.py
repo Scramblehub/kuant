@@ -14,12 +14,21 @@ output ships with a `.to_parquet(path)` convenience via lazy `pyarrow`.
 from kuant.data.align import AlignResult, align
 from kuant.data.baragg import BarAggResult, baragg
 from kuant.data.corpaction import CorpActionResult, corpaction
+from kuant.data.panelize import PanelResult, panelize, unpanelize
+from kuant.data.resample import ResampleResult, resample
+from kuant.data.stitch import stitch
 
 __all__ = [
     "AlignResult",
     "BarAggResult",
     "CorpActionResult",
+    "PanelResult",
+    "ResampleResult",
     "align",
     "baragg",
     "corpaction",
+    "panelize",
+    "resample",
+    "stitch",
+    "unpanelize",
 ]
