@@ -3,10 +3,10 @@
 The same equity gets written differently by every data source:
 
     Vendor / venue        BRK class B      BF class B    "IBM"
-    Wikipedia / CRSP      BRK.B            BF.B          IBM
+    Wikipedia / academic  BRK.B            BF.B          IBM
     Yahoo Finance         BRK-B            BF-B          IBM
     Google / some feeds   BRK/B            BF/B          IBM
-    CRSP with permno tag  BRK.10107        BF.87890      IBM.12490
+    With numeric ID tag   BRK.99999        BF.99999      IBM.99999
 
 Users routinely re-implement this. `tickernorm` ships the canonical
 mappings and a two-step API: parse to a `TickerParts` record, then
@@ -64,7 +64,7 @@ class TickerParts:
             - `'yahoo'`: hyphen (`BRK-B`).
             - `'google'`: slash (`BRK/B`).
             - `'crsp'`: dot; permno restored if present (`BRK.B` OR
-              `BRK.10107` if the parsed form had a permno instead of
+              `BRK.99999` if the parsed form had a permno instead of
               a share class).
         """
         if venue not in _VENUES:
@@ -124,9 +124,9 @@ def tickernorm(
     'BRK.B'
     >>> tickernorm('BRK/B', venue='crsp')
     'BRK.B'
-    >>> # CRSP permno-tagged form: strip the tag when rendering to yahoo.
-    >>> tickernorm('BHI.10107', venue='yahoo')
-    'BHI'
+    >>> # Permno-tagged form: strip the tag when rendering to yahoo.
+    >>> tickernorm('ACME.99999', venue='yahoo')
+    'ACME'
     >>> # No class share: passthrough with uppercase.
     >>> tickernorm('ibm', venue='yahoo')
     'IBM'

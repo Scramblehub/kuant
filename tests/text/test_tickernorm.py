@@ -32,19 +32,19 @@ def test_class_share_venue_conversion(src, venue, expected):
 
 
 def test_permno_stripped_for_non_crsp_venues():
-    assert tickernorm("BHI.10107", venue="yahoo") == "BHI"
-    assert tickernorm("BHI.10107", venue="wiki") == "BHI"
-    assert tickernorm("BHI.10107", venue="google") == "BHI"
+    assert tickernorm("ACME.99999", venue="yahoo") == "ACME"
+    assert tickernorm("ACME.99999", venue="wiki") == "ACME"
+    assert tickernorm("ACME.99999", venue="google") == "ACME"
 
 
 def test_permno_preserved_for_crsp_venue():
-    assert tickernorm("BHI.10107", venue="crsp") == "BHI.10107"
+    assert tickernorm("ACME.99999", venue="crsp") == "ACME.99999"
 
 
 def test_permno_detected_in_parts():
-    p = tickernorm("BHI.10107")
-    assert p.root == "BHI"
-    assert p.permno == 10107
+    p = tickernorm("ACME.99999")
+    assert p.root == "ACME"
+    assert p.permno == 99999
     assert p.share_class is None
 
 
@@ -128,7 +128,7 @@ def test_reject_bad_venue_in_top_level_call():
         tickernorm("IBM", venue="bloomberg")
 
 
-# ---------- real-world cases from user's own scripts -------------------
+# ---------- realistic-shape inputs -------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -138,9 +138,9 @@ def test_reject_bad_venue_in_top_level_call():
         ("BRK.B", "BRK", "B", None),
         ("BF.B", "BF", "B", None),
         ("BRK-A", "BRK", "A", None),
-        # CRSP permno-tagged samples from compare_v8_vs_smm_picks.py
-        ("BHI.10107", "BHI", None, 10107),
-        ("AAPL.14593", "AAPL", None, 14593),
+        # Permno-tagged shape with placeholder identifiers
+        ("XYZ.12345", "XYZ", None, 12345),
+        ("QQQQ.67890", "QQQQ", None, 67890),
         # Plain
         ("SPY", "SPY", None, None),
         ("AAPL", "AAPL", None, None),
