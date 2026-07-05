@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kuant"
-version = "0.4.2"
+version = "0.4.3"
 description = "GPU-accelerated quantitative research kernels. Kernel × quant."
 readme = "README.md"
 license = { text = "Apache-2.0" }

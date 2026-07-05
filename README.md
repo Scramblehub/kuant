@@ -29,7 +29,7 @@ Fifteen subpackages, 1656 tests, ~90 benchmarks. Alpha stability.
 | `kuant.text` | 4 | tickernorm, cusipvalidate, occparse (option symbols), secformparse. |
 | `kuant.nulltest` | 3 | bootstrap, multiple-hypothesis correction, White/Hansen SPA test. |
 | `kuant.queueing` | 2 | hardware throttle, request-coordination layer. |
-| `kuant.backtest` | 4 subpackages | `lifecycle` (SecurityLifecycle + TerminalAction + apply_lifecycle + tradeable_mask + lifecycle_returns + detect_delistings); `liquidity` (LiquidityProfile + FlatSlippage / LinearImpact / SquareRootImpact + execute_fill + liquidity_mask); `fill` (Order + OrderSide/Type/Status + FillReport + submit_order); `position` (Position + PortfolioState + EquitySnapshot). `warmup`, `engine` planned. |
+| `kuant.backtest` | 5 subpackages | `lifecycle` (SecurityLifecycle + TerminalAction + apply_lifecycle + tradeable_mask + lifecycle_returns + detect_delistings); `liquidity` (LiquidityProfile + FlatSlippage / LinearImpact / SquareRootImpact + execute_fill + liquidity_mask); `fill` (Order + OrderSide/Type/Status + FillReport + submit_order); `position` (Position + PortfolioState + EquitySnapshot); `warmup` (Warmup + WarmupCache + WarmupMode with eager/lazy/off + per-indicator cache override). `engine` planned. |
 
 Each kernel has: an API doc in [`docs/kernels/`](docs/kernels/), a numpy
 implementation, a cupy path where the math is batched, and a test suite
@@ -93,6 +93,14 @@ higher moments, and pandas-parity guardrails.
   cumulative `realized_pnl`) with netting semantics, `PortfolioState`
   (cash + per-symbol positions with atomic fill application), and
   `EquitySnapshot` for mark-to-market reporting.
+- **v0.4.3**: `kuant.backtest.warmup` lands. `Warmup(prices, mode)`
+  registers indicators, universe membership, lifecycle maps, and
+  liquidity profiles; `materialize()` produces a `WarmupCache` with
+  a uniform `.get(name, timestamp, symbol)` interface plus
+  `.tradeable`, `.liquid`, `.universe` gate queries. Three modes
+  (`WarmupMode.EAGER` / `LAZY` / `OFF`) trade memory vs setup cost,
+  with a per-indicator `cache=True|False|None` override for mixed
+  slow-moving-cached + fast-moving-live strategies.
 
 ## Install
 
