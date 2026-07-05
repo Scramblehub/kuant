@@ -12,5 +12,14 @@ output ships with a `.to_parquet(path)` convenience via lazy `pyarrow`.
 """
 
 from kuant.data.align import AlignResult, align
+from kuant.data.baragg import BarAggResult, baragg
+from kuant.data.corpaction import CorpActionResult, corpaction
 
-__all__ = ["AlignResult", "align"]
+__all__ = [
+    "AlignResult",
+    "BarAggResult",
+    "CorpActionResult",
+    "align",
+    "baragg",
+    "corpaction",
+]
