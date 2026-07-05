@@ -4,6 +4,41 @@ All notable changes to `kuant` are tracked here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); dates are release dates
 on PyPI.
 
+## v0.5.0
+
+- **`kuant.qm.quaternion`** lands: Hamilton (w-first) unit-quaternion
+  algebra plus two kernels aimed at regime-drift signals.
+  - `Quaternion(w, x, y, z)` frozen dataclass with strict unit-norm
+    enforcement (auto-normalizes non-unit input, raises on zero norm).
+    Methods: `multiply`, `conjugate`, `inverse`, `rotate(v)`,
+    `to_axis_angle` / `from_axis_angle`, `to_rotation_matrix` /
+    `from_rotation_matrix`, `angle`.
+  - Module-level array ops on `(4,)` scalars or `(..., 4)` batches:
+    `quat_multiply`, `quat_conjugate`, `quat_normalize`, `quat_angle`,
+    `quaternion_distance`, `slerp` (with linear-then-normalize fallback
+    at parallel-quaternion pole).
+  - `composerotations(quats, return_trajectory=False)`: list-order
+    equals application-order via a right-to-left Hamilton product.
+    Two input forms (numpy `(T, 4)` or list of `Quaternion`), optional
+    running-composition trajectory output.
+  - `rollholonomy(quats, window)`: trailing-window composed quaternion
+    and its rotation-angle magnitude per bar. First `w - 1` rows NaN;
+    windows containing any NaN propagate. Naive O(T*w) in v1; a
+    prefix-product O(T) variant is queued.
+- **Docs batch**: 20 new markdown files (~4100 lines) closing the docs
+  debt accumulated since v0.3.2. Kernel docs for
+  `kuant.backtest.liquidity`, `kuant.backtest.fill`,
+  `kuant.backtest.position`, `kuant.backtest.warmup`,
+  `kuant.backtest.engine`, and `kuant.qm.quaternion`. New central
+  `docs/design/errors-and-warnings-index.md` indexing every stable
+  `KE-*` and `KW-*` code (38 errors + 64 warnings = 102 total) with
+  their exception class, kernel, and one-line trigger.
+- **New `kuant.qm` submodule**: `quaternion` joins `hmm`, `ghmm`.
+  Version minor-bumped to signal the new surface even though the
+  addition is purely additive.
+- 56 new quaternion tests. Regression: 1877 -> 1933 pass (+56).
+  Coverage 91% held.
+
 ## v0.4.7
 
 - **Tier-2B warnings close-out** (Session 5B, part 2): the audit's

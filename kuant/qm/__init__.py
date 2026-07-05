@@ -1,8 +1,9 @@
-'''kuant.qm — QM-inspired tools for financial time series.
+"""kuant.qm — QM-inspired tools for financial time series.
 
 Submodules:
   hmm          — discrete-observation HMM inference
   ghmm         — Gaussian-observation HMM inference (continuous scalars)
+  quaternion   — unit-quaternion algebra + rollholonomy + composerotations
 
 Direct exports:
   belltest             — Bell-inequality-style aggregation test
@@ -15,8 +16,9 @@ Direct exports:
   NoCloningScanResult
   decoherencescan      — day-in-window skill decay diagnostic
   DecoherenceScanResult
-'''
-from . import ghmm, hmm
+"""
+
+from . import ghmm, hmm, quaternion
 from .belltest import BellTestResult
 from .belltest import belltest as _belltest_fn
 from .decoherencescan import DecoherenceScanResult
@@ -36,10 +38,17 @@ nocloningscan = _nocloningscan_fn
 decoherencescan = _decoherencescan_fn
 
 __all__ = [
-    'hmm', 'ghmm',
-    'belltest', 'BellTestResult',
-    'zenoscan', 'ZenoScanResult',
-    'posteriorentropy', 'PosteriorEntropyResult',
-    'nocloningscan', 'NoCloningScanResult',
-    'decoherencescan', 'DecoherenceScanResult',
+    "hmm",
+    "ghmm",
+    "quaternion",
+    "belltest",
+    "BellTestResult",
+    "zenoscan",
+    "ZenoScanResult",
+    "posteriorentropy",
+    "PosteriorEntropyResult",
+    "nocloningscan",
+    "NoCloningScanResult",
+    "decoherencescan",
+    "DecoherenceScanResult",
 ]
