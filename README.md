@@ -27,22 +27,28 @@ discovery — not just an implementation of textbook indicators.
 
 ## Status
 
-Alpha. **1028 tests** across 5 shipped subpackages:
+Alpha. **1325 tests** across 9 shipped subpackages:
 
 | Subpackage | Kernels | Highlights |
 | --- | --- | --- |
 | `kuant.core` | 16 | BS pricing (bscall/bsput) + full Gaussian family (normcdf/normpdf/normppf + log-tails) + Student-t (tcdf/tpdf/tppf + log-tails) + Generalized Pareto (gpdcdf/gpdpdf/gpdppf) + logsumexp |
 | `kuant.options` | 21 | First-order Greeks (delta/gamma/vega/rho/theta/charm) + second-order (vanna/volga/speed/zomma/color) + payoffs + chain filters + Newton and bisection implied-vol solvers |
 | `kuant.stats` | 27 | Rolling primitives with strict-window NaN + Hurst (R/S) + rolling Hurst + risk metrics (Sharpe/Sortino/MDD/Calmar) + tail cluster (Hill tailindex, rolling variant, DFA, rollcoherence) |
-| `kuant.qm` | 5 + `hmm`/`ghmm` subpackages | HMM/GHMM inference (forward/backward/viterbi/posterior) + belltest, zenoscan, posteriorentropy, nocloningscan, decoherencescan |
+| `kuant.qm` | 5 + `hmm`/`ghmm` subpackages | HMM/GHMM inference (forward/backward/viterbi/posterior) + **Baum-Welch EM training** + belltest, zenoscan, posteriorentropy, nocloningscan, decoherencescan |
 | `kuant.sindy` | 6 | permtest, grangerscan, sindylasso, pinnscan, symbolicscan, accelerationscan |
+| `kuant.topology` | 4 | persistenthomology (ripser) + bettiseries + wasserstein (persim) + dispersioncollapse |
+| `kuant.data` | 6 | align (inner/outer/forward) + baragg (OHLCV) + corpaction (splits/dividends) + panelize + resample + stitch |
+| `kuant.edgecases` | 6 | nanpolicies (5 strategies) + delistedhandling (zero/hold/recovery) + outlierpolicy (mad/iqr/zscore) |
+| `kuant.signals` | 3 | winsorize + neutralize (OLS residual) + icdecay (Spearman IC decay curve) |
 
 Each kernel has:
 
 - Full API doc under [`docs/kernels/`](docs/kernels/)
 - CPU fallback (numpy path — works on any machine)
-- GPU path (cupy — same math, verified for parity)
+- GPU path (cupy — same math, verified for parity) where the math batches
 - Cross-checked test suite (golden values, library reference, cross-kernel identities, machine-precision fd tolerances)
+- Informative errors and runtime warnings via `kuant.errors`
+  ([`KuantValueError`](kuant/errors.py), `KuantNumericWarning`, …) — every message names the kernel, the actual bad value, a stable error code, and a concrete fix line
 
 ## Install
 
@@ -53,9 +59,14 @@ pip install kuant
 # With GPU
 pip install kuant[gpu]
 
-# Some tools have optional heavy dependencies (scikit-learn for belltest,
-# statsmodels for grangerscan). Install those separately when needed:
-pip install scikit-learn statsmodels
+# Bundle for topological data analysis (ripser + persim)
+pip install kuant[topology]
+
+# Bundle for SINDy tools (scikit-learn + statsmodels)
+pip install kuant[sindy]
+
+# All optional bundles at once
+pip install kuant[all]
 ```
 
 ## Benchmarks
@@ -69,7 +80,7 @@ on batches of 1M elements (NVIDIA GPU + Intel-class CPU):
 | `normcdf`  1M       | 14.4 ms  | 0.17 ms | **85x** |
 
 Smaller batches are dispatch-overhead bound; the crossover is around 10K
-elements. The whole benchmark suite (55 measurements across the 5
+elements. The whole benchmark suite (~90 measurements across the 9
 subpackages) is in `benchmarks/`. Reproduce with:
 
 ```bash
@@ -118,17 +129,19 @@ states, log_prob = viterbi(observations, pi, A, B)
 ```folder
 kuant/
 ├── core/         Mathematical primitives (BS family, normal CDF/PDF)
-├── options/      Options analytics (impvol solver)
-├── stats/        Rolling and windowed statistics (18 kernels)
-├── qm/           Quantum-inspired tools (HMM, belltest, zenoscan)
-├── sindy/        SINDy-adjacent null-testing tools (permtest, grangerscan)
-├── portfolio/    P&L, drawdown, Sharpe (skeleton)
+├── options/      Options analytics (Greeks, impvol solvers, chain filters)
+├── stats/        Rolling and windowed statistics (27 kernels)
+├── qm/           HMM/GHMM + Baum-Welch + regime-discovery tools
+├── sindy/        SINDy-adjacent null-testing (permtest, grangerscan, ...)
+├── topology/     TDA (persistent homology, betti, wasserstein, dispersioncollapse)
+├── data/         Data-shape primitives (align, baragg, corpaction, panelize, resample, stitch)
+├── edgecases/    NaN policies, delisted handling, outlier detection
+├── signals/      winsorize, neutralize, icdecay
+├── portfolio/    P&L, drawdown, Sharpe (skeleton — v1 next)
 ├── backtest/     Simulation engine (skeleton)
-├── signals/      Signal computation (skeleton)
-├── topology/     TDA (skeleton)
-├── text/         Text parsing (skeleton)
-├── data/         Bar aggregation (skeleton)
-├── edgecases/    Edge case utilities (skeleton)
+├── text/         Text parsing (skeleton — v1 next)
+├── errors.py     KuantError hierarchy + KuantWarning classes
+├── _validation.py Central validators (used by every kernel)
 └── queueing/     Hardware throttle + coordination layer
 
 docs/
@@ -136,7 +149,7 @@ docs/
 ├── design/       Cross-cutting design docs
 └── examples/     Worked examples
 
-tests/            1:1 with kernel files; 887 tests total
+tests/            1:1 with kernel files; 1325 tests total
 ```
 
 ## Design principles
@@ -154,6 +167,12 @@ tests/            1:1 with kernel files; 887 tests total
    guarantee same outputs
 6. **No underscores in the API surface** — `bsput`, not `bs_put`;
    `belltest`, not `bell_test`. Improves typing flow
+7. **Informative errors, not black boxes** — every kernel raises a
+   `KuantError` subclass with the offending value, a stable error code,
+   and a copy-pasteable fix line. Same shape for runtime warnings via
+   `KuantWarning`. See [`docs/design/Validation_Additions.md`](docs/design/Validation_Additions.md).
+8. **Parquet-first for tabular output** — result dataclasses ship
+   `.to_parquet(path)` via lazy `pyarrow`. No CSV/JSON helpers by design.
 
 ## Contributing
 
