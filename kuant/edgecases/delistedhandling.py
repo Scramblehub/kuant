@@ -31,11 +31,33 @@ from kuant._validation import (
     require_probability,
     warn_kuant,
 )
-from kuant.errors import KuantNumericWarning, KuantValueError
+from kuant.errors import KuantDeprecationWarning, KuantNumericWarning, KuantValueError
+
+
+def _warn_deprecated_use_lifecycle(kernel: str, replacement: str) -> None:
+    """One-shot deprecation warning pointing at the lifecycle replacement."""
+    warn_kuant(
+        kernel=kernel,
+        code="KW-DEPRECATED-USE-LIFECYCLE",
+        what=(
+            f"kuant.edgecases.{kernel} is deprecated; use {replacement} "
+            f"instead. Scheduled for removal in v0.6.0"
+        ),
+        fix=(
+            "construct a SecurityLifecycle with the desired terminal_action "
+            "and call apply_lifecycle on a pandas.Series or "
+            "apply_lifecycle_panel on a DataFrame"
+        ),
+        category=KuantDeprecationWarning,
+    )
 
 
 def zero_after_delist(prices, delist_position: int) -> np.ndarray:
     """Set every price at or after `delist_position` to 0.
+
+    .. deprecated::
+       Superseded by `kuant.backtest.lifecycle.apply_lifecycle` with
+       `TerminalAction.MARK_TO_ZERO`. Scheduled for removal in v0.6.0.
 
     Parameters
     ----------
@@ -62,6 +84,10 @@ def zero_after_delist(prices, delist_position: int) -> np.ndarray:
     >>> zero_after_delist(prices, 3).tolist()
     [100.0, 95.0, 90.0, 0.0, 0.0]
     """
+    _warn_deprecated_use_lifecycle(
+        "zero_after_delist",
+        "kuant.backtest.lifecycle.apply_lifecycle with " "TerminalAction.MARK_TO_ZERO",
+    )
     arr = np.asarray(prices, dtype=np.float64)
     require_1d(arr, "prices", kernel="zero_after_delist")
     n = arr.size
@@ -108,6 +134,10 @@ def hold_last_price(
     >>> hold_last_price(prices, 3, max_hold_days=100).tolist()
     [100.0, 95.0, 90.0, 90.0, 90.0]
     """
+    _warn_deprecated_use_lifecycle(
+        "hold_last_price",
+        "kuant.backtest.lifecycle.apply_lifecycle with " "TerminalAction.LIQUIDATE_AT_LAST",
+    )
     arr = np.asarray(prices, dtype=np.float64)
     require_1d(arr, "prices", kernel="hold_last_price")
     n = arr.size

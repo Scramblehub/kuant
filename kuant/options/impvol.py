@@ -29,7 +29,8 @@ from typing import Any
 
 import numpy as np
 
-from kuant._validation import require_positive
+from kuant._validation import require_positive, warn_kuant
+from kuant.errors import KuantNumericWarning
 
 from ..core import bscall, bsput
 from .bsvega import bsvega
@@ -170,6 +171,49 @@ def impvol(price, S, K, T, r, is_call=False, q=0.0, tol=1e-8, max_iter=100):
     pv_final = bscall(S, K, T, r, sigma, q) if is_call else bsput(S, K, T, r, sigma, q)
     residual_final = xp.abs(pv_final - price)
     ok = in_bounds & (residual_final < tol * _FINAL_TOL_MULT)
+
+    # Post-loop diagnostics for cells that did NOT converge but were in
+    # bounds. Two independent failure modes surface here.
+    unconverged_in_bounds = in_bounds & ~ok
+    n_unconv = (
+        int(unconverged_in_bounds.sum()) if xp is np else int(unconverged_in_bounds.sum().get())
+    )
+    if n_unconv > 0:
+        warn_kuant(
+            kernel="impvol",
+            code="KW-CONV-MAX-ITER",
+            what=(
+                f"{n_unconv} in-bounds cells failed to converge within "
+                f"max_iter={int(max_iter)} at tol={tol:g}; those cells "
+                f"return NaN"
+            ),
+            fix=(
+                "increase max_iter, loosen tol, or fall back to "
+                "impvolbisection for the failing cells"
+            ),
+            category=KuantNumericWarning,
+        )
+    # Detect vega-flat cells: recompute vega at the returned sigma and
+    # count where it fell below the Newton floor. This can co-occur with
+    # non-convergence above but is a distinct diagnosis.
+    vega_final = bsvega(S, K, T, r, sigma, q)
+    vega_degen = in_bounds & (vega_final < _VEGA_MIN)
+    n_vega = int(vega_degen.sum()) if xp is np else int(vega_degen.sum().get())
+    if n_vega > 0:
+        warn_kuant(
+            kernel="impvol",
+            code="KW-NUM-VEGA-DEGENERATE",
+            what=(
+                f"vega fell below {_VEGA_MIN:g} in {n_vega} cells; Newton "
+                f"step was unusable in those cells (likely deep-OTM or "
+                f"very short tenor)"
+            ),
+            fix=(
+                "use impvolbisection for deep-OTM / very-short-tenor cells "
+                "where the price-to-vol map is nearly flat"
+            ),
+            category=KuantNumericWarning,
+        )
 
     sigma = xp.where(ok, sigma, xp.asarray(xp.nan, dtype=out_dtype))
 

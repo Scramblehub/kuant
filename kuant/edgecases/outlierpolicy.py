@@ -146,6 +146,29 @@ def outlierpolicy(
         out_finite = (np.abs(values - mu) / sd) > threshold
 
     mask[finite_mask] = out_finite
+
+    n_finite = int(finite_mask.sum())
+    if n_finite > 0:
+        n_out = int(mask.sum())
+        rate = n_out / n_finite
+        if rate == 0.0 or rate >= 0.99:
+            warn_kuant(
+                kernel="outlierpolicy",
+                code="KW-OUTLIER-EXTREME-RATE",
+                what=(
+                    f"threshold={threshold:g} under method={method!r} "
+                    f"flagged {rate:.1%} of finite values; near-0% or "
+                    f"near-100% flag rates usually indicate a "
+                    f"threshold-units mismatch"
+                ),
+                fix=(
+                    "for MAD/z-score the threshold is a scale multiple "
+                    "(3.0 is a typical default); for IQR it is a Tukey "
+                    "multiplier (1.5 is a typical default). Recheck "
+                    "against the method chosen"
+                ),
+                category=KuantNumericWarning,
+            )
     return mask
 
 

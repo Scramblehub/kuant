@@ -23,8 +23,8 @@ from typing import Any
 
 import numpy as np
 
-from kuant._validation import require_1d
-from kuant.errors import KuantValueError
+from kuant._validation import require_1d, warn_kuant
+from kuant.errors import KuantNumericWarning, KuantValueError
 
 cp: Any
 try:
@@ -95,6 +95,28 @@ def deltabucket(deltas, targets):
     # Shape: (n_targets, n_deltas) — broadcast subtraction.
     diff = xp.abs(deltas_arr[None, :] - targets_arr[:, None])
     idx = xp.argmin(diff, axis=1)
+
+    # Flag matches whose gap exceeds a reasonable tolerance on the
+    # delta scale (options deltas live in [-1, 1] for calls / [-1, 0]
+    # for puts, so 0.05 is ~5 percentage points off the target).
+    min_gap = xp.min(diff, axis=1)
+    poor = min_gap > 0.05
+    n_poor = int(poor.sum()) if xp is np else int(poor.sum().get())
+    if n_poor > 0:
+        warn_kuant(
+            kernel="deltabucket",
+            code="KW-NUM-NO-MATCH",
+            what=(
+                f"{n_poor} target(s) had no chain delta within 0.05; the "
+                f"nearest available delta was chosen but does not represent "
+                f"a meaningful bucket"
+            ),
+            fix=(
+                "provide a chain that spans the target delta, or apply a "
+                "max-gap filter downstream of this call"
+            ),
+            category=KuantNumericWarning,
+        )
 
     if scalar_target:
         return int(idx[0])

@@ -25,8 +25,8 @@ from typing import Optional
 
 import numpy as np
 
-from kuant._validation import require_dep
-from kuant.errors import KuantValueError
+from kuant._validation import require_dep, warn_kuant
+from kuant.errors import KuantNumericWarning, KuantValueError
 
 
 @dataclass
@@ -154,6 +154,22 @@ def grangerscan(
             if verbose:
                 print(f"{name}: too few clean observations ({len(data_clean)}), skipping")
             continue
+        if len(data_clean) < 100:
+            warn_kuant(
+                kernel="grangerscan",
+                code="KW-NUM-SAMPLE-SIZE",
+                what=(
+                    f"candidate {name!r}: only {len(data_clean)} clean rows; "
+                    f"Granger F-test asymptotics are unreliable below ~100 "
+                    f"observations"
+                ),
+                fix=(
+                    "extend the sample or restrict candidates with more "
+                    "history; below 100 rows the F-test's p-values are "
+                    "systematically anti-conservative"
+                ),
+                category=KuantNumericWarning,
+            )
 
         for h in horizons:
             try:

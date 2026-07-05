@@ -29,8 +29,8 @@ from typing import Any, Callable
 
 import numpy as np
 
-from kuant._validation import require_2d, require_positive, require_range
-from kuant.errors import KuantValueError
+from kuant._validation import require_2d, require_positive, require_range, warn_kuant
+from kuant.errors import KuantNumericWarning, KuantValueError
 
 
 @dataclass
@@ -152,7 +152,8 @@ def decoherencescan(
     valid = ~np.isnan(y_pred_all)
     bucket_corr = []
     bucket_n = []
-    for days in bucket_days:
+    small_buckets: list[tuple[int, int, int]] = []
+    for i, days in enumerate(bucket_days):
         mask = valid & np.isin(day_in_win_all, days)
         n = int(mask.sum())
         if n >= 2:
@@ -163,6 +164,22 @@ def decoherencescan(
             c = 0.0
         bucket_corr.append(c)
         bucket_n.append(n)
+        if n < 30:
+            lo_hi = buckets[i] if i < len(buckets) else (None, None)
+            small_buckets.append((lo_hi[0], lo_hi[1], n))
+    if small_buckets:
+        sample = small_buckets[:3]
+        warn_kuant(
+            kernel="decoherencescan",
+            code="KW-NUM-BUCKET-SMALL",
+            what=(
+                f"{len(small_buckets)} bucket(s) had fewer than 30 valid "
+                f"samples; per-bucket correlation is dominated by sampling "
+                f"noise. First few: {sample}"
+            ),
+            fix=("extend predict_window, shrink the number of buckets, or " "provide more data"),
+            category=KuantNumericWarning,
+        )
 
     peak_idx = int(np.argmax(bucket_corr))
     is_monotonic = all(

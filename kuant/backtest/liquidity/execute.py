@@ -263,6 +263,30 @@ def execute_fill_panel(
             f"{sorted(missing)}.  [KE-VAL-SCHEMA]\n"
             f"  → Fix: include all of {sorted(required)}"
         )
+    extras = set(orders.columns) - required
+    if extras:
+        warn_kuant(
+            kernel="execute_fill_panel",
+            code="KW-FILL-PANEL-EXTRA-COLS",
+            what=(
+                f"'orders' has unrecognized column(s) {sorted(extras)}; "
+                f"they are silently dropped from the returned frame"
+            ),
+            fix=(
+                "if these columns carry per-order metadata (tag, order_id), "
+                "stitch them back onto the output after the call; "
+                "otherwise drop them upstream"
+            ),
+            category=KuantNumericWarning,
+        )
+    if len(orders) == 0:
+        warn_kuant(
+            kernel="execute_fill_panel",
+            code="KW-FILL-PANEL-EMPTY",
+            what="no orders supplied; execute_fill_panel returned an empty result",
+            fix="verify the strategy actually emitted orders on this bar batch",
+            category=KuantNumericWarning,
+        )
 
     rows = []
     for _, row in orders.iterrows():

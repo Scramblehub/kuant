@@ -15,9 +15,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from kuant._validation import warn_kuant
 from kuant.backtest.fill.submit import FillReport
 from kuant.backtest.position.position import Position
-from kuant.errors import KuantValueError
+from kuant.errors import KuantNumericWarning, KuantValueError
 
 
 @dataclass
@@ -162,10 +163,13 @@ class PortfolioState:
 
     def mark_to_market(self, prices: dict) -> EquitySnapshot:
         """Snapshot cash + positions valued at `prices`."""
+        import math
+
         positions_value = 0.0
         unrealized = 0.0
         realized = 0.0
         n_open = 0
+        nan_marked: list[str] = []
         for sym, pos in self.positions.items():
             realized += pos.realized_pnl
             if pos.size == 0.0:
@@ -179,9 +183,27 @@ class PortfolioState:
                     f"if you want to accept the position as unpriced)"
                 )
             price = float(prices[sym])
+            if not math.isfinite(price):
+                nan_marked.append(sym)
             positions_value += pos.market_value(price)
             unrealized += pos.unrealized_pnl(price)
             n_open += 1
+        if nan_marked:
+            warn_kuant(
+                kernel="PortfolioState.mark_to_market",
+                code="KW-PORTFOLIO-NAN-MARK",
+                what=(
+                    f"{len(nan_marked)} open position(s) marked with a "
+                    f"non-finite price: {nan_marked[:5]}; positions_value "
+                    f"and total_value will be NaN"
+                ),
+                fix=(
+                    "close the position at the last known finite mark, "
+                    "apply the lifecycle terminal action, or accept NaN "
+                    "if the miss is intentional"
+                ),
+                category=KuantNumericWarning,
+            )
         return EquitySnapshot(
             cash=float(self.cash),
             positions_value=positions_value,

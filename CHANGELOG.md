@@ -4,6 +4,49 @@ All notable changes to `kuant` are tracked here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); dates are release dates
 on PyPI.
 
+## v0.4.7
+
+- **Tier-2B warnings close-out** (Session 5B, part 2): the audit's
+  remaining ~13 findings across options, sindy, qm, backtest, and
+  edgecases. Wraps up the full-library warnings/errors sweep started
+  in v0.4.4.
+- **Options:**
+  - `impvol` post-loop diagnostics: `KW-CONV-MAX-ITER` names how many
+    in-bounds cells failed to converge and their retry knobs;
+    `KW-NUM-VEGA-DEGENERATE` flags cells where the Newton step floors
+    below `_VEGA_MIN` (deep-OTM / very-short-tenor).
+  - `impvolbisection`: `KW-CONV-MAX-ITER` when the bisection bracket
+    still exceeds `tol`; `KW-VAL-RANGE` when the passed price is
+    outside the `[sigma_lo, sigma_hi]` no-arbitrage bracket.
+  - `deltabucket`: `KW-NUM-NO-MATCH` when the nearest available delta
+    is more than 0.05 off the target.
+- **Sindy / QM:**
+  - `grangerscan`: `KW-NUM-SAMPLE-SIZE` per candidate with fewer than
+    100 clean rows (F-test asymptotics become anti-conservative).
+  - `decoherencescan`: `KW-NUM-BUCKET-SMALL` for day-in-window buckets
+    with fewer than 30 samples; per-bucket correlation is dominated by
+    sampling noise.
+- **Backtest:**
+  - `execute_fill_panel`: `KW-FILL-PANEL-EMPTY` and
+    `KW-FILL-PANEL-EXTRA-COLS`.
+  - `PortfolioState.mark_to_market`: `KW-PORTFOLIO-NAN-MARK` when a
+    non-finite price is supplied for an open position; the NaN
+    propagates but the diagnostic surfaces.
+  - `WarmupCache.tradeable` / `.liquid` / `.universe`:
+    `KW-CACHE-TS-NOT-IN-PANEL` (timestamp missing from the cache
+    index) and `KW-CACHE-UNIVERSE-UNKNOWN-SYMBOL` (symbol referenced
+    but not registered in the membership panel).
+- **Edgecases:**
+  - `outlierpolicy`: `KW-OUTLIER-EXTREME-RATE` when a threshold flags
+    0% or ≥99% of finite values (a strong signal of units mismatch
+    between method families).
+  - `zero_after_delist` and `hold_last_price` now emit
+    `KW-DEPRECATED-USE-LIFECYCLE` (a `KuantDeprecationWarning`)
+    pointing at their `kuant.backtest.lifecycle` replacements.
+    Scheduled for removal in v0.6.0.
+- 14 new Tier-2B audit tests colocated at `tests/test_tier2b_audit.py`.
+- Regression: 1863 -> 1877 pass (+14). Coverage held at 91%.
+
 ## v0.4.6
 
 - **`kuant.backtest.engine`** lands. Reference orchestrator over the

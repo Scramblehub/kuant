@@ -27,8 +27,8 @@ from typing import Any
 
 import numpy as np
 
-from kuant._validation import require_positive
-from kuant.errors import KuantValueError
+from kuant._validation import require_positive, warn_kuant
+from kuant.errors import KuantNumericWarning, KuantValueError
 
 from ..core import bscall, bsput
 
@@ -160,6 +160,43 @@ def impvolbisection(
         lo = xp.where(f_mid > 0, lo, mid)
         if bool(xp.all(hi - lo < tol)):
             break
+
+    # Warn on non-convergence (bracketed cells still wider than tol).
+    unconv = bracketed & (hi - lo >= tol)
+    n_unconv = int(unconv.sum()) if xp is np else int(unconv.sum().get())
+    if n_unconv > 0:
+        warn_kuant(
+            kernel="impvolbisection",
+            code="KW-CONV-MAX-ITER",
+            what=(
+                f"bisection reached max_iter={int(max_iter)} without "
+                f"shrinking the bracket below tol for {n_unconv} cells; "
+                f"midpoint returned but may not satisfy the residual"
+            ),
+            fix=(
+                "increase max_iter (bisection needs roughly log2((hi-lo)/"
+                "tol) iterations) or loosen tol"
+            ),
+            category=KuantNumericWarning,
+        )
+    # Warn on out-of-bracket cells: those get NaN because their price is
+    # outside the [price_lo, price_hi] range at (sigma_lo, sigma_hi).
+    n_oob = int((~bracketed).sum()) if xp is np else int((~bracketed).sum().get())
+    if n_oob > 0:
+        warn_kuant(
+            kernel="impvolbisection",
+            code="KW-VAL-RANGE",
+            what=(
+                f"{n_oob} of the passed prices lie outside the "
+                f"[sigma_lo, sigma_hi] bracket at the given "
+                f"(S, K, T, r, q); those cells returned NaN"
+            ),
+            fix=(
+                "widen the bracket (sigma_hi up to 20 or 50) or check "
+                "that price is inside no-arbitrage bounds"
+            ),
+            category=KuantNumericWarning,
+        )
 
     sigma = 0.5 * (lo + hi)
     nan_val = xp.asarray(float("nan"), dtype=out_dtype)

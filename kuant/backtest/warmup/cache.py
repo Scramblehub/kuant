@@ -18,10 +18,11 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable
 
+from kuant._validation import warn_kuant
 from kuant.backtest.lifecycle.security import (
     _as_date,
 )
-from kuant.errors import KuantValueError
+from kuant.errors import KuantNumericWarning, KuantValueError
 
 
 class WarmupMode(str, Enum):
@@ -229,6 +230,21 @@ class WarmupCache:
         if self.membership is None:
             return True
         if symbol not in self.membership.columns:
+            warn_kuant(
+                kernel="WarmupCache.universe",
+                code="KW-CACHE-UNIVERSE-UNKNOWN-SYMBOL",
+                what=(
+                    f"symbol {symbol!r} not in registered membership "
+                    f"columns; treated as out-of-universe on every date"
+                ),
+                fix=(
+                    "confirm the symbol was intended to be in the "
+                    "universe; extending the membership panel is "
+                    "preferable to silently gating out symbols the "
+                    "strategy still trades"
+                ),
+                category=KuantNumericWarning,
+            )
             return False
         return bool(self._panel_get(self.membership, timestamp, symbol))
 
@@ -237,6 +253,21 @@ class WarmupCache:
         ts = _as_date(timestamp)
         row_dates = [_as_date(x) for x in panel.index]
         if ts not in row_dates:
+            warn_kuant(
+                kernel="WarmupCache._panel_get",
+                code="KW-CACHE-TS-NOT-IN-PANEL",
+                what=(
+                    f"timestamp {ts} not in cache panel index; gate "
+                    f"returned False by fallthrough, which will silently "
+                    f"suppress any dependent orders"
+                ),
+                fix=(
+                    "align the query timestamps to the panel's index "
+                    "before iterating; the indicator-side .get() raises "
+                    "on the same input"
+                ),
+                category=KuantNumericWarning,
+            )
             return False
         return panel.iloc[row_dates.index(ts)][symbol]
 
