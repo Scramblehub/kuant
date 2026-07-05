@@ -119,9 +119,21 @@ def rollemastd(x, span=None, alpha=None, bias=False):
 
     beta = 1.0 - alpha_val
 
-    # Recurrences for m1 and m2.
-    m1 = _ema_via_lfilter(arr_np, alpha_val)
-    m2 = _ema_via_lfilter(arr_np * arr_np, alpha_val)
+    # Numerical-stability shift. Running the recurrence on `y = x - shift`
+    # (with shift ≈ typical magnitude of x) then reading variance as
+    # `E[y²] - E[y]²` is mathematically identical to reading it on x
+    # (variance is shift-invariant), but keeps both terms small so the
+    # subtraction doesn't suffer catastrophic cancellation. Without this,
+    # inputs like `[C + tiny_noise]` for large C blow up variance by
+    # `C² · eps_machine`.
+    shift_val = float(arr_np[0])
+    if not np.isfinite(shift_val):
+        shift_val = 0.0
+    y = arr_np - shift_val
+
+    # Recurrences for m1 and m2 in y-space.
+    m1 = _ema_via_lfilter(y, alpha_val)
+    m2 = _ema_via_lfilter(y * y, alpha_val)
 
     var_biased = m2 - m1 * m1
     var_biased = np.maximum(var_biased, 0.0)  # guard FP negatives
