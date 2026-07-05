@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kuant"
-version = "0.1.0"
+version = "0.2.0"
 description = "GPU-accelerated quantitative research kernels. Kernel × quant."
 readme = "README.md"
 license = { text = "Apache-2.0" }
@@ -71,6 +71,11 @@ dev = [
     "ruff>=0.4",
     "black>=24.0",
     "pre-commit>=3.7",
+    # Test-only deps for parity checks and parquet round-trip tests.
+    # pandas is used for pandas.rolling parity in stats tests.
+    # pyarrow is used for .to_parquet() round-trip tests across subpackages.
+    "pandas>=2.0",
+    "pyarrow>=15.0",
 ]
 docs = [
     "sphinx>=7.0",

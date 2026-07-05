@@ -1,28 +1,39 @@
 # kuant design docs
 
-Cross-cutting architectural decisions and design rationale that spans
-multiple kernels or the library as a whole.
+Cross-cutting architectural decisions that span multiple kernels or the
+library as a whole.
 
-For per-kernel design rationale, see [`../kernels/`](../kernels/) — each
-kernel doc includes a Design Decisions section.
+For per-kernel rationale, see [`../kernels/`](../kernels/). Each kernel
+doc has a Design Decisions section.
 
-## Planned design docs
+## Existing docs
 
-- `backend-dtype-shape-contract.md` — the universal invariant every kernel
-  in kuant preserves: numpy/cupy backend, dtype (with int → float64),
-  shape (broadcasting + scalar-in/scalar-out), NaN propagation
-- `naming-convention.md` — the no-underscore API rule (`bsput`, not
-  `bs_put`; `belltest`, not `bell_test`) and the direction-in-name
-  rule (only when call vs put math differs)
-- `cpu-first-gpu-second.md` — why every kernel has a numpy fallback and
-  the pattern for adding GPU acceleration incrementally
-- `testing-policy.md` — the three-layer validation strategy (golden
+- [`Validation_Additions.md`](Validation_Additions.md): validation gaps
+  identified in a background audit. Priority-ranked list of missing
+  input validators, runtime warnings, and message-polish items. Every
+  Priority A gap has been addressed; the doc remains as the log.
+- [`subpackage-scopes.md`](subpackage-scopes.md): working scopes for the
+  five originally-empty subpackages (data, edgecases, signals, portfolio,
+  text). Kernel list, first-three-cut recommendation, warnings, and
+  sequencing per subpackage.
+- [`plan-topology.md`](plan-topology.md): topology kernel plan.
+- [`plan-options.md`](plan-options.md): options kernel plan.
+- [`roadmap.md`](roadmap.md): what's next per subpackage.
+
+## Planned docs
+
+- `backend-dtype-shape-contract.md`: the universal invariant every
+  kernel preserves (numpy/cupy backend, dtype with int-to-float64,
+  shape broadcasting with scalar-in/scalar-out, NaN propagation).
+- `naming-convention.md`: the no-underscore API rule (`bsput`, not
+  `bs_put`) and the direction-in-name rule.
+- `cpu-first-gpu-second.md`: why every kernel has a numpy fallback and
+  the pattern for adding GPU acceleration incrementally.
+- `testing-policy.md`: the three-layer validation strategy (golden
   values, library reference match, cross-kernel identities) with
-  concrete expected tolerances
-- `dependency-management.md` — how sklearn / statsmodels are optional
-  (lazy-imported at call time via `_require_*` helpers) so `import
-  kuant` never pulls in heavy scientific-python deps
-- `queueing-and-throttle.md` — hardware detection and adaptive
-  chunking so consumer GPUs don't get overrun
-
-Currently empty — populate as decisions accumulate.
+  concrete expected tolerances.
+- `dependency-management.md`: how scikit-learn, statsmodels, ripser,
+  persim, pyarrow are optional. They import lazily inside the kernels
+  that need them via `require_dep`, so `import kuant` stays cheap.
+- `queueing-and-throttle.md`: hardware detection and adaptive chunking
+  so consumer GPUs do not get overrun.

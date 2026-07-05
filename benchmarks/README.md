@@ -1,47 +1,53 @@
 # kuant benchmarks
 
-Micro-benchmarks per subpackage, run through a **file-based queue** so
-you can add new kernels without waiting for the current run to finish.
+Micro-benchmarks per subpackage, driven by a file-based queue. You can
+add new benchmark files while a run is in progress; they get picked up
+on the next scan.
 
 ## Layout
 
 ```
 benchmarks/
-├── suites/            One file per subpackage — pytest-benchmark tests
+├── suites/            One file per subpackage. pytest-benchmark tests.
 │   ├── bench_core.py
 │   ├── bench_options.py
 │   ├── bench_stats.py
 │   ├── bench_qm.py
-│   └── bench_sindy.py
-├── results/           Append-only JSONL logs (one line per benchmark)
-├── queue.py           The runner: scans suites, executes one at a time
-└── run.sh             Shell wrapper (activates venv, runs queue.py)
+│   ├── bench_sindy.py
+│   ├── bench_topology.py
+│   ├── bench_data.py
+│   ├── bench_edgecases.py
+│   └── bench_signals.py
+├── results/           Append-only JSONL logs (one line per benchmark).
+├── queue.py           The runner. Scans suites, executes one at a time.
+└── run.sh             Shell wrapper (activates venv, runs queue.py).
 ```
 
 ## Queue semantics
 
-Each benchmark suite is a standalone pytest-benchmark file. The runner:
+Each suite is a standalone pytest-benchmark file. The runner:
 
-1. Finds `benchmarks/suites/bench_*.py`
-2. For each, computes a content hash and checks a manifest of completed hashes
-3. Runs any that are new or changed (unless `--force`)
-4. Streams results to `results/latest.jsonl` as each completes
-5. Holds a lockfile so two concurrent invocations don't collide
+1. Finds `benchmarks/suites/bench_*.py`.
+2. For each, computes a content hash and checks a manifest of completed hashes.
+3. Runs any that are new or changed. `--force` overrides.
+4. Streams results to `results/latest.jsonl` as each completes.
+5. Holds a lockfile so two concurrent invocations do not collide.
 
-## Workflow when adding new kernel benchmarks
+## Adding a new benchmark
 
-1. Edit or create a file in `suites/` — pytest-benchmark style:
+1. Edit or create a file in `suites/`. pytest-benchmark style:
 
    ```python
    def test_bench_bscall_scalar(benchmark):
        benchmark(bscall, 100.0, 100.0, 1.0, 0.05, 0.20)
    ```
 
-2. Run the queue: `./benchmarks/run.sh` (foreground) or
-   `./benchmarks/run.sh --detach` (background — logs to `benchmarks/queue.log`).
+2. Run the queue: `./benchmarks/run.sh` (foreground), or
+   `./benchmarks/run.sh --detach` for background (logs to
+   `benchmarks/queue.log`).
 
-3. **Add more suites while the queue is running.** They get picked up on
-   the next scan; the currently-running suite is not interrupted.
+3. You can add more suites while the queue is running. They get picked
+   up on the next scan. The currently-running suite is not interrupted.
 
 4. Watch results live:
 
@@ -51,7 +57,7 @@ Each benchmark suite is a standalone pytest-benchmark file. The runner:
 
 ## Result format
 
-Each JSON line has:
+Each JSON line:
 
 ```json
 {
@@ -72,10 +78,10 @@ Each JSON line has:
 
 ## GPU benchmarks
 
-Tests that call cupy in their body need a CUDA device. They're skipped
-gracefully otherwise via a `pytest.importorskip("cupy")` at the top of
-the file. GPU numbers are stored alongside CPU numbers so you can
-compute the speedup ratio from `results/latest.jsonl`.
+Tests that call cupy need a CUDA device. They skip gracefully via
+`pytest.importorskip("cupy")` at the top of the file. GPU numbers are
+recorded alongside CPU numbers so you can compute speedup ratios from
+`results/latest.jsonl`.
 
 ## Forcing a rerun
 
