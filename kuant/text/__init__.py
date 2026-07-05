@@ -20,12 +20,15 @@ signal).
 from kuant.text.cusipvalidate import CUSIPValidation, cusipvalidate
 from kuant.text.occparse import OCCSymbol, occparse
 from kuant.text.secformparse import SECForm, secformparse
+from kuant.text.tickernorm import TickerParts, tickernorm
 
 __all__ = [
     "CUSIPValidation",
     "OCCSymbol",
     "SECForm",
+    "TickerParts",
     "cusipvalidate",
     "occparse",
     "secformparse",
+    "tickernorm",
 ]

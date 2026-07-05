@@ -14,14 +14,36 @@ signal desk composes:
   from noise given the sample size.
 """
 
+from kuant.signals.factorscoring import (
+    FactorICResult,
+    QuantileReturnsResult,
+    QuantileSpreadResult,
+    QuantileTurnoverResult,
+    RankAutocorrResult,
+    factor_ic,
+    factor_rank_autocorr,
+    mean_return_by_quantile,
+    quantile_spread,
+    quantile_turnover,
+)
 from kuant.signals.icdecay import ICDecayResult, icdecay
 from kuant.signals.neutralize import NeutralizeResult, neutralize
 from kuant.signals.winsorize import winsorize
 
 __all__ = [
+    "FactorICResult",
     "ICDecayResult",
     "NeutralizeResult",
+    "QuantileReturnsResult",
+    "QuantileSpreadResult",
+    "QuantileTurnoverResult",
+    "RankAutocorrResult",
+    "factor_ic",
+    "factor_rank_autocorr",
     "icdecay",
+    "mean_return_by_quantile",
     "neutralize",
+    "quantile_spread",
+    "quantile_turnover",
     "winsorize",
 ]

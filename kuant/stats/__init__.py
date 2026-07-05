@@ -28,6 +28,18 @@ from .rollstd import rollstd
 from .rollsum import rollsum
 from .zscore import zscore
 
+# Realized-volatility estimators (Wave 3).
+from .realizedvol import atr, garmanklass, parkinson, rogerssatchell, yangzhang
+
+# Stationarity / unit-root tests (Wave 3). Lazy statsmodels/arch inside.
+from .stationarity import (
+    StationarityResult,
+    adftest,
+    kpsstest,
+    phillipsperrontest,
+    varianceratiotest,
+)
+
 __all__ = [
     "DFAResult",
     "dfa",
@@ -63,4 +75,15 @@ __all__ = [
     "rollstd",
     "rollsum",
     "zscore",
+    # Wave 3 additions.
+    "atr",
+    "garmanklass",
+    "parkinson",
+    "rogerssatchell",
+    "yangzhang",
+    "StationarityResult",
+    "adftest",
+    "kpsstest",
+    "phillipsperrontest",
+    "varianceratiotest",
 ]
