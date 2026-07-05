@@ -129,6 +129,42 @@ class KuantOverflowWarning(KuantWarning):
     """
 
 
+# ---------- text-specific errors and warnings ------------------------------
+#
+# Used by kuant.text (occparse, secformparse, cusipvalidate, lmdict, ...).
+# String input is the primary failure surface for text kernels; these
+# classes give callers a clean handle on the two common cases.
+
+
+class KuantEncodingError(KuantValueError):
+    """Input to a text kernel cannot be safely processed as text.
+
+    Two triggers:
+      - `bytes` passed where `str` was expected (kernel refuses to
+        guess the encoding).
+      - a UTF-8 decode failure surfacing from an internal operation.
+
+    Distinct subclass so `try: ... except KuantEncodingError:` catches
+    only encoding failures without swallowing every value-range error.
+    """
+
+
+class KuantEncodingWarning(KuantWarning):
+    """Text input looks structurally valid but likely reflects a broken
+    upstream decode.
+
+    Fires on U+FFFD (`REPLACEMENT CHARACTER`), NUL bytes, or control
+    characters in a field that has no legitimate use for them. The
+    string will still be processed; the warning tells the caller the
+    result may be silently wrong because the upstream decode step
+    produced replacement chars.
+
+    Users who want strict enforcement can promote:
+
+        warnings.filterwarnings("error", category=KuantEncodingWarning)
+    """
+
+
 __all__ = [
     "KuantError",
     "KuantValueError",
@@ -136,8 +172,10 @@ __all__ = [
     "KuantConvergenceError",
     "KuantBackendError",
     "KuantDependencyError",
+    "KuantEncodingError",
     "KuantWarning",
     "KuantConvergenceWarning",
     "KuantNumericWarning",
     "KuantOverflowWarning",
+    "KuantEncodingWarning",
 ]
