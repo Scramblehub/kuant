@@ -192,6 +192,7 @@ kuant/
 │                   fill (Order, submit_order, FillReport)
 │                   position (Position, PortfolioState, EquitySnapshot)
 │                   warmup (Warmup, WarmupCache, WarmupMode)
+│                   engine (run, BacktestResult)
 ├── queueing/     Hardware throttle and coordination layer
 ├── errors.py     KuantError + KuantWarning hierarchies
 └── _validation.py  Central validators used by every kernel
@@ -201,7 +202,7 @@ docs/
 ├── design/       Cross-cutting design decisions
 └── examples/     Worked examples
 
-tests/            1:1 with kernel files; 1847 tests total
+tests/            1:1 with kernel files; 1863 tests total
 ```
 
 ## Contributing

@@ -4,6 +4,37 @@ All notable changes to `kuant` are tracked here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); dates are release dates
 on PyPI.
 
+## v0.4.6
+
+- **`kuant.backtest.engine`** lands. Reference orchestrator over the
+  correctness-first backtest primitives (`lifecycle`, `liquidity`,
+  `fill`, `position`, `warmup`). Intentionally small (~200 lines); users
+  who want richer semantics build on top of the primitives directly.
+- `run(cache, strategy, liquidity_profiles, fill_model, initial_cash,
+  lifecycles=None) -> BacktestResult`. Bar-driven loop:
+  - For each timestamp, the user's `strategy(cache, state, timestamp)`
+    returns a list of `Order`s.
+  - Each order is gated: lifecycle `tradeable_mask`, presence of a
+    liquidity profile, symbol presence in the price panel, finite
+    positive reference price. Gated orders are recorded (never silently
+    dropped) with categorical reasons `GATED_LIFECYCLE`, `NO_PROFILE`,
+    `SYMBOL_NOT_IN_PANEL`, `NO_PRICE`.
+  - Surviving orders route through `submit_order` -> `execute_fill`.
+    The `FillReport` is applied atomically to the `PortfolioState`.
+  - Bar closes with a `mark_to_market` snapshot appended to the equity
+    curve.
+- `BacktestResult`: `equity` (per-bar DataFrame with cash /
+  positions_value / total_value / unrealized_pnl / realized_pnl),
+  `trades` (per-order DataFrame including gated intents),
+  `portfolio_final`, order counters, `summary()`, and `to_parquet(path)`
+  emitting `{path}_equity.parquet` and `{path}_trades.parquet`.
+- 16 new tests spanning empty runs, buy-and-hold equity growth, gating
+  under lifecycle / no-profile / symbol-missing / NaN-price, rejected
+  fills below min_size, slippage causing lower final equity than
+  zero-slip runs, state visibility across bars, and `.to_parquet`
+  round-trip.
+- Regression: 1847 -> 1863 pass (+16). Coverage held at 91%.
+
 ## v0.4.5
 
 - **Tier-2 warnings sweep** (Session 5B): ~40 new `KuantNumericWarning`
