@@ -12,7 +12,7 @@ Works on numpy, dispatches transparently to cupy when available.
 
 ## What's in the box
 
-Fifteen subpackages, 1985 tests, ~90 benchmarks. Alpha stability.
+Fifteen subpackages, 1994 tests, ~90 benchmarks. Alpha stability.
 
 | Subpackage | Kernels | Contents |
 |---|---|---|
@@ -203,7 +203,7 @@ docs/
 ├── design/       Cross-cutting design decisions
 └── examples/     Worked examples
 
-tests/            1:1 with kernel files; 1985 tests total
+tests/            1:1 with kernel files; 1994 tests total
 ```
 
 ## Contributing

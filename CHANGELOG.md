@@ -4,6 +4,31 @@ All notable changes to `kuant` are tracked here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); dates are release dates
 on PyPI.
 
+## v0.5.2
+
+- **`kuant.backtest.engine.run`**: new `terminal_actions: bool = False`
+  opt-in. When enabled, the engine detects the first bar on which a
+  held position becomes non-tradeable per its lifecycle and applies the
+  lifecycle's `terminal_action` (`LIQUIDATE_AT_LAST` at the last finite
+  price, `MARK_TO_ZERO` for total-loss delistings, or
+  `PRORATE_RECOVERY` at `terminal_recovery * last_finite_price`). Each
+  close is recorded as a synthetic trade row with
+  `reason="TERMINAL_CLOSE"` and counted in the new
+  `BacktestResult.n_terminal_closes`. Default OFF preserves the v0.5.1
+  contract (strategies pre-close delisted names themselves). Closes
+  the gap surfaced by real-CRSP-panel stress testing on 2026-07-06.
+- **`kuant.sindy.chaos.chaosscan`**: new
+  `label_calibration: {"classical", "financial"} = "classical"` opt-in.
+  `financial` scales lambda thresholds ~100x smaller to fit
+  production return-series magnitudes (where meaningful divergence is
+  order 1e-5 per bar rather than 0.5 as in Lorenz textbook signals).
+  Raw kernel outputs are calibration-independent; only the `regime`
+  label depends on the choice. Classical stays default for backwards
+  compatibility.
+- **Tests**: +5 engine terminal-action tests + 4 chaosscan calibration
+  tests (1985 → 1994 total). Full regression clean.
+- **No breaking changes.**
+
 ## v0.5.1
 
 - **`kuant.sindy.chaos`** lands: chaos-theory diagnostics for regime

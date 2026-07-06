@@ -26,11 +26,23 @@ recorded as `no_price`.
 
 Terminal actions
 ----------------
-The engine does NOT auto-close positions on delisting_date. A
-strategy that holds through delisting will retain a NaN mark-to-
-market from that point forward. A `terminal_actions=True` opt-in
-that auto-liquidates per `SecurityLifecycle.terminal_action` is
-deferred to v1.1.
+Opt-in via `terminal_actions=True` on `run`. When enabled, the engine
+detects the first bar on which a held position becomes non-tradeable
+per its `SecurityLifecycle` and applies the lifecycle's
+`terminal_action`:
+
+- `LIQUIDATE_AT_LAST`: sell at the most recent finite price at or
+  before the current bar.
+- `MARK_TO_ZERO`: force size to zero, book P&L = -avg_cost * size,
+  no cash effect. Used for total-loss delistings.
+- `PRORATE_RECOVERY`: sell at `terminal_recovery * last_finite_price`
+  (recovery fraction on the lifecycle).
+
+The synthetic close is recorded in the trades DataFrame with
+`reason="TERMINAL_CLOSE"` and `tag="terminal_<action_value>"`.
+
+Default is `terminal_actions=False` to preserve the v0.5.1 contract
+(strategies were responsible for pre-closing delisted names).
 
 Design: docs/kernels/backtest/engine/README.md.
 """
@@ -46,6 +58,7 @@ import pandas as pd
 from kuant._validation import require_dep, require_positive
 from kuant.backtest.fill.order import Order
 from kuant.backtest.fill.submit import submit_order
+from kuant.backtest.lifecycle.security import SecurityLifecycle, TerminalAction
 from kuant.backtest.position.portfolio import PortfolioState
 from kuant.backtest.warmup.cache import WarmupCache
 from kuant.errors import KuantShapeError, KuantValueError
@@ -87,6 +100,10 @@ class BacktestResult:
     n_orders_gated : int
         Orders skipped before reaching the liquidity layer
         (tradeable_mask False, no profile registered, or NaN price).
+    n_terminal_closes : int
+        Positions force-closed by the auto-close pass
+        (`terminal_actions=True`). Zero when the opt-in is off or no
+        held positions crossed their delisting_date during the run.
     """
 
     equity: object  # pandas.DataFrame
@@ -98,6 +115,7 @@ class BacktestResult:
     n_orders_filled: int
     n_orders_rejected: int
     n_orders_gated: int
+    n_terminal_closes: int = 0
 
     def summary(self) -> str:
         eq = self.equity
@@ -113,6 +131,7 @@ class BacktestResult:
             f"filled:          {self.n_orders_filled}\n"
             f"rejected:        {self.n_orders_rejected}\n"
             f"gated:           {self.n_orders_gated}\n"
+            f"terminal closes: {self.n_terminal_closes}\n"
             f"initial cash:    {self.initial_cash:.4f}\n"
             f"final total:     {last:.4f}\n"
             f"total return:    {total_return:+.4%}"
@@ -170,6 +189,87 @@ def _empty_trades_frame() -> pd.DataFrame:
     return pd.DataFrame({c: [] for c in _TRADE_COLUMNS})
 
 
+def _last_finite_price_at_or_before(prices: pd.DataFrame, timestamp, symbol) -> float:
+    """Scan the price column backwards from `timestamp` (inclusive) for
+    the most recent finite value. Returns NaN if none exists."""
+    if symbol not in prices.columns:
+        return float("nan")
+    col = prices[symbol]
+    up_to = col.loc[:timestamp]
+    if len(up_to) == 0:
+        return float("nan")
+    finite = up_to[np.isfinite(up_to.values)]
+    if len(finite) == 0:
+        return float("nan")
+    return float(finite.iloc[-1])
+
+
+def _apply_terminal_close(
+    state: PortfolioState,
+    lifecycle: SecurityLifecycle,
+    last_finite_price: float,
+    timestamp,
+) -> dict:
+    """Force-close a single position per lifecycle.terminal_action.
+
+    Mutates `state.cash` and `state.positions[lifecycle.symbol]` in
+    place; returns a trade row dict for the trades DataFrame.
+    """
+    sym = lifecycle.symbol
+    pos = state.positions[sym]
+    size_at_close = float(pos.size)
+    action = lifecycle.terminal_action
+
+    if action == TerminalAction.MARK_TO_ZERO:
+        # Total loss. Realize -avg_cost * size; zero out size and cost.
+        realized_delta = -pos.avg_cost * size_at_close
+        pos.realized_pnl += realized_delta
+        pos.size = 0.0
+        pos.avg_cost = 0.0
+        close_price = 0.0
+        # Cash unchanged: no proceeds.
+    else:
+        if not np.isfinite(last_finite_price) or last_finite_price <= 0:
+            # Cannot LIQUIDATE / PRORATE without a valid last mark; fall
+            # back to MARK_TO_ZERO for a safe close, but flag it.
+            realized_delta = -pos.avg_cost * size_at_close
+            pos.realized_pnl += realized_delta
+            pos.size = 0.0
+            pos.avg_cost = 0.0
+            close_price = 0.0
+            action_recorded = TerminalAction.MARK_TO_ZERO
+        else:
+            if action == TerminalAction.PRORATE_RECOVERY:
+                effective_price = float(last_finite_price) * float(lifecycle.terminal_recovery)
+            else:  # LIQUIDATE_AT_LAST
+                effective_price = float(last_finite_price)
+            # Sell full size at effective_price: cash += size * price,
+            # realize P&L on (price - avg_cost) * size.
+            state.cash += size_at_close * effective_price
+            pos.realized_pnl += (effective_price - pos.avg_cost) * size_at_close
+            pos.size = 0.0
+            pos.avg_cost = 0.0
+            close_price = effective_price
+            action_recorded = action
+        # (fall-through to trade row build)
+
+    # Trade row: negative size_filled reflects the sell.
+    return {
+        "timestamp": timestamp,
+        "order_id": -1,  # synthetic; no originating Order
+        "symbol": sym,
+        "side": -1 if size_at_close > 0 else 1,
+        "requested_size": abs(size_at_close),
+        "fill_price": close_price,
+        "size_filled": -size_at_close,
+        "slippage_bps": 0.0,
+        "cost": abs(size_at_close) * close_price,
+        "status": "filled",
+        "reason": "TERMINAL_CLOSE",
+        "tag": f"terminal_{(action if action == TerminalAction.MARK_TO_ZERO else action_recorded).value}",
+    }
+
+
 def run(
     cache: WarmupCache,
     strategy: StrategyFn,
@@ -178,6 +278,7 @@ def run(
     fill_model,
     initial_cash: float,
     lifecycles: dict | None = None,
+    terminal_actions: bool = False,
 ) -> BacktestResult:
     """Run a bar-driven backtest.
 
@@ -204,7 +305,17 @@ def run(
         If provided, the engine calls `cache.tradeable(t, sym)` to gate
         orders. If `cache` was already built with lifecycle registration
         via `Warmup.add_lifecycles`, pass None here; the cache already
-        knows the answer.
+        knows the answer. Required (either here or on the cache) when
+        `terminal_actions=True`.
+    terminal_actions : bool, default False
+        When True, the engine auto-closes any held position whose
+        lifecycle just crossed into non-tradeable territory, applying
+        `lifecycle.terminal_action` (LIQUIDATE_AT_LAST / MARK_TO_ZERO /
+        PRORATE_RECOVERY). Each close is recorded as a synthetic trade
+        with `reason="TERMINAL_CLOSE"` and counted in
+        `n_terminal_closes`. When False (v0.5.1 contract), strategies
+        must pre-close delisted names themselves or accept the NaN
+        mark-to-market that follows.
 
     Returns
     -------
@@ -254,8 +365,33 @@ def run(
     n_orders_filled = 0
     n_orders_rejected = 0
     n_orders_gated = 0
+    n_terminal_closes = 0
+    terminal_closed: set = set()  # symbols already terminal-closed
+    lc_map: dict = lifecycles or {}
 
     for timestamp in prices.index:
+        # Auto-close pass (v0.5.2 opt-in): before the strategy runs,
+        # detect any held position whose lifecycle just crossed into
+        # non-tradeable territory and force-close it per
+        # `lifecycle.terminal_action`. Emits a synthetic trade row with
+        # `reason="TERMINAL_CLOSE"`.
+        if terminal_actions and lc_map:
+            for sym in list(state.positions.keys()):
+                pos = state.positions[sym]
+                if pos.size == 0.0 or sym in terminal_closed:
+                    continue
+                lc = lc_map.get(sym)
+                if lc is None or lc.delisting_date is None:
+                    continue
+                # Fire on the first bar where the position is non-tradeable
+                # (i.e. strictly past delisting_date). Delisting_date itself
+                # is still a tradeable close bar.
+                if not cache.tradeable(timestamp, sym):
+                    last_px = _last_finite_price_at_or_before(prices, timestamp, sym)
+                    trade_rows.append(_apply_terminal_close(state, lc, last_px, timestamp))
+                    terminal_closed.add(sym)
+                    n_terminal_closes += 1
+
         orders = strategy(cache, state, timestamp) or []
         for order in orders:
             n_orders_seen += 1
@@ -323,6 +459,7 @@ def run(
         n_orders_filled=int(n_orders_filled),
         n_orders_rejected=int(n_orders_rejected),
         n_orders_gated=int(n_orders_gated),
+        n_terminal_closes=int(n_terminal_closes),
     )
 
 

@@ -499,3 +499,125 @@ def test_slippage_reduces_equity_vs_zero_slip():
     )
     # Same fills, more slippage → lower final equity.
     assert r10.equity["total_value"].iloc[-1] < r0.equity["total_value"].iloc[-1]
+
+
+# ---------- v0.5.2: terminal_actions opt-in ----------------------------
+
+
+def _panel_with_delisting(n: int = 20, delist_at: int = 15) -> pd.DataFrame:
+    """Two-name panel where B goes NaN starting at bar `delist_at`."""
+    idx = pd.date_range("2020-01-01", periods=n, freq="D")
+    price_a = np.linspace(100.0, 110.0, n)
+    price_b = np.linspace(50.0, 60.0, n)
+    price_b[delist_at:] = np.nan
+    return pd.DataFrame({"A": price_a, "B": price_b}, index=idx)
+
+
+def _buy_B_then_hold(cache, state, timestamp):
+    if state.positions.get("B") is not None and state.positions["B"].size != 0.0:
+        return []
+    return [
+        Order(
+            symbol="B",
+            side=OrderSide.BUY,
+            size=10.0,
+            timestamp=(timestamp.date() if hasattr(timestamp, "date") else timestamp),
+            tag="test",
+        )
+    ]
+
+
+def _run_with_terminal(action: TerminalAction, terminal_actions: bool, recovery: float = 0.0):
+    prices = _panel_with_delisting(n=20, delist_at=15)
+    idx = prices.index
+    profiles = {"A": _profile("A", idx), "B": _profile("B", idx)}
+    lc_b = SecurityLifecycle(
+        symbol="B",
+        listing_date=None,
+        delisting_date=idx[14].date(),
+        terminal_action=action,
+        terminal_recovery=recovery,
+    )
+    lc_a = SecurityLifecycle(
+        symbol="A",
+        listing_date=None,
+        delisting_date=None,
+        terminal_action=TerminalAction.MARK_TO_ZERO,
+    )
+    lifecycles = {"A": lc_a, "B": lc_b}
+    w = Warmup(prices, mode="eager")
+    w.add_lifecycles(lifecycles)
+    cache = w.materialize()
+    return run(
+        cache,
+        strategy=_buy_B_then_hold,
+        liquidity_profiles=profiles,
+        fill_model=FlatSlippage(bps=0),
+        initial_cash=100_000.0,
+        lifecycles=lifecycles,
+        terminal_actions=terminal_actions,
+    )
+
+
+def test_terminal_action_off_by_default_preserves_v051_contract():
+    """When terminal_actions=False, held-through-delisting produces NaN
+    mark-to-market and n_terminal_closes == 0."""
+    r = _run_with_terminal(TerminalAction.LIQUIDATE_AT_LAST, terminal_actions=False)
+    assert r.n_terminal_closes == 0
+    # Post-delisting bars should have NaN total_value because B is NaN
+    # in the price row.
+    assert bool(r.equity["total_value"].iloc[-1] != r.equity["total_value"].iloc[-1])
+
+
+def test_terminal_liquidate_at_last_closes_position_at_prior_finite_price():
+    """LIQUIDATE_AT_LAST sells at the last finite price before delisting."""
+    r = _run_with_terminal(TerminalAction.LIQUIDATE_AT_LAST, terminal_actions=True)
+    assert r.n_terminal_closes == 1
+    # B position closed.
+    assert r.portfolio_final.positions["B"].size == 0.0
+    # Equity finite everywhere post-close.
+    assert bool(np.isfinite(r.equity["total_value"].iloc[-1]))
+    # A synthetic close row for B with reason TERMINAL_CLOSE.
+    terminal_rows = r.trades[r.trades["reason"] == "TERMINAL_CLOSE"]
+    assert len(terminal_rows) == 1
+    row = terminal_rows.iloc[0]
+    assert row["symbol"] == "B"
+    assert row["fill_price"] > 0
+    assert row["tag"].startswith("terminal_")
+
+
+def test_terminal_mark_to_zero_realizes_full_loss():
+    """MARK_TO_ZERO closes at price 0; realized_pnl absorbs the loss."""
+    r = _run_with_terminal(TerminalAction.MARK_TO_ZERO, terminal_actions=True)
+    assert r.n_terminal_closes == 1
+    b_pos = r.portfolio_final.positions["B"]
+    assert b_pos.size == 0.0
+    # Bought 10 shares at ~50 on bar 0; realized_pnl should be negative
+    # and roughly equal to -avg_cost * size = -500.
+    assert b_pos.realized_pnl < 0
+    assert abs(b_pos.realized_pnl + 500.0) < 1.0  # ~-500 within a dollar
+    # Cash unchanged from just-before-close (no proceeds).
+    terminal_row = r.trades[r.trades["reason"] == "TERMINAL_CLOSE"].iloc[0]
+    assert terminal_row["fill_price"] == 0.0
+
+
+def test_terminal_prorate_recovery_scales_close_price():
+    """PRORATE_RECOVERY closes at recovery * last_finite_price."""
+    r = _run_with_terminal(TerminalAction.PRORATE_RECOVERY, terminal_actions=True, recovery=0.30)
+    assert r.n_terminal_closes == 1
+    b_pos = r.portfolio_final.positions["B"]
+    assert b_pos.size == 0.0
+    terminal_row = r.trades[r.trades["reason"] == "TERMINAL_CLOSE"].iloc[0]
+    # Last finite price for B is at index 14 (delist_at - 1 + 0 = 14).
+    # Prices are linear 50 -> 60 across 20 bars, so index 14 is at 50 + 14*(60-50)/19 = 57.368.
+    expected_last_finite = 50.0 + 14 * (60.0 - 50.0) / 19
+    expected_close = 0.30 * expected_last_finite
+    assert abs(terminal_row["fill_price"] - expected_close) < 1e-6
+
+
+def test_terminal_close_fires_once_per_symbol():
+    """A single symbol's terminal close should fire on exactly one bar,
+    not repeatedly across the remaining bars."""
+    r = _run_with_terminal(TerminalAction.LIQUIDATE_AT_LAST, terminal_actions=True)
+    terminal_rows = r.trades[r.trades["reason"] == "TERMINAL_CLOSE"]
+    assert len(terminal_rows) == 1

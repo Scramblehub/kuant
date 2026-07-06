@@ -81,27 +81,69 @@ class ChaosScanResult:
         )
 
 
+# Threshold profiles for the regime classifier.
+#
+# `classical` matches the literature calibration for Lorenz-like
+# systems where lambda ~ 0.5-2.0 per timestep. `financial` scales the
+# lambda thresholds down by ~100x to fit real return-series magnitudes
+# where lambda ~ 1e-4 to 1e-2 per bar even when structure is present.
+# DET / D_2 thresholds are dimensionless and are shared.
+#
+# Users who disagree with either preset can call `chaosscan` and pull
+# the raw kernel results off the returned `ChaosScanResult`, then
+# threshold at whatever they prefer.
+_THRESHOLDS = {
+    "classical": {
+        "chaotic_lyap_min": 0.001,
+        "chaotic_det_min": 0.5,
+        "periodic_lyap_max": 0.005,
+        "periodic_det_min": 0.9,
+        "stochastic_det_max": 0.5,
+    },
+    "financial": {
+        "chaotic_lyap_min": 1e-5,
+        "chaotic_det_min": 0.5,
+        "periodic_lyap_max": 5e-5,
+        "periodic_det_min": 0.7,
+        "stochastic_det_max": 0.5,
+    },
+}
+
+
 def _classify(
     lyap: float,
     d2: float,
     det: float,
     embed_dim: int,
+    calibration: str = "classical",
 ) -> str:
     """Rule-based regime classifier.
 
-    Thresholds are the "default" ones the literature settles on; users
-    can pull the raw kernel results and apply their own thresholds if
-    they disagree.
+    Parameters
+    ----------
+    calibration : {"classical", "financial"}, default "classical"
+        Threshold profile. `classical` uses lambda thresholds calibrated
+        to Lorenz-like textbook signals (lambda around 0.001 to 0.005).
+        `financial` scales the lambda thresholds down by ~100x to match
+        the magnitudes typical of production return series (lambda around
+        1e-5 to 5e-5). DET / D_2 gates are dimensionless and are shared.
     """
-    # Chaotic: positive Lyapunov, finite D_2 well below embed_dim,
-    # high determinism.
-    if lyap > 0.001 and d2 < embed_dim - 0.5 and det > 0.5:
+    if calibration not in _THRESHOLDS:
+        raise KuantValueError(
+            f"kuant.chaosscan: 'label_calibration' must be one of "
+            f"{sorted(_THRESHOLDS.keys())}, got {calibration!r}.  "
+            f"[KE-VAL-RANGE]"
+        )
+    thr = _THRESHOLDS[calibration]
+    # Chaotic: positive Lyapunov above threshold, D_2 well below
+    # embedding dim, high determinism.
+    if lyap > thr["chaotic_lyap_min"] and d2 < embed_dim - 0.5 and det > thr["chaotic_det_min"]:
         return "chaotic"
-    # Periodic: Lyapunov ~ 0, D_2 close to 1, very high determinism.
-    if abs(lyap) < 0.005 and d2 < 1.5 and det > 0.9:
+    # Periodic: Lyapunov near zero, D_2 close to 1, very high determinism.
+    if abs(lyap) < thr["periodic_lyap_max"] and d2 < 1.5 and det > thr["periodic_det_min"]:
         return "periodic"
     # Stochastic: D_2 saturates near embed_dim (no attractor), low det.
-    if d2 >= embed_dim - 0.5 and det < 0.5:
+    if d2 >= embed_dim - 0.5 and det < thr["stochastic_det_max"]:
         return "stochastic"
     return "unknown"
 
@@ -114,6 +156,7 @@ def chaosscan(
     max_lag: int = 32,
     max_dim: int = 10,
     n_r: int = 20,
+    label_calibration: str = "classical",
 ) -> ChaosScanResult:
     """Full chaos-battery scan with regime classification.
 
@@ -127,6 +170,17 @@ def chaosscan(
     max_lag : int, default 32
     max_dim : int, default 10
     n_r : int, default 20
+    label_calibration : {"classical", "financial"}, default "classical"
+        Threshold profile for the regime label.
+        - "classical" matches literature-standard chaos signals
+          (Lorenz, Rossler, r=4 logistic) where per-sample Lyapunov
+          exponents are order 0.001 to 0.5.
+        - "financial" scales the lambda thresholds down ~100x to fit
+          production return-series magnitudes where meaningful
+          divergence is order 1e-5 to 1e-4 per bar. Use for daily or
+          intraday financial returns / equity-curve derivatives.
+        The raw numbers on `lyapunov`, `corrdim`, `rqa` are unaffected
+        by this choice; only the `regime` label depends on it.
 
     Returns
     -------
@@ -163,6 +217,7 @@ def chaosscan(
         d2=corr_res.correlation_dim,
         det=rqa_res.determinism,
         embed_dim=m_pick,
+        calibration=label_calibration,
     )
     return ChaosScanResult(
         regime=regime,
