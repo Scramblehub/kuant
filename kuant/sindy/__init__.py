@@ -1,4 +1,4 @@
-'''kuant.sindy — SINDy-adjacent reusable research tools.
+"""kuant.sindy — SINDy-adjacent reusable research tools.
 
 Tools distilled from real production null-hypothesis testing:
 
@@ -9,9 +9,21 @@ Tools distilled from real production null-hypothesis testing:
   symbolicscan     — polynomial-symbolic regression scan (sklearn)
   accelerationscan — second-derivative predictive-power scan (numpy)
 
+Chaos-theory sub-package (new in v0.5.1):
+
+  kuant.sindy.chaos.mutualinfo   — embedding-delay picker
+  kuant.sindy.chaos.falsenearest — embedding-dimension picker
+  kuant.sindy.chaos.lyapunov     — largest Lyapunov exponent
+  kuant.sindy.chaos.corrdim      — correlation dimension
+  kuant.sindy.chaos.rqa          — recurrence quantification analysis
+  kuant.sindy.chaos.ccm          — convergent cross-mapping
+  kuant.sindy.chaos.chaosscan    — composer + regime classifier
+
 All heavy deps (statsmodels, sklearn) are lazy-imported at CALL time,
 not at module import.
-'''
+"""
+
+from kuant.sindy import chaos
 from .accelerationscan import AccelerationScanResult
 from .accelerationscan import accelerationscan as _accelerationscan_fn
 from .grangerscan import GrangerHit, GrangerScanResult
@@ -34,10 +46,18 @@ symbolicscan = _symbolicscan_fn
 accelerationscan = _accelerationscan_fn
 
 __all__ = [
-    'accelerationscan', 'AccelerationScanResult',
-    'grangerscan', 'GrangerHit', 'GrangerScanResult',
-    'permtest', 'PermutationTestResult',
-    'pinnscan', 'PinnScanResult',
-    'sindylasso', 'SindyLassoResult',
-    'symbolicscan', 'SymbolicScanResult',
+    "accelerationscan",
+    "AccelerationScanResult",
+    "chaos",
+    "grangerscan",
+    "GrangerHit",
+    "GrangerScanResult",
+    "permtest",
+    "PermutationTestResult",
+    "pinnscan",
+    "PinnScanResult",
+    "sindylasso",
+    "SindyLassoResult",
+    "symbolicscan",
+    "SymbolicScanResult",
 ]

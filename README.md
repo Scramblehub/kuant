@@ -12,7 +12,7 @@ Works on numpy, dispatches transparently to cupy when available.
 
 ## What's in the box
 
-Fifteen subpackages, 1933 tests, ~90 benchmarks. Alpha stability.
+Fifteen subpackages, 1985 tests, ~90 benchmarks. Alpha stability.
 
 | Subpackage | Kernels | Contents |
 |---|---|---|
@@ -20,7 +20,7 @@ Fifteen subpackages, 1933 tests, ~90 benchmarks. Alpha stability.
 | `kuant.options` | 21 | First- and second-order Greeks, payoffs, chain filters, implied-vol via Newton or bisection. |
 | `kuant.stats` | 29 | Rolling primitives with strict-window NaN semantics, Hurst R/S, rolling Hurst, risk metrics (Sharpe, Sortino, MDD, Calmar), realized volatility, stationarity tests, tail cluster (Hill tail index, rolling variant, DFA, rollcoherence). |
 | `kuant.qm` | 5 plus `hmm`/`ghmm`/`quaternion` submodules | HMM and Gaussian-HMM inference (forward, backward, viterbi, posterior) plus Baum-Welch EM training. Also belltest, zenoscan, posteriorentropy, nocloningscan, decoherencescan. Quaternion algebra (Quaternion + array ops + slerp + quaternion_distance + composerotations + rollholonomy) for regime-drift signals. |
-| `kuant.sindy` | 6 | permtest, grangerscan, sindylasso, pinnscan, symbolicscan, accelerationscan. |
+| `kuant.sindy` | 6 plus `chaos` submodule | permtest, grangerscan, sindylasso, pinnscan, symbolicscan, accelerationscan. Chaos-theory diagnostics: mutualinfo, falsenearest, lyapunov, corrdim, rqa, ccm, chaosscan (composer + regime classifier). |
 | `kuant.topology` | 4 | persistenthomology (ripser), bettiseries, wasserstein (persim), dispersioncollapse. |
 | `kuant.data` | 6 | align (inner/outer/forward), baragg (OHLCV), corpaction (splits/dividends), panelize, resample, stitch. |
 | `kuant.edgecases` | 3 | Five NaN policies, delisted-name utilities, an outlier detector with three methods. |
@@ -203,7 +203,7 @@ docs/
 ├── design/       Cross-cutting design decisions
 └── examples/     Worked examples
 
-tests/            1:1 with kernel files; 1933 tests total
+tests/            1:1 with kernel files; 1985 tests total
 ```
 
 ## Contributing

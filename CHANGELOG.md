@@ -4,6 +4,40 @@ All notable changes to `kuant` are tracked here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); dates are release dates
 on PyPI.
 
+## v0.5.1
+
+- **`kuant.sindy.chaos`** lands: chaos-theory diagnostics for regime
+  classification and nonlinear-causality testing. Seven kernels + a
+  composer, sharing a single time-delay embedding helper. All CPU-only,
+  numpy-only, no heavy deps.
+  - `mutualinfo(x, y=None, ...)`: auto-MI curve vs lag (mode 1, returns
+    `MutualInfoResult` with `suggested_tau` at first local minimum) or
+    cross-MI scalar between two series at a given lag (mode 2). Fraser-
+    Swinney 1986 histogram estimator.
+  - `falsenearest(x, tau, ...)`: false-nearest-neighbors fraction vs
+    embedding dimension (Kennel-Brown-Abarbanel 1992). Returns
+    `FalseNearestResult` with `suggested_m` at the first dim below a
+    5%-default threshold.
+  - `lyapunov(x, tau, m, ...)`: largest Lyapunov exponent via
+    Rosenstein-Collins-DeLuca 1993. Configurable Theiler window;
+    returns full log-divergence curve so callers can visually check
+    the linear fit region.
+  - `corrdim(x, tau, m, ...)`: correlation dimension via
+    Grassberger-Procaccia 1983. Fits the middle 60% of the log-log
+    C(r) curve to avoid noise-floor and finite-size regimes.
+  - `rqa(x, tau, m, ...)`: recurrence-quantification analysis
+    (Marwan-Romano-Thiel-Kurths 2007). Recurrence rate, determinism,
+    laminarity, longest diagonal, entropy of diagonal lengths.
+    Auto-picks epsilon to hit a target recurrence rate if not given.
+  - `ccm(x, y, tau, m, ...)`: convergent cross-mapping (Sugihara 2012)
+    for coupled deterministic systems. Simplex-projection cross-map
+    prediction skill vs library size, both directions, with a
+    convergence flag.
+  - `chaosscan(x, ...)`: composer. Auto-picks (tau, m), runs the full
+    battery, classifies into `{chaotic, periodic, stochastic, unknown}`.
+- **Tests**: +52 chaos-kernel tests (1933 → 1985 total).
+- **No breaking changes.**
+
 ## v0.5.0
 
 - **`kuant.qm.quaternion`** lands: Hamilton (w-first) unit-quaternion
