@@ -4,6 +4,7 @@ Fixtures:
   rng      — deterministic numpy Generator (seed 42), for reproducible tests
   has_gpu  — bool, True if cupy imports and a CUDA GPU is available
 """
+
 import numpy as np
 import pytest
 
@@ -19,6 +20,7 @@ def has_gpu():
     """True iff cupy imports and a CUDA-capable GPU is reachable."""
     try:
         import cupy  # noqa: F401
+
         return cupy.cuda.is_available()
     except (ImportError, RuntimeError):
         return False
@@ -55,6 +57,7 @@ def _check_no_gpu_leak(has_gpu):
         return
 
     import cupy
+
     pool = cupy.get_default_memory_pool()
     used_before = pool.used_bytes()
     yield

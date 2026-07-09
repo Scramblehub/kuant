@@ -11,6 +11,7 @@ In a real workflow, `market_price` comes from your data feed.
 Run:
     python docs/examples/iv_surface_from_market.py
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -24,10 +25,10 @@ def make_synthetic_surface(strikes: np.ndarray, tenors: np.ndarray) -> np.ndarra
     K = strikes[:, None]
     T = tenors[None, :]
     S = 100.0
-    m = np.log(K / S)                    # log-moneyness
+    m = np.log(K / S)  # log-moneyness
     base_iv = 0.20
-    smile_curvature = 0.15                # bigger = more smile
-    term_slope = 0.05                     # bigger = more term-structure tilt
+    smile_curvature = 0.15  # bigger = more smile
+    term_slope = 0.05  # bigger = more term-structure tilt
     iv = base_iv + smile_curvature * m * m + term_slope * np.sqrt(T)
     return iv
 
@@ -38,7 +39,7 @@ def main() -> None:
     q = 0.02
 
     strikes = np.linspace(85, 115, 13)
-    tenors = np.array([1/12, 3/12, 6/12, 1.0, 2.0])
+    tenors = np.array([1 / 12, 3 / 12, 6 / 12, 1.0, 2.0])
 
     # 1) Simulate a market with a known IV surface, price puts across the grid.
     true_iv = make_synthetic_surface(strikes, tenors)
@@ -62,7 +63,7 @@ def main() -> None:
 
     # 4) Show the recovered smile at the 6-month tenor.
     j = int(np.argmin(np.abs(tenors - 0.5)))
-    print(f"6-month smile (recovered vs true IV):")
+    print("6-month smile (recovered vs true IV):")
     print(f"  {'strike':>7s}  {'true_iv':>8s}  {'recovered':>10s}  {'error':>10s}")
     for i, strike in enumerate(strikes):
         print(
@@ -72,7 +73,7 @@ def main() -> None:
 
     # 5) When Newton might struggle (deep OTM, near-expiry — flat vega),
     #    bisection is the robust fallback. Here true_iv = 0.30.
-    otm_short = bsput(100.0, 60.0, 0.02, 0.05, 0.30, 0.02)   # deep OTM 1-wk put
+    otm_short = bsput(100.0, 60.0, 0.02, 0.05, 0.30, 0.02)  # deep OTM 1-wk put
     iv_newton = impvol(otm_short, 100.0, 60.0, 0.02, 0.05, is_call=False, q=0.02)
     iv_bisect = impvolbisection(otm_short, 100.0, 60.0, 0.02, 0.05, is_call=False, q=0.02)
     print()

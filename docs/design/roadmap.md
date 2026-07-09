@@ -44,7 +44,7 @@ open an issue first so we can align on scope.
   degree-2 by default. Return the sparsest polynomial that beats a
   baseline R².
 - **crossderivativescan** — 2D bivariate ramp fits (`∂²y / ∂x₁∂x₂`).
- 
+
 - **tvsindy** — Time-varying SINDy fit with rolling windows. Distilled
   .
 - **accelerationscan** — `d²y/dt²` predictive power scan. Distilled

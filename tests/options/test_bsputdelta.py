@@ -7,6 +7,7 @@ Same 5-layer validation strategy as bsput:
   4. Property tests     — bounded [-1, 0], monotonic in K, put spread
   5. CPU==GPU parity
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -219,6 +220,7 @@ def test_delta_matches_finite_difference(rng):
 
 def test_gpu_matches_cpu(skip_no_gpu, rng):
     import cupy as cp
+
     n = 1000
     S = rng.uniform(50, 200, size=n)
     K = rng.uniform(50, 200, size=n)
@@ -228,13 +230,17 @@ def test_gpu_matches_cpu(skip_no_gpu, rng):
 
     result_cpu = bsputdelta(S, K, T, r, sigma)
     result_gpu = bsputdelta(
-        cp.asarray(S), cp.asarray(K), cp.asarray(T),
-        cp.asarray(r), cp.asarray(sigma),
+        cp.asarray(S),
+        cp.asarray(K),
+        cp.asarray(T),
+        cp.asarray(r),
+        cp.asarray(sigma),
     )
     np.testing.assert_allclose(result_cpu, cp.asnumpy(result_gpu), atol=1e-10)
 
 
 def test_gpu_preserves_backend(skip_no_gpu):
     import cupy as cp
+
     result = bsputdelta(cp.asarray([100.0]), 100.0, 1.0, 0.05, 0.20)
     assert isinstance(result, cp.ndarray)

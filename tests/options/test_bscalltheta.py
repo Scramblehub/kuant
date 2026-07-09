@@ -1,4 +1,4 @@
-'''Test suite for kuant.options.bscalltheta.
+"""Test suite for kuant.options.bscalltheta.
 
 Validation strategy:
   1. Match scipy analytic reference
@@ -10,7 +10,8 @@ Validation strategy:
   6. Batched input
   7. dtype preservation
   8. CPU==GPU parity
-'''
+"""
+
 from __future__ import annotations
 
 import numpy as np
@@ -22,11 +23,13 @@ from kuant.options import bscalltheta, bsputtheta
 
 
 def _ref_call_theta(S, K, T, r, sigma, q=0.0):
-    d1 = (np.log(S/K) + (r - q + 0.5*sigma**2)*T) / (sigma * np.sqrt(T))
+    d1 = (np.log(S / K) + (r - q + 0.5 * sigma**2) * T) / (sigma * np.sqrt(T))
     d2 = d1 - sigma * np.sqrt(T)
-    return (-S*np.exp(-q*T)*norm.pdf(d1)*sigma / (2*np.sqrt(T))
-            - r*K*np.exp(-r*T)*norm.cdf(d2)
-            + q*S*np.exp(-q*T)*norm.cdf(d1))
+    return (
+        -S * np.exp(-q * T) * norm.pdf(d1) * sigma / (2 * np.sqrt(T))
+        - r * K * np.exp(-r * T) * norm.cdf(d2)
+        + q * S * np.exp(-q * T) * norm.cdf(d1)
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -35,13 +38,13 @@ def _ref_call_theta(S, K, T, r, sigma, q=0.0):
 
 
 @pytest.mark.parametrize(
-    'S, K, T, r, sigma, q',
+    "S, K, T, r, sigma, q",
     [
         (100.0, 100.0, 1.0, 0.05, 0.20, 0.0),
-        (100.0, 120.0, 1.0, 0.05, 0.20, 0.0),   # OTM call
-        (100.0, 80.0, 1.0, 0.05, 0.20, 0.0),    # ITM call
+        (100.0, 120.0, 1.0, 0.05, 0.20, 0.0),  # OTM call
+        (100.0, 80.0, 1.0, 0.05, 0.20, 0.0),  # ITM call
         (100.0, 100.0, 0.25, 0.05, 0.20, 0.0),  # short T
-        (100.0, 100.0, 2.0, 0.05, 0.30, 0.0),   # longer T, higher vol
+        (100.0, 100.0, 2.0, 0.05, 0.30, 0.0),  # longer T, higher vol
         (100.0, 100.0, 1.0, 0.05, 0.20, 0.03),  # with dividend
         (100.0, 100.0, 1.0, 0.00, 0.20, 0.00),  # r=q=0
     ],
@@ -56,7 +59,7 @@ def test_matches_scipy_reference(S, K, T, r, sigma, q):
 
 
 def test_finite_difference_matches():
-    '''theta = -d(price)/dT. h=1e-5 balances truncation and roundoff.'''
+    """theta = -d(price)/dT. h=1e-5 balances truncation and roundoff."""
     S, K, r, sigma, q = 100.0, 100.0, 0.05, 0.20, 0.02
     for T in [0.25, 0.5, 1.0, 2.0]:
         dt = 1e-5
@@ -71,7 +74,7 @@ def test_finite_difference_matches():
 
 
 def test_put_call_parity():
-    '''theta_call - theta_put = q·S·e^(-q·T) - r·K·e^(-r·T)'''
+    """theta_call - theta_put = q·S·e^(-q·T) - r·K·e^(-r·T)"""
     for S, K, T, r, sigma, q in [
         (100.0, 100.0, 1.0, 0.05, 0.20, 0.02),
         (100.0, 120.0, 0.5, 0.03, 0.15, 0.01),
@@ -97,19 +100,19 @@ def test_S_zero_gives_zero():
 
 
 def test_K_zero_gives_qS_growth():
-    '''When K=0 the call is worth S·e^(-q·T); theta = q·S·e^(-q·T).'''
+    """When K=0 the call is worth S·e^(-q·T); theta = q·S·e^(-q·T)."""
     S, T, r, sigma, q = 100.0, 1.0, 0.05, 0.20, 0.03
     expected = q * S * np.exp(-q * T)
     assert abs(bscalltheta(S, 0.0, T, r, sigma, q) - expected) < 1e-10
 
 
 def test_ATM_call_theta_negative():
-    '''Long ATM call decays with time -> theta negative.'''
+    """Long ATM call decays with time -> theta negative."""
     assert bscalltheta(100.0, 100.0, 1.0, 0.05, 0.20) < 0
 
 
 def test_short_tenor_theta_more_negative():
-    '''As T -> 0 for OTM, theta -> 0; for ATM it accelerates.'''
+    """As T -> 0 for OTM, theta -> 0; for ATM it accelerates."""
     short = bscalltheta(100.0, 100.0, 0.1, 0.05, 0.20)
     long = bscalltheta(100.0, 100.0, 1.0, 0.05, 0.20)
     assert short < long  # more negative = "smaller"
@@ -163,12 +166,14 @@ def test_dtype_float32_preserved():
 
 def test_gpu_matches_cpu(skip_no_gpu, rng):
     import cupy as cp
+
     S = rng.uniform(50, 150, 100)
     K = rng.uniform(50, 150, 100)
     T = rng.uniform(0.1, 2.0, 100)
     r = rng.uniform(-0.01, 0.10, 100)
     sigma = rng.uniform(0.1, 0.6, 100)
     r_cpu = bscalltheta(S, K, T, r, sigma)
-    r_gpu = cp.asnumpy(bscalltheta(cp.asarray(S), cp.asarray(K), cp.asarray(T),
-                                    cp.asarray(r), cp.asarray(sigma)))
+    r_gpu = cp.asnumpy(
+        bscalltheta(cp.asarray(S), cp.asarray(K), cp.asarray(T), cp.asarray(r), cp.asarray(sigma))
+    )
     np.testing.assert_allclose(r_cpu, r_gpu, atol=1e-10)

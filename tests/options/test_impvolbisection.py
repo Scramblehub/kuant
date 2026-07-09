@@ -1,4 +1,4 @@
-'''Test suite for kuant.options.impvolbisection.
+"""Test suite for kuant.options.impvolbisection.
 
 Validation strategy:
   1. Round-trip: bsput(sigma) -> impvolbisection -> sigma
@@ -10,7 +10,8 @@ Validation strategy:
   7. Batched
   8. Convergence never diverges (unlike Newton)
   9. CPU==GPU parity
-'''
+"""
+
 from __future__ import annotations
 
 import numpy as np
@@ -27,14 +28,14 @@ from kuant.options import impvol, impvolbisection
 
 
 @pytest.mark.parametrize(
-    'sigma_true, S, K, T, r, q, is_call',
+    "sigma_true, S, K, T, r, q, is_call",
     [
         (0.20, 100.0, 100.0, 1.0, 0.05, 0.0, False),
         (0.20, 100.0, 100.0, 1.0, 0.05, 0.0, True),
         (0.15, 100.0, 110.0, 0.5, 0.03, 0.0, False),  # OTM put
         (0.35, 100.0, 90.0, 2.0, 0.05, 0.02, False),  # ITM put with div
-        (0.10, 100.0, 90.0, 2.0, 0.05, 0.0, True),   # ITM call
-        (0.60, 100.0, 100.0, 0.1, 0.05, 0.0, False), # short tenor high vol
+        (0.10, 100.0, 90.0, 2.0, 0.05, 0.0, True),  # ITM call
+        (0.60, 100.0, 100.0, 0.1, 0.05, 0.0, False),  # short tenor high vol
     ],
 )
 def test_round_trip(sigma_true, S, K, T, r, q, is_call):
@@ -53,7 +54,9 @@ def _brentq_ref(price, S, K, T, r, is_call=False, q=0.0):
     pricer = bscall if is_call else bsput
     return brentq(
         lambda s: pricer(S, K, T, r, s, q) - price,
-        1e-6, 10.0, xtol=1e-8,
+        1e-6,
+        10.0,
+        xtol=1e-8,
     )
 
 
@@ -146,9 +149,9 @@ def test_batched_matches_scalar():
 
 
 def test_bracket_shrinks_monotonically(rng):
-    '''Bisection guarantees hi-lo strictly halves each iteration until convergence.
+    """Bisection guarantees hi-lo strictly halves each iteration until convergence.
     Verified indirectly: 30 iterations is more than enough for tol=1e-8 with a
-    bracket of width 10.'''
+    bracket of width 10."""
     for _ in range(10):
         sigma_true = float(rng.uniform(0.1, 0.5))
         price = bsput(100.0, 100.0, 1.0, 0.05, sigma_true)
@@ -163,6 +166,7 @@ def test_bracket_shrinks_monotonically(rng):
 
 def test_gpu_matches_cpu(skip_no_gpu, rng):
     import cupy as cp
+
     sigmas = rng.uniform(0.1, 0.5, 20)
     S = np.full(20, 100.0)
     K = rng.uniform(80, 120, 20)
@@ -170,6 +174,9 @@ def test_gpu_matches_cpu(skip_no_gpu, rng):
     r = np.full(20, 0.05)
     prices = np.array([bsput(100.0, K[i], T[i], 0.05, sigmas[i]) for i in range(20)])
     r_cpu = impvolbisection(prices, S, K, T, r)
-    r_gpu = cp.asnumpy(impvolbisection(cp.asarray(prices), cp.asarray(S), cp.asarray(K),
-                                        cp.asarray(T), cp.asarray(r)))
+    r_gpu = cp.asnumpy(
+        impvolbisection(
+            cp.asarray(prices), cp.asarray(S), cp.asarray(K), cp.asarray(T), cp.asarray(r)
+        )
+    )
     np.testing.assert_allclose(r_cpu, r_gpu, atol=1e-6)

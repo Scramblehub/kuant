@@ -11,6 +11,7 @@ Additionally: an auto-fixture (in conftest.py) checks that no test leaks
 GPU memory above the 100MB threshold. Any test here that grows the memory
 pool by more than that fails automatically.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -33,7 +34,7 @@ from kuant.core import normcdf
         (-1.0, 0.15865525393145707),
         (2.0, 0.9772498680518208),
         (-2.0, 0.022750131948179195),
-        (1.96, 0.9750021048517795),   # famous 97.5th percentile
+        (1.96, 0.9750021048517795),  # famous 97.5th percentile
         (-1.96, 0.024997895148220435),
         (3.0, 0.9986501019683699),
         (5.0, 0.9999997133484281),
@@ -110,9 +111,7 @@ def test_array_int_input():
     x = np.array([-1, 0, 1], dtype=np.int64)
     result = normcdf(x)
     assert result.dtype == np.float64
-    np.testing.assert_allclose(
-        result, [0.15865525393145707, 0.5, 0.8413447460685429], atol=1e-12
-    )
+    np.testing.assert_allclose(result, [0.15865525393145707, 0.5, 0.8413447460685429], atol=1e-12)
 
 
 def test_2d_array_preserves_shape():
@@ -122,8 +121,7 @@ def test_2d_array_preserves_shape():
     assert result.shape == (2, 2)
     np.testing.assert_allclose(
         result,
-        [[0.5, 0.8413447460685429],
-          [0.15865525393145707, 0.9772498680518208]],
+        [[0.5, 0.8413447460685429], [0.15865525393145707, 0.9772498680518208]],
         atol=1e-12,
     )
 
@@ -156,9 +154,7 @@ def test_list_input():
     """Python list input works (auto-array coercion)."""
     result = normcdf([-1.0, 0.0, 1.0])
     assert isinstance(result, np.ndarray)
-    np.testing.assert_allclose(
-        result, [0.15865525393145707, 0.5, 0.8413447460685429], atol=1e-12
-    )
+    np.testing.assert_allclose(result, [0.15865525393145707, 0.5, 0.8413447460685429], atol=1e-12)
 
 
 # ---------------------------------------------------------------------------

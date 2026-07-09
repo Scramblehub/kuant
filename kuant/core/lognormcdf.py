@@ -1,4 +1,4 @@
-'''Numerically stable log of Gaussian CDF.
+"""Numerically stable log of Gaussian CDF.
 
     lognormcdf(x) = log(Φ(x))
 
@@ -14,7 +14,8 @@ float64, where Φ(x) rounds to 0). Two-branch implementation:
                — analytic tail expansion; exact to O(1/x^4)
 
 Design: docs/kernels/core/lognormcdf.md.
-'''
+"""
+
 from __future__ import annotations
 
 from typing import Any
@@ -26,6 +27,7 @@ from .normcdf import normcdf
 cp: Any
 try:
     import cupy as cp
+
     _CUPY_NDARRAY = cp.ndarray
 except ImportError:
     cp = None
@@ -41,12 +43,12 @@ def _detect_backend(*args) -> Any:
     return np
 
 
-_LOG_2PI = 1.8378770664093453   # log(2π)
+_LOG_2PI = 1.8378770664093453  # log(2π)
 _TAIL_THRESHOLD = -37.0
 
 
 def lognormcdf(x):
-    '''Log of Gaussian CDF: `log(Φ(x))`, numerically stable to all x.
+    """Log of Gaussian CDF: `log(Φ(x))`, numerically stable to all x.
 
     Parameters
     ----------
@@ -65,19 +67,18 @@ def lognormcdf(x):
     >>> import math
     >>> math.isfinite(lognormcdf(-40.0))
     True
-    '''
+    """
     xp = _detect_backend(x)
     x_arr = xp.asarray(x)
-    if x_arr.dtype.kind in 'iub':
+    if x_arr.dtype.kind in "iub":
         x_arr = x_arr.astype(xp.float64)
 
     # Safe placeholder to avoid log(0) in inactive branches.
-    x_safe = xp.where(x_arr >= _TAIL_THRESHOLD, x_arr,
-                      xp.asarray(-1.0, dtype=x_arr.dtype))
+    x_safe = xp.where(x_arr >= _TAIL_THRESHOLD, x_arr, xp.asarray(-1.0, dtype=x_arr.dtype))
 
     # All branches are computed vectorized; the inactive branch(es) at each
     # element may evaluate log(0) etc. but are masked out via xp.where().
-    with np.errstate(divide='ignore', invalid='ignore'):
+    with np.errstate(divide="ignore", invalid="ignore"):
         # Branch A: x >= 0  -> log1p(-normcdf(-x))
         branch_a = xp.log1p(-normcdf(-x_safe))
 
@@ -86,15 +87,15 @@ def lognormcdf(x):
 
         # Branch C: x < -37  -> Mills asymptotic
         #   log Φ(x) ≈ -x²/2 - 0.5·log(2π) - log(-x) + log(1 - 1/x²)
-        x_tail = xp.where(x_arr < _TAIL_THRESHOLD, x_arr,
-                          xp.asarray(-100.0, dtype=x_arr.dtype))
-        branch_c = (-0.5 * x_tail * x_tail
-                    - 0.5 * _LOG_2PI
-                    - xp.log(-x_tail)
-                    + xp.log1p(-1.0 / (x_tail * x_tail)))
+        x_tail = xp.where(x_arr < _TAIL_THRESHOLD, x_arr, xp.asarray(-100.0, dtype=x_arr.dtype))
+        branch_c = (
+            -0.5 * x_tail * x_tail
+            - 0.5 * _LOG_2PI
+            - xp.log(-x_tail)
+            + xp.log1p(-1.0 / (x_tail * x_tail))
+        )
 
-    result = xp.where(x_arr >= 0, branch_a,
-                       xp.where(x_arr >= _TAIL_THRESHOLD, branch_b, branch_c))
+    result = xp.where(x_arr >= 0, branch_a, xp.where(x_arr >= _TAIL_THRESHOLD, branch_b, branch_c))
 
     # NaN inputs got replaced by safe placeholders in each branch; restore.
     result = xp.where(xp.isnan(x_arr), x_arr, result)

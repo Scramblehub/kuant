@@ -183,4 +183,151 @@ def lyapunov(
     )
 
 
-__all__ = ["LyapunovResult", "lyapunov"]
+@dataclass
+class KnnLyapunovResult:
+    """Kantz-neighborhood Lyapunov estimate (k-NN method).
+
+    Attributes
+    ----------
+    lyapunov : float
+        Largest Lyapunov exponent (nats per sample).
+    intercept : float
+    slope_range : tuple[int, int]
+    log_divergence : 1D np.ndarray
+    n_neighbors : int
+    embed_dim : int
+    embed_tau : int
+    """
+
+    lyapunov: float
+    intercept: float
+    slope_range: tuple
+    log_divergence: np.ndarray
+    n_neighbors: int
+    embed_dim: int
+    embed_tau: int
+
+    def summary(self) -> str:
+        return (
+            "=== KnnLyapunovResult ===\n"
+            f"lambda (nats/sample):   {self.lyapunov:+.6f}\n"
+            f"embed dim/tau:          {self.embed_dim} / {self.embed_tau}\n"
+            f"k neighbors:            {self.n_neighbors}\n"
+            f"fit range:              [{self.slope_range[0]}, {self.slope_range[1]}]"
+        )
+
+
+def knnlyapunov(
+    x,
+    *,
+    tau: int = 1,
+    m: int = 5,
+    max_t: int | None = None,
+    k_neighbors: int = 5,
+    theiler_window: int | None = None,
+    fit_start: int = 1,
+    fit_end: int | None = None,
+) -> KnnLyapunovResult:
+    """Kantz-method largest Lyapunov exponent using k-nearest neighbors.
+
+    Rosenstein 1993 (see `lyapunov`) uses a single nearest neighbor per
+    reference point. Kantz's variant averages over `k_neighbors` per
+    reference, producing a more robust divergence curve on noisy data
+    at the cost of extra compute.
+
+    Parameters
+    ----------
+    x : 1D array
+    tau : int, default 1
+    m : int, default 5
+    max_t : int, optional
+    k_neighbors : int, default 5
+    theiler_window : int, optional
+    fit_start, fit_end : int
+
+    Returns
+    -------
+    KnnLyapunovResult
+
+    References
+    ----------
+    Kantz 1994, "A robust method to estimate the maximal Lyapunov
+    exponent of a time series."
+    """
+    arr = np.asarray(x, dtype=np.float64)
+    require_1d(arr, "x", kernel="knnlyapunov")
+    finite = np.isfinite(arr)
+    arr = arr[finite]
+    require_positive(tau, "tau", kernel="knnlyapunov", kind="int")
+    require_range(m, "m", kernel="knnlyapunov", lo=2, hi=50)
+    require_positive(k_neighbors, "k_neighbors", kernel="knnlyapunov", kind="int")
+    if arr.size < 200:
+        raise KuantValueError(
+            f"kuant.knnlyapunov: only {arr.size} finite values; need at "
+            f"least 200 for a stable Kantz estimate.  [KE-VAL-MIN-CLEAN]"
+        )
+
+    E = _embed(arr, int(m), int(tau))
+    N = E.shape[0]
+    if max_t is None:
+        max_t = int(min(N // 4, 40))
+    if theiler_window is None:
+        theiler_window = int(m) * int(tau)
+    if fit_end is None:
+        fit_end = max(fit_start + 2, max_t // 2)
+    require_positive(max_t, "max_t", kernel="knnlyapunov", kind="int")
+
+    nn_idx = np.full((N, int(k_neighbors)), -1, dtype=np.int64)
+    for i in range(N):
+        d2 = np.sum((E - E[i]) ** 2, axis=1)
+        mask_i = np.abs(np.arange(N) - i) > theiler_window
+        d2 = np.where(mask_i, d2, np.inf)
+        order = np.argsort(d2)
+        nn_idx[i] = order[: int(k_neighbors)]
+
+    log_div = np.zeros(max_t, dtype=np.float64)
+    n_active = np.zeros(max_t, dtype=np.int64)
+    for k in range(max_t):
+        valid_i = np.arange(N) + k < N
+        i_v = np.where(valid_i)[0]
+        for i in i_v:
+            js = nn_idx[i]
+            js_ok = js[(js + k < N) & (js >= 0)]
+            if js_ok.size == 0:
+                continue
+            d = np.sqrt(np.sum((E[i + k] - E[js_ok + k]) ** 2, axis=1))
+            d = d[d > 0]
+            if d.size == 0:
+                continue
+            log_div[k] += float(np.mean(np.log(d)))
+            n_active[k] += 1
+    with np.errstate(invalid="ignore", divide="ignore"):
+        log_div = np.where(n_active > 0, log_div / np.maximum(n_active, 1), np.nan)
+
+    fit_end = min(fit_end, max_t - 1)
+    if fit_end <= fit_start + 1:
+        raise KuantValueError(
+            f"kuant.knnlyapunov: fit range [{fit_start}, {fit_end}] too "
+            f"narrow; need at least 2 points.  [KE-VAL-RANGE]"
+        )
+    valid_curve = np.isfinite(log_div[fit_start : fit_end + 1])
+    ks = np.arange(fit_start, fit_end + 1)[valid_curve]
+    ys = log_div[fit_start : fit_end + 1][valid_curve]
+    if ks.size < 2:
+        raise KuantValueError(
+            "kuant.knnlyapunov: could not compute divergence at enough "
+            "steps to fit a slope.  [KE-VAL-MIN-CLEAN]"
+        )
+    slope, intercept = np.polyfit(ks, ys, 1)
+    return KnnLyapunovResult(
+        lyapunov=float(slope),
+        intercept=float(intercept),
+        slope_range=(int(fit_start), int(fit_end)),
+        log_divergence=log_div,
+        n_neighbors=int(k_neighbors),
+        embed_dim=int(m),
+        embed_tau=int(tau),
+    )
+
+
+__all__ = ["LyapunovResult", "KnnLyapunovResult", "lyapunov", "knnlyapunov"]

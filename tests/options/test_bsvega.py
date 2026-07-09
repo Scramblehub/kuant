@@ -1,4 +1,5 @@
 """Test suite for kuant.core.bsvega."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -45,7 +46,8 @@ def test_matches_reference_uniform(rng):
     np.testing.assert_allclose(
         bsvega(S, K, T, r, sigma, q),
         _reference_vega(S, K, T, r, sigma, q),
-        atol=1e-10, rtol=1e-12,
+        atol=1e-10,
+        rtol=1e-12,
     )
 
 
@@ -83,23 +85,39 @@ def test_vega_peaks_near_atm():
 
 
 # Edge cases
-def test_expired(): assert bsvega(100.0, 100.0, 0.0, 0.05, 0.20) == 0.0
-def test_zero_vol(): assert bsvega(100.0, 100.0, 1.0, 0.05, 0.0) == 0.0
-def test_zero_spot(): assert bsvega(0.0, 100.0, 1.0, 0.05, 0.20) == 0.0
-def test_zero_strike(): assert bsvega(100.0, 0.0, 1.0, 0.05, 0.20) == 0.0
-def test_nan_passthrough(): assert np.isnan(bsvega(float("nan"), 100.0, 1.0, 0.05, 0.20))
+def test_expired():
+    assert bsvega(100.0, 100.0, 0.0, 0.05, 0.20) == 0.0
+
+
+def test_zero_vol():
+    assert bsvega(100.0, 100.0, 1.0, 0.05, 0.0) == 0.0
+
+
+def test_zero_spot():
+    assert bsvega(0.0, 100.0, 1.0, 0.05, 0.20) == 0.0
+
+
+def test_zero_strike():
+    assert bsvega(100.0, 0.0, 1.0, 0.05, 0.20) == 0.0
+
+
+def test_nan_passthrough():
+    assert np.isnan(bsvega(float("nan"), 100.0, 1.0, 0.05, 0.20))
 
 
 def test_dtype_preserved_float32():
-    args = [np.array([100.0], dtype=np.float32)] * 2 + [np.array([1.0], dtype=np.float32),
-                                                        np.array([0.05], dtype=np.float32),
-                                                        np.array([0.2], dtype=np.float32)]
+    args = [np.array([100.0], dtype=np.float32)] * 2 + [
+        np.array([1.0], dtype=np.float32),
+        np.array([0.05], dtype=np.float32),
+        np.array([0.2], dtype=np.float32),
+    ]
     result = bsvega(*args)
     assert result.dtype == np.float32
 
 
 def test_gpu_matches_cpu(skip_no_gpu, rng):
     import cupy as cp
+
     n = 500
     S = rng.uniform(50, 200, size=n)
     K = rng.uniform(50, 200, size=n)

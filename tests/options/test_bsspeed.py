@@ -1,4 +1,5 @@
-'''Test suite for kuant.options.bsspeed.'''
+"""Test suite for kuant.options.bsspeed."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -9,13 +10,13 @@ from kuant.options import bsgamma, bsspeed
 
 
 def _ref_speed(S, K, T, r, sigma, q=0.0):
-    d1 = (np.log(S/K) + (r-q+0.5*sigma**2)*T) / (sigma*np.sqrt(T))
-    gamma = np.exp(-q*T)*norm.pdf(d1)/(S*sigma*np.sqrt(T))
-    return -gamma/S * (d1/(sigma*np.sqrt(T)) + 1)
+    d1 = (np.log(S / K) + (r - q + 0.5 * sigma**2) * T) / (sigma * np.sqrt(T))
+    gamma = np.exp(-q * T) * norm.pdf(d1) / (S * sigma * np.sqrt(T))
+    return -gamma / S * (d1 / (sigma * np.sqrt(T)) + 1)
 
 
 @pytest.mark.parametrize(
-    'S, K, T, r, sigma, q',
+    "S, K, T, r, sigma, q",
     [
         (100.0, 100.0, 1.0, 0.05, 0.20, 0.0),
         (100.0, 120.0, 1.0, 0.05, 0.20, 0.0),
@@ -29,7 +30,7 @@ def test_matches_scipy_reference(S, K, T, r, sigma, q):
 
 
 def test_fd_dGamma_dSpot():
-    '''speed = d(gamma)/d(spot). h=1e-3 keeps truncation ~1e-10.'''
+    """speed = d(gamma)/d(spot). h=1e-3 keeps truncation ~1e-10."""
     S, K, T, r, sigma, q = 100.0, 105.0, 1.0, 0.05, 0.20, 0.02
     ds = 1e-3
     fd = (bsgamma(S + ds, K, T, r, sigma, q) - bsgamma(S - ds, K, T, r, sigma, q)) / (2 * ds)
@@ -66,12 +67,14 @@ def test_dtype_float32_preserved():
 
 def test_gpu_matches_cpu(skip_no_gpu, rng):
     import cupy as cp
+
     S = rng.uniform(50, 150, 100)
     K = rng.uniform(50, 150, 100)
     T = rng.uniform(0.1, 2.0, 100)
     r = rng.uniform(-0.01, 0.10, 100)
     sigma = rng.uniform(0.1, 0.6, 100)
     r_cpu = bsspeed(S, K, T, r, sigma)
-    r_gpu = cp.asnumpy(bsspeed(cp.asarray(S), cp.asarray(K), cp.asarray(T),
-                                cp.asarray(r), cp.asarray(sigma)))
+    r_gpu = cp.asnumpy(
+        bsspeed(cp.asarray(S), cp.asarray(K), cp.asarray(T), cp.asarray(r), cp.asarray(sigma))
+    )
     np.testing.assert_allclose(r_cpu, r_gpu, atol=1e-10)

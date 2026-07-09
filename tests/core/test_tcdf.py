@@ -1,4 +1,5 @@
-'''Test suite for kuant.core.tcdf.'''
+"""Test suite for kuant.core.tcdf."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -9,13 +10,18 @@ from kuant.core import tcdf
 
 
 @pytest.mark.parametrize(
-    'x, df',
+    "x, df",
     [
-        (0.0, 3.0), (1.0, 5.0), (-1.5, 10.0),
-        (3.0, 30.0), (0.5, 100.0), (2.0, 2.0),
-        (-5.0, 1.0), (0.0, 1e6),
-        (5.0, 3.0),   # deep upper tail
-        (-10.0, 5.0), # deep lower tail
+        (0.0, 3.0),
+        (1.0, 5.0),
+        (-1.5, 10.0),
+        (3.0, 30.0),
+        (0.5, 100.0),
+        (2.0, 2.0),
+        (-5.0, 1.0),
+        (0.0, 1e6),
+        (5.0, 3.0),  # deep upper tail
+        (-10.0, 5.0),  # deep lower tail
     ],
 )
 def test_matches_scipy(x, df):
@@ -38,7 +44,7 @@ def test_at_zero_is_half():
 
 
 def test_symmetry():
-    '''tcdf(-x) = 1 - tcdf(x).'''
+    """tcdf(-x) = 1 - tcdf(x)."""
     for x in [0.5, 1.5, 3.0]:
         for df in [3.0, 10.0, 30.0]:
             assert abs(tcdf(-x, df) - (1 - tcdf(x, df))) < 1e-14
@@ -60,6 +66,7 @@ def test_range_0_1(rng):
 
 def test_gpu_matches_cpu(skip_no_gpu, rng):
     import cupy as cp
+
     xs = rng.uniform(-3, 3, 50)
     dfs = rng.uniform(2, 30, 50)
     r_cpu = tcdf(xs, dfs)

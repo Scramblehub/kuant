@@ -1,4 +1,4 @@
-'''Black-Scholes European put charm, batched.
+"""Black-Scholes European put charm, batched.
 
 charm_put = -∂Delta_put/∂T                   (delta decay per year of
                                               calendar time passing)
@@ -16,7 +16,8 @@ charm_call - charm_put = -q·e^(-q·T) (rearranged for the -dDelta/dT
 convention).
 
 Design: docs/kernels/options/bsputcharm.md.
-'''
+"""
+
 from __future__ import annotations
 
 from ..core._bs_common import finalize, prepare_bs
@@ -25,7 +26,7 @@ from ..core.normpdf import normpdf
 
 
 def bsputcharm(S, K, T, r, sigma, q=0.0):
-    '''Black-Scholes European put charm = -dDelta_put/dT.
+    """Black-Scholes European put charm = -dDelta_put/dT.
 
     Sign convention matches bscallcharm — delta bleed per year of
     calendar time passing.
@@ -36,7 +37,7 @@ def bsputcharm(S, K, T, r, sigma, q=0.0):
     --------
     >>> bsputcharm(100.0, 100.0, 1.0, 0.05, 0.20)
     -0.11060933183045406
-    '''
+    """
     c = prepare_bs(S, K, T, r, sigma, q)
     xp = c.xp
 

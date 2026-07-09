@@ -1,4 +1,5 @@
-'''Gaussian HMM state posteriors (γ) and joint posteriors (ξ).'''
+"""Gaussian HMM state posteriors (γ) and joint posteriors (ξ)."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -9,13 +10,13 @@ from .forward import forward
 
 
 def posterior(obs, pi, A, mu, sigma):
-    '''State posterior γ, joint posterior ξ, and log-likelihood.
+    """State posterior γ, joint posterior ξ, and log-likelihood.
 
     Returns:
         gamma (T, N)     — rows sum to 1
         xi    (T-1, N, N) — per-t slices sum to 1
         log_likelihood
-    '''
+    """
     xp, obs_arr, log_pi, log_A, log_B = _prepare_ghmm_inputs(obs, pi, A, mu, sigma)
 
     log_alpha, log_lik = forward(obs, pi, A, mu, sigma)

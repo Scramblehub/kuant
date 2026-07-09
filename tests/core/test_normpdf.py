@@ -2,6 +2,7 @@
 
 Covers: golden values, scipy match, edge cases, symmetry, backend parity.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -14,7 +15,7 @@ from kuant.core import normpdf
 @pytest.mark.parametrize(
     "x, expected",
     [
-        (0.0, 0.3989422804014327),   # peak
+        (0.0, 0.3989422804014327),  # peak
         (1.0, 0.24197072451914337),
         (-1.0, 0.24197072451914337),  # symmetric
         (2.0, 0.05399096651318806),
@@ -88,6 +89,7 @@ def test_output_in_valid_range(rng):
 
 def test_gpu_matches_cpu(skip_no_gpu, rng):
     import cupy as cp
+
     x_cpu = rng.uniform(-4, 4, size=10_000)
     x_gpu = cp.asarray(x_cpu)
     np.testing.assert_allclose(normpdf(x_cpu), cp.asnumpy(normpdf(x_gpu)), atol=1e-14)
@@ -95,5 +97,6 @@ def test_gpu_matches_cpu(skip_no_gpu, rng):
 
 def test_gpu_preserves_backend(skip_no_gpu):
     import cupy as cp
+
     result = normpdf(cp.asarray([0.0, 1.0]))
     assert isinstance(result, cp.ndarray)

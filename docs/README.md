@@ -9,20 +9,37 @@ One markdown file per kernel, grouped by subpackage:
 - [`kernels/core/`](kernels/core/): Black-Scholes family, Gaussian primitives,
   Student-t and Generalized Pareto tails, logsumexp.
 - [`kernels/options/`](kernels/options/): Greeks, payoffs, chain filters,
-  implied-vol solvers.
-- [`kernels/stats/`](kernels/stats/): rolling and windowed statistics
-  (27 kernels).
+  implied-vol solvers, exotic pricers (digital, gap, lookback, chooser, power).
+- [`kernels/stats/`](kernels/stats/): rolling and windowed statistics,
+  HAC standard errors (Newey-West, Andrews), portmanteau and normality
+  tests, Hurst family, cross-sectional correlations, spectral entropy.
 - [`kernels/qm/`](kernels/qm/): HMM/GHMM inference, Baum-Welch training,
-  belltest, zenoscan, decoherencescan.
+  belltest, zenoscan, decoherencescan, quaternion algebra for regime drift.
 - [`kernels/sindy/`](kernels/sindy/): permtest, grangerscan, sindylasso,
-  pinnscan, symbolicscan, accelerationscan.
+  pinnscan, symbolicscan, accelerationscan, plus chaos submodule
+  (entropy family, RQA, cross- and joint-recurrence, Lyapunov).
 - [`kernels/topology/`](kernels/topology/): persistenthomology, bettiseries,
   wasserstein, dispersioncollapse.
 - [`kernels/data/`](kernels/data/): align, baragg, corpaction, panelize,
   resample, stitch.
 - [`kernels/edgecases/`](kernels/edgecases/): nanpolicies, delistedhandling,
   outlierpolicy.
-- [`kernels/signals/`](kernels/signals/): winsorize, neutralize, icdecay.
+- [`kernels/signals/`](kernels/signals/): winsorize, neutralize, icdecay,
+  factorscoring, wavelet, ICA, EMD, kernel PCA, whitening.
+- [`kernels/portfolio/`](kernels/portfolio/): P&L contribution, drawdown,
+  Sharpe, Sortino, aggregate metrics, HRP, Black-Litterman, mean-CVaR,
+  mintorsion, risk parity.
+- [`kernels/nulltest/`](kernels/nulltest/): bootstrap, multiple-hypothesis
+  correction, White and Hansen SPA tests.
+- [`kernels/text/`](kernels/text/): tickernorm, cusipvalidate, occparse,
+  secformparse.
+- [`kernels/backtest/`](kernels/backtest/): lifecycle, liquidity, fill,
+  position, warmup, engine (six submodules).
+- [`kernels/risk/`](kernels/risk/): Cornish-Fisher VaR, POT/GPD EVT VaR
+  and ES, bootstrap ES confidence intervals, Adrian-Brunnermeier CoVaR,
+  Marginal Expected Shortfall.
+- [`kernels/causal/`](kernels/causal/): synthetic control, 2SLS IV,
+  sharp RDD, PC-algorithm skeleton.
 
 Start at [`kernels/README.md`](kernels/README.md) for the full index.
 

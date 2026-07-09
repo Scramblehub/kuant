@@ -8,6 +8,7 @@ just textbook indicators.
 
 See README for structure, install, design principles.
 """
+
 import logging
 
 # Version is read from installed package metadata when possible so it stays

@@ -1,9 +1,10 @@
-'''Black-Scholes European put rho, batched.
+"""Black-Scholes European put rho, batched.
 
 rho = -T·K·e^(-r·T)·Φ(-d2)    range (-inf, 0]
 
 Put-specific. Call rho: opposite sign, uses Φ(d2). Design: docs/kernels/bsputrho.md.
-'''
+"""
+
 from __future__ import annotations
 
 from ..core._bs_common import finalize, prepare_bs
@@ -11,7 +12,7 @@ from ..core.normcdf import normcdf
 
 
 def bsputrho(S, K, T, r, sigma, q=0.0):
-    '''Black-Scholes European put rho. Range (-inf, 0].
+    """Black-Scholes European put rho. Range (-inf, 0].
 
     For "rho per 1% rate change", divide by 100.
 
@@ -19,7 +20,7 @@ def bsputrho(S, K, T, r, sigma, q=0.0):
     --------
     >>> bsputrho(100.0, 100.0, 1.0, 0.05, 0.20)
     -41.890461500336574
-    '''
+    """
     c = prepare_bs(S, K, T, r, sigma, q)
     xp = c.xp
 

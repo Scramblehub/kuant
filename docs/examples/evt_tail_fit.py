@@ -13,11 +13,12 @@ tail quantiles the sample alone can't estimate.
 Run:
     python docs/examples/evt_tail_fit.py
 """
+
 from __future__ import annotations
 
 import numpy as np
 
-from kuant.core import gpdcdf, gpdpdf, gpdppf, tcdf, tpdf
+from kuant.core import gpdpdf, gpdppf, tcdf
 
 
 def fit_gpd_mle(exceedances: np.ndarray, xi_grid=None, scale_grid=None) -> tuple[float, float]:
@@ -62,7 +63,7 @@ def main() -> None:
 
     # 2) Empirical tail: pick the top 5% |return| threshold; work on losses.
     losses = -returns[returns < 0]
-    threshold = float(np.quantile(losses, 0.90))    # top 10% of losses
+    threshold = float(np.quantile(losses, 0.90))  # top 10% of losses
     exceedances = losses[losses > threshold] - threshold
     print(f"n = {n} bars, negative returns = {int(np.sum(returns < 0))}")
     print(f"POT threshold (90th percentile of losses): {threshold:.4f}")
@@ -72,7 +73,7 @@ def main() -> None:
     # 3) Fit GPD to exceedances via grid-MLE.
     xi_hat, scale_hat = fit_gpd_mle(exceedances)
     print(f"GPD fit:  xi = {xi_hat:+.3f}   scale = {scale_hat:.4f}")
-    print(f"          (heavy tail signature is xi > 0)")
+    print("          (heavy tail signature is xi > 0)")
     print()
 
     # 4) Return-period tail estimates from the fitted GPD.

@@ -10,6 +10,7 @@ intentional. It matches the process model — one process, one device profile,
 one throttle. Cross-process coordination (if ever needed) belongs in a
 separate layer, not here.
 """
+
 from .hardware import DEVICE, DeviceProfile, detect_hw
 from .throttle import THROTTLE, ChunkSizer
 

@@ -277,7 +277,7 @@ def falsenearest(
             continue
         # Naive brute-force nearest neighbor (O(N^2)). Fine for the
         # small N (~hundreds to thousands) typical here.
-        d2 = np.sum(embed_m[:, None, :] - embed_m[None, :, :], axis=-1) ** 2
+        d2 = np.sum((embed_m[:, None, :] - embed_m[None, :, :]) ** 2, axis=-1)
         # Exclude self.
         np.fill_diagonal(d2, np.inf)
         nn_idx = np.argmin(d2, axis=1)

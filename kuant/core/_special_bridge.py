@@ -1,4 +1,4 @@
-'''Backend-aware bridge to scipy / cupyx special functions.
+"""Backend-aware bridge to scipy / cupyx special functions.
 
 Design: kuant.core wants backend-preserving primitives, but implementing
 special functions (gammaln, betainc, stdtrit, etc.) from scratch is a
@@ -11,7 +11,8 @@ The fallback path is slow (H↔D copy) but correct. Callers get consistent
 API; performance-critical GPU work can be added later by porting kernels.
 
 Private module — not exported from kuant.core.
-'''
+"""
+
 from __future__ import annotations
 
 from typing import Any
@@ -21,6 +22,7 @@ import numpy as np
 cp: Any
 try:
     import cupy as cp
+
     _CUPY_NDARRAY = cp.ndarray
 except ImportError:
     cp = None
@@ -32,18 +34,19 @@ def _is_cupy(a) -> bool:
 
 
 def _cupyx_special():
-    '''Return cupyx.scipy.special module if available, else None.'''
+    """Return cupyx.scipy.special module if available, else None."""
     if cp is None:
         return None
     try:
         import cupyx.scipy.special as spx
+
         return spx
     except (ImportError, ModuleNotFoundError):
         return None
 
 
 def _dispatch_unary(x, np_fn, spx_fn_name):
-    '''Apply np_fn(x) or the cupyx equivalent depending on x's backend.'''
+    """Apply np_fn(x) or the cupyx equivalent depending on x's backend."""
     if _is_cupy(x):
         spx = _cupyx_special()
         if spx is not None and hasattr(spx, spx_fn_name):
@@ -54,7 +57,7 @@ def _dispatch_unary(x, np_fn, spx_fn_name):
 
 
 def _dispatch_binary(a, b, np_fn, spx_fn_name):
-    '''Apply np_fn(a, b) or cupyx equivalent.'''
+    """Apply np_fn(a, b) or cupyx equivalent."""
     if _is_cupy(a) or _is_cupy(b):
         spx = _cupyx_special()
         if spx is not None and hasattr(spx, spx_fn_name):
@@ -88,19 +91,23 @@ def _dispatch_ternary(a, b, c, np_fn, spx_fn_name):
 
 # --- Public helpers ---------------------------------------------------------
 
+
 def gammaln(x):
-    '''Log Γ(x), backend-preserving.'''
+    """Log Γ(x), backend-preserving."""
     from scipy.special import gammaln as np_gammaln
-    return _dispatch_unary(x, np_gammaln, 'gammaln')
+
+    return _dispatch_unary(x, np_gammaln, "gammaln")
 
 
 def betainc(a, b, x):
-    '''Regularized incomplete beta I_x(a, b), backend-preserving.'''
+    """Regularized incomplete beta I_x(a, b), backend-preserving."""
     from scipy.special import betainc as np_betainc
-    return _dispatch_ternary(a, b, x, np_betainc, 'betainc')
+
+    return _dispatch_ternary(a, b, x, np_betainc, "betainc")
 
 
 def stdtrit(df, p):
-    '''Inverse Student-t CDF, numpy-only (no cupyx equivalent — H↔D fallback).'''
+    """Inverse Student-t CDF, numpy-only (no cupyx equivalent — H↔D fallback)."""
     from scipy.special import stdtrit as np_stdtrit
-    return _dispatch_binary(df, p, np_stdtrit, 'stdtrit')
+
+    return _dispatch_binary(df, p, np_stdtrit, "stdtrit")

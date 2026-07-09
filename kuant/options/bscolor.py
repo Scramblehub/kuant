@@ -1,4 +1,4 @@
-'''Black-Scholes color, batched. Put-call symmetric.
+"""Black-Scholes color, batched. Put-call symmetric.
 
 color = ∂Gamma/∂T = ∂³Price/∂S²∂T
       = -e^(-qT) · φ(d1) / (2·S·T·σ·√T)
@@ -13,7 +13,8 @@ time-to-expiry (typical for OTM options).
 Put-call symmetric because gamma is.
 
 Design: docs/kernels/options/bscolor.md.
-'''
+"""
+
 from __future__ import annotations
 
 from ..core._bs_common import finalize, prepare_bs
@@ -21,7 +22,7 @@ from ..core.normpdf import normpdf
 
 
 def bscolor(S, K, T, r, sigma, q=0.0):
-    '''Black-Scholes color = ∂Gamma/∂T. Same for calls and puts.
+    """Black-Scholes color = ∂Gamma/∂T. Same for calls and puts.
 
     Sign: ∂Gamma/∂T. Divide by 252 for per-trading-day gamma change.
 
@@ -29,13 +30,19 @@ def bscolor(S, K, T, r, sigma, q=0.0):
     --------
     >>> bscolor(100.0, 100.0, 1.0, 0.05, 0.20)
     0.00787527971924437
-    '''
+    """
     c = prepare_bs(S, K, T, r, sigma, q)
     xp = c.xp
 
     sigma_sqrt_T = c.sigma_safe * c.sqrt_T
-    inner = 2.0 * c.q * c.T_safe + 1.0 + (2.0 * (c.r - c.q) * c.T_safe - c.d2 * sigma_sqrt_T) * c.d1 / sigma_sqrt_T
-    prefactor = -xp.exp(-c.q * c.T_safe) * normpdf(c.d1) / (2.0 * c.S_safe * c.T_safe * sigma_sqrt_T)
+    inner = (
+        2.0 * c.q * c.T_safe
+        + 1.0
+        + (2.0 * (c.r - c.q) * c.T_safe - c.d2 * sigma_sqrt_T) * c.d1 / sigma_sqrt_T
+    )
+    prefactor = (
+        -xp.exp(-c.q * c.T_safe) * normpdf(c.d1) / (2.0 * c.S_safe * c.T_safe * sigma_sqrt_T)
+    )
     color_analytic = prefactor * inner
     out = xp.where(c.normal, color_analytic, c.out)
 

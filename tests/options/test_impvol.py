@@ -1,4 +1,4 @@
-'''Test suite for kuant.options.impvol.
+"""Test suite for kuant.options.impvol.
 
 Validation strategy:
   1. Round-trip: bsput(sigma) -> impvol -> sigma
@@ -9,7 +9,8 @@ Validation strategy:
   6. Batched calls
   7. dtype preservation
   8. CPU==GPU parity
-'''
+"""
+
 from __future__ import annotations
 
 import numpy as np
@@ -25,25 +26,28 @@ from kuant.options import impvol
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize('sigma_true', [0.10, 0.20, 0.30, 0.50, 0.80, 1.20])
-@pytest.mark.parametrize('S, K, T, r, q', [
-    (100.0, 100.0, 1.0, 0.05, 0.00),  # ATM 1y
-    (100.0, 105.0, 0.5, 0.05, 0.02),  # slight OTM with dividend
-    (100.0, 95.0, 0.5, 0.05, 0.00),   # slight ITM (put)
-])
+@pytest.mark.parametrize("sigma_true", [0.10, 0.20, 0.30, 0.50, 0.80, 1.20])
+@pytest.mark.parametrize(
+    "S, K, T, r, q",
+    [
+        (100.0, 100.0, 1.0, 0.05, 0.00),  # ATM 1y
+        (100.0, 105.0, 0.5, 0.05, 0.02),  # slight OTM with dividend
+        (100.0, 95.0, 0.5, 0.05, 0.00),  # slight ITM (put)
+    ],
+)
 def test_roundtrip_put(sigma_true, S, K, T, r, q):
-    '''Round-trip test in the well-behaved region (moderate |moneyness|,
-    non-tiny vol). Newton recovers to essentially machine precision here.'''
+    """Round-trip test in the well-behaved region (moderate |moneyness|,
+    non-tiny vol). Newton recovers to essentially machine precision here."""
     price = bsput(S, K, T, r, sigma_true, q)
     sigma_iv = impvol(price, S, K, T, r, is_call=False, q=q)
-    assert abs(sigma_iv - sigma_true) < 1e-6, (
-        f'sigma_true={sigma_true}, sigma_iv={sigma_iv}, S={S}, K={K}, T={T}'
-    )
+    assert (
+        abs(sigma_iv - sigma_true) < 1e-6
+    ), f"sigma_true={sigma_true}, sigma_iv={sigma_iv}, S={S}, K={K}, T={T}"
 
 
 def test_roundtrip_put_low_vol_wide_tolerance():
-    '''Very low vol + off-ATM has near-zero vega; Newton hits the numerical
-    floor. Recovery is still good but not machine-precision.'''
+    """Very low vol + off-ATM has near-zero vega; Newton hits the numerical
+    floor. Recovery is still good but not machine-precision."""
     sigma_true = 0.05
     price = bsput(100.0, 90.0, 0.25, 0.05, sigma_true)  # 5% vol, 3mo, OTM
     sigma_iv = impvol(price, 100.0, 90.0, 0.25, 0.05)
@@ -52,12 +56,15 @@ def test_roundtrip_put_low_vol_wide_tolerance():
         assert abs(sigma_iv - sigma_true) < 5e-2
 
 
-@pytest.mark.parametrize('sigma_true', [0.10, 0.30, 0.60])
-@pytest.mark.parametrize('S, K, T, r, q', [
-    (100.0, 100.0, 1.0, 0.05, 0.00),
-    (100.0, 90.0, 0.5, 0.05, 0.00),   # ITM (for call)
-    (100.0, 110.0, 0.5, 0.05, 0.02),  # OTM (for call)
-])
+@pytest.mark.parametrize("sigma_true", [0.10, 0.30, 0.60])
+@pytest.mark.parametrize(
+    "S, K, T, r, q",
+    [
+        (100.0, 100.0, 1.0, 0.05, 0.00),
+        (100.0, 90.0, 0.5, 0.05, 0.00),  # ITM (for call)
+        (100.0, 110.0, 0.5, 0.05, 0.02),  # OTM (for call)
+    ],
+)
 def test_roundtrip_call(sigma_true, S, K, T, r, q):
     price = bscall(S, K, T, r, sigma_true, q)
     sigma_iv = impvol(price, S, K, T, r, is_call=True, q=q)
@@ -70,18 +77,20 @@ def test_roundtrip_call(sigma_true, S, K, T, r, q):
 
 
 def _brentq_impvol(target_price, S, K, T, r, is_call=False, q=0.0):
-    '''Independent implementation: bisection via scipy.optimize.brentq.'''
+    """Independent implementation: bisection via scipy.optimize.brentq."""
+
     def obj(sigma):
         price = bscall(S, K, T, r, sigma, q) if is_call else bsput(S, K, T, r, sigma, q)
         return price - target_price
+
     return brentq(obj, 1e-6, 5.0, xtol=1e-10)
 
 
 def test_matches_brentq_random_puts(rng):
-    '''Newton and brentq are both root-finders on the same objective; they
+    """Newton and brentq are both root-finders on the same objective; they
     should agree wherever the price surface has non-negligible slope.
     Skip the low-vega tail where BOTH algorithms hit the same numerical
-    floor and disagree by the flat-region uncertainty.'''
+    floor and disagree by the flat-region uncertainty."""
     from kuant.options import bsvega
 
     for _ in range(50):
@@ -132,7 +141,7 @@ def test_matches_brentq_random_calls(rng):
 
 
 def test_put_price_below_intrinsic_returns_nan():
-    '''Put price below max(K*e^-rT - S*e^-qT, 0) is arbitrage.'''
+    """Put price below max(K*e^-rT - S*e^-qT, 0) is arbitrage."""
     S, K, T, r = 100.0, 110.0, 1.0, 0.05
     # Lower bound: 110*e^-0.05 - 100 ~ 4.63; below that is arbitrage
     price = 1.0  # way below
@@ -141,7 +150,7 @@ def test_put_price_below_intrinsic_returns_nan():
 
 
 def test_put_price_above_upper_bound_returns_nan():
-    '''Put worth more than discounted strike is arbitrage.'''
+    """Put worth more than discounted strike is arbitrage."""
     S, K, T, r = 100.0, 100.0, 1.0, 0.05
     # Upper bound: 100 * e^-0.05 ~ 95.12
     price = 200.0  # way above
@@ -155,7 +164,7 @@ def test_call_price_negative_returns_nan():
 
 
 def test_zero_T_returns_nan():
-    '''T=0 has no vol solution.'''
+    """T=0 has no vol solution."""
     result = impvol(1.0, 100.0, 100.0, 0.0, 0.05, is_call=False)
     assert np.isnan(result)
 
@@ -166,16 +175,16 @@ def test_zero_T_returns_nan():
 
 
 def test_short_tenor_atm():
-    '''1 day to expiry, ATM.'''
+    """1 day to expiry, ATM."""
     sigma_true = 0.30
-    S, K, T, r = 100.0, 100.0, 1/365, 0.05
+    S, K, T, r = 100.0, 100.0, 1 / 365, 0.05
     price = bsput(S, K, T, r, sigma_true)
     sigma_iv = impvol(price, S, K, T, r)
     assert abs(sigma_iv - sigma_true) < 1e-6
 
 
 def test_very_high_vol():
-    '''sigma = 1.5 (150% annualized).'''
+    """sigma = 1.5 (150% annualized)."""
     sigma_true = 1.5
     price = bsput(100.0, 100.0, 1.0, 0.05, sigma_true)
     sigma_iv = impvol(price, 100.0, 100.0, 1.0, 0.05)
@@ -183,7 +192,7 @@ def test_very_high_vol():
 
 
 def test_deep_otm_put():
-    '''K=50, S=100 -> deep OTM put with tiny price.'''
+    """K=50, S=100 -> deep OTM put with tiny price."""
     sigma_true = 0.40
     S, K, T, r = 100.0, 50.0, 1.0, 0.05
     price = bsput(S, K, T, r, sigma_true)
@@ -281,6 +290,7 @@ def test_gpu_matches_cpu(skip_no_gpu, rng):
 
 def test_gpu_preserves_backend(skip_no_gpu):
     import cupy as cp
+
     price = bsput(100.0, 100.0, 1.0, 0.05, 0.25)
     result = impvol(
         cp.asarray([price]),

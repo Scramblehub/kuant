@@ -1,9 +1,10 @@
-'''Black-Scholes European call pricer, batched.
+"""Black-Scholes European call pricer, batched.
 
 call = S·e^(-q·T)·Φ(d1) - K·e^(-r·T)·Φ(d2)
 
 Put-call parity: C - P = S·e^(-q·T) - K·e^(-r·T). Design: docs/kernels/bscall.md.
-'''
+"""
+
 from __future__ import annotations
 
 from ._bs_common import finalize, prepare_bs
@@ -11,13 +12,13 @@ from .normcdf import normcdf
 
 
 def bscall(S, K, T, r, sigma, q=0.0):
-    '''Black-Scholes European call price. Non-negative.
+    """Black-Scholes European call price. Non-negative.
 
     Examples
     --------
     >>> bscall(100.0, 100.0, 1.0, 0.05, 0.2)  # ATM 1y
     10.450583572185565
-    '''
+    """
     c = prepare_bs(S, K, T, r, sigma, q)
     xp = c.xp
 

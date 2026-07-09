@@ -1,4 +1,5 @@
-'''Gaussian HMM Viterbi decoding.'''
+"""Gaussian HMM Viterbi decoding."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -7,10 +8,10 @@ from .common import _prepare_ghmm_inputs
 
 
 def viterbi(obs, pi, A, mu, sigma):
-    '''Most-likely state sequence for a Gaussian HMM.
+    """Most-likely state sequence for a Gaussian HMM.
 
     Returns (states (T,) int, log_prob float).
-    '''
+    """
     xp, obs_arr, log_pi, log_A, log_B = _prepare_ghmm_inputs(obs, pi, A, mu, sigma)
     T = obs_arr.size
     N = log_pi.size

@@ -1,4 +1,5 @@
-'''Test suite for kuant.options.putpayoff.'''
+"""Test suite for kuant.options.putpayoff."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -8,13 +9,13 @@ from kuant.options import callpayoff, putpayoff
 
 
 @pytest.mark.parametrize(
-    'S, K, expected',
+    "S, K, expected",
     [
         (80.0, 100.0, 20.0),
         (100.0, 100.0, 0.0),
         (120.0, 100.0, 0.0),
-        (0.0, 100.0, 100.0),   # S=0 -> full payoff
-        (100.0, 0.0, 0.0),     # K=0 -> worthless
+        (0.0, 100.0, 100.0),  # S=0 -> full payoff
+        (100.0, 0.0, 0.0),  # K=0 -> worthless
     ],
 )
 def test_golden(S, K, expected):
@@ -36,7 +37,7 @@ def test_at_the_money_zero():
 
 
 def test_intrinsic_parity(rng):
-    '''Basic identity: callpayoff(S,K) - putpayoff(S,K) = S - K.'''
+    """Basic identity: callpayoff(S,K) - putpayoff(S,K) = S - K."""
     S = rng.uniform(0, 200, 100)
     K = rng.uniform(0, 200, 100)
     lhs = callpayoff(S, K) - putpayoff(S, K)
@@ -60,8 +61,7 @@ def test_broadcast_2d():
     K = np.array([[110.0], [90.0]])
     result = putpayoff(S, K)
     assert result.shape == (2, 3)
-    np.testing.assert_array_equal(result, [[30.0, 10.0,  0.0],
-                                            [10.0,  0.0,  0.0]])
+    np.testing.assert_array_equal(result, [[30.0, 10.0, 0.0], [10.0, 0.0, 0.0]])
 
 
 # ---------------------------------------------------------------------------
@@ -106,6 +106,7 @@ def test_matches_naive_max():
 
 def test_gpu_matches_cpu(skip_no_gpu, rng):
     import cupy as cp
+
     S = rng.uniform(0, 200, 100)
     K = rng.uniform(0, 200, 100)
     r_cpu = putpayoff(S, K)
@@ -115,5 +116,6 @@ def test_gpu_matches_cpu(skip_no_gpu, rng):
 
 def test_gpu_preserves_backend(skip_no_gpu):
     import cupy as cp
+
     result = putpayoff(cp.asarray([80.0, 100.0]), cp.asarray([100.0, 100.0]))
     assert isinstance(result, cp.ndarray)

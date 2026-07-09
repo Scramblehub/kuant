@@ -1,4 +1,5 @@
-'''Test suite for kuant.stats.rollargmin and rollargmax.'''
+"""Test suite for kuant.stats.rollargmin and rollargmax."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -44,7 +45,7 @@ def test_window_1_all_zeros():
 
 
 def test_ties_return_first():
-    '''numpy convention: argmax of tie returns first occurrence.'''
+    """numpy convention: argmax of tie returns first occurrence."""
     x = np.array([1.0, 5, 5, 5, 5])
     result = rollargmax(x, 4)
     # Window [1,5,5,5]: first max at index 1; window [5,5,5,5]: first max at 0
@@ -65,9 +66,9 @@ def test_nan_in_window_propagates():
 
 
 def test_window_zero_raises():
-    with pytest.raises(ValueError, match='must be positive'):
+    with pytest.raises(ValueError, match="must be positive"):
         rollargmax(np.array([1.0]), 0)
-    with pytest.raises(ValueError, match='must be positive'):
+    with pytest.raises(ValueError, match="must be positive"):
         rollargmin(np.array([1.0]), 0)
 
 
@@ -76,7 +77,7 @@ def test_window_larger_than_length():
 
 
 def test_2d_input_raises():
-    with pytest.raises(ValueError, match='1D'):
+    with pytest.raises(ValueError, match="1D"):
         rollargmax(np.array([[1.0, 2], [3, 4]]), 2)
 
 
@@ -95,13 +96,14 @@ def test_bounded_by_0_and_w_minus_1(rng):
 
 
 def test_argmax_neg_equals_argmin(rng):
-    '''argmax(-x) == argmin(x).'''
+    """argmax(-x) == argmin(x)."""
     x = rng.uniform(-1, 1, size=100)
     np.testing.assert_array_equal(rollargmax(-x, 10), rollargmin(x, 10))
 
 
 def test_gpu_matches_cpu(skip_no_gpu, rng):
     import cupy as cp
+
     x = rng.uniform(-1, 1, size=200)
     for w in [3, 20]:
         r_cpu = rollargmax(x, w)

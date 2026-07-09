@@ -1,4 +1,4 @@
-'''Black-Scholes zomma, batched. Put-call symmetric.
+"""Black-Scholes zomma, batched. Put-call symmetric.
 
 zomma = ∂Gamma/∂σ = ∂³Price/∂S²∂σ
       = Gamma · (d1·d2 - 1) / σ
@@ -12,7 +12,8 @@ rebalancing when IV shifts across the vol surface.
 Put-call symmetric because gamma is put-call symmetric.
 
 Design: docs/kernels/options/bszomma.md.
-'''
+"""
+
 from __future__ import annotations
 
 from ..core._bs_common import finalize, prepare_bs
@@ -20,13 +21,13 @@ from ..core.normpdf import normpdf
 
 
 def bszomma(S, K, T, r, sigma, q=0.0):
-    '''Black-Scholes zomma. Same for calls and puts.
+    """Black-Scholes zomma. Same for calls and puts.
 
     Examples
     --------
     >>> bszomma(100.0, 100.0, 1.0, 0.05, 0.20)
     -0.09880075894327053
-    '''
+    """
     c = prepare_bs(S, K, T, r, sigma, q)
     xp = c.xp
 

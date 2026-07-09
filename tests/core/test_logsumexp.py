@@ -1,4 +1,5 @@
-'''Test suite for kuant.core.logsumexp.'''
+"""Test suite for kuant.core.logsumexp."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -42,7 +43,7 @@ def test_single_element():
 
 
 def test_with_finite_and_neg_inf_mix():
-    '''logsumexp([0, -inf, -inf]) = log(exp(0)) = 0.'''
+    """logsumexp([0, -inf, -inf]) = log(exp(0)) = 0."""
     result = logsumexp(np.array([0.0, -np.inf, -np.inf]))
     assert abs(result) < 1e-14
 
@@ -87,7 +88,7 @@ def test_keepdims(rng):
 
 
 def test_no_overflow_at_1e300():
-    '''Values around log(max float) — naive exp would overflow.'''
+    """Values around log(max float) — naive exp would overflow."""
     x = np.array([700.0, 700.0])  # exp(700) is near float64 max
     result = logsumexp(x)
     ref = 700.0 + np.log(2)
@@ -95,7 +96,7 @@ def test_no_overflow_at_1e300():
 
 
 def test_associativity_via_partition(rng):
-    '''logsumexp([logsumexp(A), logsumexp(B)]) == logsumexp(A ∪ B).'''
+    """logsumexp([logsumexp(A), logsumexp(B)]) == logsumexp(A ∪ B)."""
     x = rng.uniform(-50, 50, 100)
     full = logsumexp(x)
     partial = logsumexp(np.array([logsumexp(x[:50]), logsumexp(x[50:])]))
@@ -109,8 +110,9 @@ def test_associativity_via_partition(rng):
 
 def test_no_warnings_all_neg_inf():
     import warnings
+
     with warnings.catch_warnings():
-        warnings.simplefilter('error')  # raise on any warning
+        warnings.simplefilter("error")  # raise on any warning
         result = logsumexp(np.array([-np.inf, -np.inf]))
         assert result == -np.inf
 
@@ -122,6 +124,7 @@ def test_no_warnings_all_neg_inf():
 
 def test_gpu_matches_cpu(skip_no_gpu, rng):
     import cupy as cp
+
     x = rng.uniform(-100, 100, 500)
     r_cpu = logsumexp(x)
     r_gpu = float(logsumexp(cp.asarray(x)))
@@ -130,6 +133,7 @@ def test_gpu_matches_cpu(skip_no_gpu, rng):
 
 def test_gpu_axis_reduction(skip_no_gpu, rng):
     import cupy as cp
+
     x = rng.uniform(-10, 10, (5, 8))
     r_cpu = logsumexp(x, axis=1)
     r_gpu = cp.asnumpy(logsumexp(cp.asarray(x), axis=1))

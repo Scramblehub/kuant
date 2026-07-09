@@ -1,4 +1,5 @@
-'''Test suite for kuant.core.tppf.'''
+"""Test suite for kuant.core.tppf."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -9,10 +10,13 @@ from kuant.core import tcdf, tppf
 
 
 @pytest.mark.parametrize(
-    'p, df',
+    "p, df",
     [
-        (0.01, 3.0), (0.05, 5.0), (0.5, 10.0),
-        (0.95, 30.0), (0.99, 100.0),
+        (0.01, 3.0),
+        (0.05, 5.0),
+        (0.5, 10.0),
+        (0.95, 30.0),
+        (0.99, 100.0),
         (0.001, 5.0),  # deep tail
         (0.999, 3.0),  # deep upper tail
     ],
@@ -37,7 +41,7 @@ def test_p_half_is_zero():
 
 
 def test_symmetry():
-    '''tppf(1 - p, df) = -tppf(p, df).'''
+    """tppf(1 - p, df) = -tppf(p, df)."""
     for p in [0.05, 0.1, 0.25]:
         for df in [3.0, 10.0, 30.0]:
             assert abs(tppf(1 - p, df) + tppf(p, df)) < 1e-9
@@ -54,7 +58,7 @@ def test_boundary_p_one_is_pos_inf():
 def test_out_of_range_returns_nan():
     assert np.isnan(tppf(-0.1, 5.0))
     assert np.isnan(tppf(1.5, 5.0))
-    assert np.isnan(tppf(0.5, -1.0))   # invalid df
+    assert np.isnan(tppf(0.5, -1.0))  # invalid df
     assert np.isnan(tppf(np.nan, 5.0))
 
 
@@ -68,6 +72,7 @@ def test_batched(rng):
 
 def test_gpu_matches_cpu(skip_no_gpu, rng):
     import cupy as cp
+
     ps = rng.uniform(0.05, 0.95, 30)
     dfs = rng.uniform(2, 30, 30)
     r_cpu = tppf(ps, dfs)

@@ -1,4 +1,4 @@
-'''Rolling idiosyncratic volatility — residual std after regressing y on x.
+"""Rolling idiosyncratic volatility — residual std after regressing y on x.
 
 For each trailing window, fit OLS `y = alpha + beta*x + eps` and return
 the standard deviation of the residuals `eps`. This is the part of y's
@@ -17,7 +17,8 @@ factor-model residuals, "how much of this stock's variance is NOT
 explained by SPY?"
 
 Design: docs/kernels/rollidio.md.
-'''
+"""
+
 from __future__ import annotations
 
 from typing import Any
@@ -30,6 +31,7 @@ from .rollstd import rollstd
 cp: Any
 try:
     import cupy as cp
+
     _CUPY_NDARRAY = cp.ndarray
 except ImportError:
     cp = None
@@ -37,7 +39,7 @@ except ImportError:
 
 
 def rollidio(y, x, window, ddof=1):
-    '''Rolling idiosyncratic std: sqrt(var(y) * (1 - corr(x, y)²)).
+    """Rolling idiosyncratic std: sqrt(var(y) * (1 - corr(x, y)²)).
 
     Parameters
     ----------
@@ -60,7 +62,7 @@ def rollidio(y, x, window, ddof=1):
     Note the argument order — `y` first, `x` second — matches the
     regression semantic "y explained by x". If you swap them, you're
     computing the residual variance of x given y instead.
-    '''
+    """
     std_y = rollstd(y, window, ddof=ddof)
     corr_xy = rollcorr(x, y, window)
 

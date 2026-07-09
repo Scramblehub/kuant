@@ -3,6 +3,7 @@
 Includes the strongest cross-check: put-call parity against bsput.
 If either kernel drifts, parity fails to machine precision.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -27,11 +28,11 @@ def _reference_call(S, K, T, r, sigma, q=0.0):
 @pytest.mark.parametrize(
     "S, K, T, r, sigma, q, expected",
     [
-        (100.0, 100.0, 1.0, 0.05, 0.20, 0.0, 10.450583572185565),   # ATM
-        (100.0, 80.0, 1.0, 0.05, 0.20, 0.0, 24.58883544392775),     # ITM (S > K)
-        (100.0, 120.0, 1.0, 0.05, 0.20, 0.0, 3.2474774165608125),   # OTM (K > S)
-        (100.0, 100.0, 1.0, 0.05, 0.20, 0.03, 8.652528553942709),   # with dividend
-        (42.0, 40.0, 0.5, 0.10, 0.20, 0.0, 4.759422392871532),      # Hull textbook
+        (100.0, 100.0, 1.0, 0.05, 0.20, 0.0, 10.450583572185565),  # ATM
+        (100.0, 80.0, 1.0, 0.05, 0.20, 0.0, 24.58883544392775),  # ITM (S > K)
+        (100.0, 120.0, 1.0, 0.05, 0.20, 0.0, 3.2474774165608125),  # OTM (K > S)
+        (100.0, 100.0, 1.0, 0.05, 0.20, 0.03, 8.652528553942709),  # with dividend
+        (42.0, 40.0, 0.5, 0.10, 0.20, 0.0, 4.759422392871532),  # Hull textbook
     ],
 )
 def test_golden_values(S, K, T, r, sigma, q, expected):
@@ -50,7 +51,8 @@ def test_matches_reference_uniform(rng):
     np.testing.assert_allclose(
         bscall(S, K, T, r, sigma, q),
         _reference_call(S, K, T, r, sigma, q),
-        atol=1e-12, rtol=1e-12,
+        atol=1e-12,
+        rtol=1e-12,
     )
 
 
@@ -144,9 +146,11 @@ def test_nan_passthrough():
 
 
 def test_dtype_preserved_float32():
-    args = [np.array([100.0], dtype=np.float32)] * 2 + [np.array([1.0], dtype=np.float32),
-                                                        np.array([0.05], dtype=np.float32),
-                                                        np.array([0.2], dtype=np.float32)]
+    args = [np.array([100.0], dtype=np.float32)] * 2 + [
+        np.array([1.0], dtype=np.float32),
+        np.array([0.05], dtype=np.float32),
+        np.array([0.2], dtype=np.float32),
+    ]
     result = bscall(*args)
     assert result.dtype == np.float32
 
@@ -202,6 +206,7 @@ def test_call_bounded_above_by_spot(rng):
 
 def test_gpu_matches_cpu(skip_no_gpu, rng):
     import cupy as cp
+
     n = 1000
     S = rng.uniform(50, 200, size=n)
     K = rng.uniform(50, 200, size=n)
@@ -215,5 +220,6 @@ def test_gpu_matches_cpu(skip_no_gpu, rng):
 
 def test_gpu_preserves_backend(skip_no_gpu):
     import cupy as cp
+
     result = bscall(cp.asarray([100.0]), 100.0, 1.0, 0.05, 0.20)
     assert isinstance(result, cp.ndarray)

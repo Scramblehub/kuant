@@ -1,4 +1,5 @@
-'''Test suite for kuant.core.gpdpdf.'''
+"""Test suite for kuant.core.gpdpdf."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -9,13 +10,13 @@ from kuant.core import gpdpdf
 
 
 @pytest.mark.parametrize(
-    'x, xi, scale',
+    "x, xi, scale",
     [
-        (0.5, 0.2, 1.0),   # positive shape
-        (0.5, 0.0, 1.0),   # exponential limit
+        (0.5, 0.2, 1.0),  # positive shape
+        (0.5, 0.0, 1.0),  # exponential limit
         (0.5, -0.3, 1.0),  # negative shape (bounded)
         (2.0, 0.5, 2.0),
-        (5.0, 1.0, 1.0),   # deep tail
+        (5.0, 1.0, 1.0),  # deep tail
         (0.1, 0.7, 0.5),
     ],
 )
@@ -26,20 +27,20 @@ def test_matches_scipy(x, xi, scale):
 
 
 def test_zero_below_support():
-    '''PDF is zero for x < 0 across any xi/scale.'''
+    """PDF is zero for x < 0 across any xi/scale."""
     for xi in [-0.5, 0.0, 0.5]:
         assert gpdpdf(-1.0, xi, 1.0) == 0.0
 
 
 def test_zero_above_upper_bound_when_xi_negative():
-    '''For xi < 0, upper bound is -scale/xi. Above it, PDF = 0.'''
+    """For xi < 0, upper bound is -scale/xi. Above it, PDF = 0."""
     xi, scale = -0.5, 1.0
     upper = -scale / xi
     assert gpdpdf(upper + 0.5, xi, scale) == 0.0
 
 
 def test_exponential_limit_at_xi_zero():
-    '''gpdpdf(x, 0, scale) = (1/scale) * exp(-x/scale).'''
+    """gpdpdf(x, 0, scale) = (1/scale) * exp(-x/scale)."""
     x, scale = 1.5, 2.0
     expected = (1.0 / scale) * np.exp(-x / scale)
     assert abs(gpdpdf(x, 0.0, scale) - expected) < 1e-14
@@ -63,6 +64,7 @@ def test_broadcast_scalar_scale():
 
 def test_gpu_matches_cpu(skip_no_gpu, rng):
     import cupy as cp
+
     xs = rng.uniform(0, 3, 50)
     xis = rng.uniform(-0.3, 0.5, 50)
     scales = rng.uniform(0.5, 2.0, 50)

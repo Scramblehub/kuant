@@ -8,6 +8,7 @@ Demonstrates:
 Run:
     python docs/examples/bs_price_surface.py
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -23,8 +24,8 @@ def main() -> None:
     q = 0.02
     sigma = 0.25
 
-    strikes = np.linspace(80, 120, 21)        # (21,)
-    tenors = np.array([1/52, 1/12, 3/12, 6/12, 1, 2, 3, 5])  # (8,)
+    strikes = np.linspace(80, 120, 21)  # (21,)
+    tenors = np.array([1 / 52, 1 / 12, 3 / 12, 6 / 12, 1, 2, 3, 5])  # (8,)
 
     # Broadcasting: strikes goes to shape (21, 1), tenors to (1, 8) → grid (21, 8)
     K = strikes[:, None]
@@ -45,8 +46,10 @@ def main() -> None:
     # ATM slice at each tenor
     atm_idx = np.argmin(np.abs(strikes - S))
     print("ATM slice (K=100):")
-    print(f"  {'tenor':>8s}  {'call':>7s}  {'put':>7s}  {'delta_c':>8s}  "
-          f"{'gamma':>8s}  {'vega':>7s}")
+    print(
+        f"  {'tenor':>8s}  {'call':>7s}  {'put':>7s}  {'delta_c':>8s}  "
+        f"{'gamma':>8s}  {'vega':>7s}"
+    )
     for j, tenor in enumerate(tenors):
         print(
             f"  {tenor:>8.4f}  {call_price[atm_idx, j]:>7.3f}  {put_price[atm_idx, j]:>7.3f}  "

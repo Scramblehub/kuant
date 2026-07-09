@@ -1,4 +1,4 @@
-'''Inverse Gaussian CDF (percent-point function), batched.
+"""Inverse Gaussian CDF (percent-point function), batched.
 
 Given probability p in (0, 1), return x such that Φ(x) = p.
 
@@ -12,7 +12,8 @@ in double precision for p in (0, 1). Three regions:
 Reference: https://web.archive.org/web/20150910040355/http://home.online.no/~pjacklam/notes/invnorm/
 
 Design: docs/kernels/core/normppf.md.
-'''
+"""
+
 from __future__ import annotations
 
 from typing import Any
@@ -22,6 +23,7 @@ import numpy as np
 cp: Any
 try:
     import cupy as cp
+
     _CUPY_NDARRAY = cp.ndarray
 except ImportError:
     cp = None
@@ -38,20 +40,36 @@ def _detect_backend(*args) -> Any:
 
 
 # Peter Acklam's rational approximation coefficients (double-precision).
-_A = (-3.969683028665376e+01, 2.209460984245205e+02, -2.759285104469687e+02,
-       1.383577518672690e+02, -3.066479806614716e+01,  2.506628277459239e+00)
-_B = (-5.447609879822406e+01, 1.615858368580409e+02, -1.556989798598866e+02,
-       6.680131188771972e+01, -1.328068155288572e+01)
-_C = (-7.784894002430293e-03, -3.223964580411365e-01, -2.400758277161838e+00,
-      -2.549732539343734e+00,  4.374664141464968e+00,  2.938163982698783e+00)
-_D = ( 7.784695709041462e-03,  3.224671290700398e-01,  2.445134137142996e+00,
-       3.754408661907416e+00)
+_A = (
+    -3.969683028665376e01,
+    2.209460984245205e02,
+    -2.759285104469687e02,
+    1.383577518672690e02,
+    -3.066479806614716e01,
+    2.506628277459239e00,
+)
+_B = (
+    -5.447609879822406e01,
+    1.615858368580409e02,
+    -1.556989798598866e02,
+    6.680131188771972e01,
+    -1.328068155288572e01,
+)
+_C = (
+    -7.784894002430293e-03,
+    -3.223964580411365e-01,
+    -2.400758277161838e00,
+    -2.549732539343734e00,
+    4.374664141464968e00,
+    2.938163982698783e00,
+)
+_D = (7.784695709041462e-03, 3.224671290700398e-01, 2.445134137142996e00, 3.754408661907416e00)
 _PLOW = 0.02425
 _PHIGH = 1.0 - _PLOW
 
 
 def normppf(p):
-    '''Inverse standard-normal CDF: return x where Φ(x) = p.
+    """Inverse standard-normal CDF: return x where Φ(x) = p.
 
     Parameters
     ----------
@@ -72,7 +90,7 @@ def normppf(p):
     True
     >>> abs(normppf(0.025) - -1.9599639845400545) < 1e-9
     True
-    '''
+    """
     xp = _detect_backend(p)
     p_arr = xp.asarray(p, dtype=xp.float64)
 
@@ -92,20 +110,20 @@ def normppf(p):
     # Central region
     q_c = p_safe_central - 0.5
     r_c = q_c * q_c
-    num_c = ((((_A[0]*r_c + _A[1])*r_c + _A[2])*r_c + _A[3])*r_c + _A[4])*r_c + _A[5]
-    den_c = ((((_B[0]*r_c + _B[1])*r_c + _B[2])*r_c + _B[3])*r_c + _B[4])*r_c + 1.0
+    num_c = ((((_A[0] * r_c + _A[1]) * r_c + _A[2]) * r_c + _A[3]) * r_c + _A[4]) * r_c + _A[5]
+    den_c = ((((_B[0] * r_c + _B[1]) * r_c + _B[2]) * r_c + _B[3]) * r_c + _B[4]) * r_c + 1.0
     x_c = num_c * q_c / den_c
 
     # Lower tail
     q_l = xp.sqrt(-2.0 * xp.log(p_safe_lower))
-    num_l = (((((_C[0]*q_l + _C[1])*q_l + _C[2])*q_l + _C[3])*q_l + _C[4])*q_l + _C[5])
-    den_l = ((((_D[0]*q_l + _D[1])*q_l + _D[2])*q_l + _D[3])*q_l + 1.0)
+    num_l = ((((_C[0] * q_l + _C[1]) * q_l + _C[2]) * q_l + _C[3]) * q_l + _C[4]) * q_l + _C[5]
+    den_l = (((_D[0] * q_l + _D[1]) * q_l + _D[2]) * q_l + _D[3]) * q_l + 1.0
     x_l = num_l / den_l
 
     # Upper tail — same formula on (1-p), then negate
     q_u = xp.sqrt(-2.0 * xp.log(1.0 - p_safe_upper))
-    num_u = (((((_C[0]*q_u + _C[1])*q_u + _C[2])*q_u + _C[3])*q_u + _C[4])*q_u + _C[5])
-    den_u = ((((_D[0]*q_u + _D[1])*q_u + _D[2])*q_u + _D[3])*q_u + 1.0)
+    num_u = ((((_C[0] * q_u + _C[1]) * q_u + _C[2]) * q_u + _C[3]) * q_u + _C[4]) * q_u + _C[5]
+    den_u = (((_D[0] * q_u + _D[1]) * q_u + _D[2]) * q_u + _D[3]) * q_u + 1.0
     x_u = -num_u / den_u
 
     # Assemble

@@ -1,4 +1,4 @@
-'''Black-Scholes European put theta, batched.
+"""Black-Scholes European put theta, batched.
 
 theta_put = -[ S·e^(-q·T)·φ(d1)·σ / (2·√T) ]
             + r·K·e^(-r·T)·Φ(-d2)
@@ -11,7 +11,8 @@ Sign: typically negative for long puts (option loses value with time),
 but can be positive for deep ITM European puts with high interest rates.
 
 Design: docs/kernels/options/bsputtheta.md.
-'''
+"""
+
 from __future__ import annotations
 
 from ..core._bs_common import finalize, prepare_bs
@@ -20,7 +21,7 @@ from ..core.normpdf import normpdf
 
 
 def bsputtheta(S, K, T, r, sigma, q=0.0):
-    '''Black-Scholes European put theta.
+    """Black-Scholes European put theta.
 
     Per year. For per-trading-day theta divide by 252; for per-
     calendar-day theta divide by 365.
@@ -29,7 +30,7 @@ def bsputtheta(S, K, T, r, sigma, q=0.0):
     --------
     >>> bsputtheta(100.0, 100.0, 1.0, 0.05, 0.20)
     -1.6579568392598896
-    '''
+    """
     c = prepare_bs(S, K, T, r, sigma, q)
     xp = c.xp
 

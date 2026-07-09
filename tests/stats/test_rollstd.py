@@ -1,4 +1,4 @@
-'''Test suite for kuant.stats.rollstd.
+"""Test suite for kuant.stats.rollstd.
 
 Validation strategy:
   1. Golden values      — hand-computed
@@ -6,7 +6,8 @@ Validation strategy:
   3. Edge cases         — window=1, w-ddof<=0, all NaN, large-magnitude inputs
   4. Property tests     — non-negative, zero-on-constants, first w-1 NaN
   5. CPU==GPU parity
-'''
+"""
+
 from __future__ import annotations
 
 import numpy as np
@@ -22,12 +23,12 @@ from kuant.stats import rollstd
 
 
 @pytest.mark.parametrize(
-    'x, w, ddof, expected',
+    "x, w, ddof, expected",
     [
         # [1,2,3,4,5] window=3, ddof=1: each window has ssq=2, var=1, std=1
         ([1.0, 2, 3, 4, 5], 3, 1, [np.nan, np.nan, 1.0, 1.0, 1.0]),
         # ddof=0: var=2/3, std=sqrt(2/3)
-        ([1.0, 2, 3, 4, 5], 3, 0, [np.nan, np.nan, np.sqrt(2/3), np.sqrt(2/3), np.sqrt(2/3)]),
+        ([1.0, 2, 3, 4, 5], 3, 0, [np.nan, np.nan, np.sqrt(2 / 3), np.sqrt(2 / 3), np.sqrt(2 / 3)]),
         # constants → std=0
         ([5.0, 5, 5, 5], 2, 1, [np.nan, 0.0, 0.0, 0.0]),
         # window=n
@@ -68,7 +69,7 @@ def test_matches_pandas_with_nans(rng):
 
 
 def test_matches_pandas_large_magnitude(rng):
-    '''Shifted cumsum should still match pandas to ~1e-8 on price-like data.'''
+    """Shifted cumsum should still match pandas to ~1e-8 on price-like data."""
     x = rng.uniform(3900, 4100, size=500)
     for w in [5, 50]:
         result = rollstd(x, w)
@@ -83,13 +84,13 @@ def test_matches_pandas_large_magnitude(rng):
 
 
 def test_window_1_ddof_1_all_nan():
-    '''w=1, ddof=1 -> w-ddof=0 -> all NaN.'''
+    """w=1, ddof=1 -> w-ddof=0 -> all NaN."""
     result = rollstd(np.array([1.0, 2, 3]), 1, ddof=1)
     assert np.all(np.isnan(result))
 
 
 def test_window_1_ddof_0_all_zeros():
-    '''w=1, ddof=0 -> variance of single value = 0.'''
+    """w=1, ddof=0 -> variance of single value = 0."""
     result = rollstd(np.array([1.0, 2, 3, 4]), 1, ddof=0)
     np.testing.assert_allclose(result, [0, 0, 0, 0], atol=1e-15)
 
@@ -100,17 +101,17 @@ def test_window_larger_than_length_all_nan():
 
 
 def test_window_zero_raises():
-    with pytest.raises(ValueError, match='must be positive'):
+    with pytest.raises(ValueError, match="must be positive"):
         rollstd(np.array([1.0, 2, 3]), 0)
 
 
 def test_ddof_negative_raises():
-    with pytest.raises(ValueError, match='non-negative'):
+    with pytest.raises(ValueError, match="non-negative"):
         rollstd(np.array([1.0, 2, 3]), 2, ddof=-1)
 
 
 def test_2d_input_raises():
-    with pytest.raises(ValueError, match='1D'):
+    with pytest.raises(ValueError, match="1D"):
         rollstd(np.array([[1.0, 2], [3, 4]]), 2)
 
 
@@ -121,7 +122,7 @@ def test_all_nan_input():
 
 
 def test_first_element_nan_still_works():
-    '''If x[0] is NaN, shift should fall back to 0 without cascading NaN.'''
+    """If x[0] is NaN, shift should fall back to 0 without cascading NaN."""
     x = np.array([np.nan, 1.0, 2, 3, 4, 5])
     result = rollstd(x, 3)
     reference = _pandas_ref(x, 3)
@@ -129,7 +130,7 @@ def test_first_element_nan_still_works():
 
 
 def test_isolated_nan_recovery():
-    '''A single NaN poisons its overlapping windows, then computation resumes.'''
+    """A single NaN poisons its overlapping windows, then computation resumes."""
     x = np.arange(10, dtype=np.float64)
     x[5] = np.nan
     result = rollstd(x, 3)
@@ -178,7 +179,7 @@ def test_first_w_minus_1_always_nan(rng):
     x = rng.uniform(-1, 1, size=100)
     for w in [2, 5, 20]:
         result = rollstd(x, w)
-        assert np.all(np.isnan(result[:w-1]))
+        assert np.all(np.isnan(result[: w - 1]))
 
 
 def test_result_length_equals_input(rng):
@@ -188,7 +189,7 @@ def test_result_length_equals_input(rng):
 
 
 def test_shift_invariance(rng):
-    '''Adding a constant to x should not change rollstd.'''
+    """Adding a constant to x should not change rollstd."""
     x = rng.uniform(-1, 1, size=100)
     result1 = rollstd(x, 10)
     result2 = rollstd(x + 1000, 10)
@@ -202,6 +203,7 @@ def test_shift_invariance(rng):
 
 def test_gpu_matches_cpu(skip_no_gpu, rng):
     import cupy as cp
+
     x_cpu = rng.uniform(-1, 1, size=1000)
     x_gpu = cp.asarray(x_cpu)
     for w in [3, 10, 50]:
@@ -212,12 +214,14 @@ def test_gpu_matches_cpu(skip_no_gpu, rng):
 
 def test_gpu_preserves_backend(skip_no_gpu):
     import cupy as cp
+
     result = rollstd(cp.asarray([1.0, 2, 3, 4, 5]), 3)
     assert isinstance(result, cp.ndarray)
 
 
 def test_gpu_with_nans(skip_no_gpu, rng):
     import cupy as cp
+
     x_cpu = rng.uniform(-1, 1, size=200)
     x_cpu[[10, 50, 100, 150]] = np.nan
     x_gpu = cp.asarray(x_cpu)

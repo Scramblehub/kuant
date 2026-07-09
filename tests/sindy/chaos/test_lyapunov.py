@@ -66,3 +66,35 @@ class TestLyapunov:
         s = r.summary()
         assert "LyapunovResult" in s
         assert "lambda" in s
+
+
+# ---------- v0.6.0: knnlyapunov (Kantz variant) -----------------------
+
+
+from kuant.sindy.chaos.lyapunov import KnnLyapunovResult, knnlyapunov  # noqa: E402
+
+
+class TestKnnLyapunov:
+    def test_returns_result(self):
+        rng = np.random.default_rng(0)
+        r = knnlyapunov(rng.normal(size=400), tau=1, m=3)
+        assert isinstance(r, KnnLyapunovResult)
+
+    def test_logistic_map_positive(self):
+        x = _logistic(900, r=4.0)
+        r = knnlyapunov(x, tau=1, m=3, k_neighbors=5, max_t=15, fit_start=1, fit_end=6)
+        assert r.lyapunov > 0
+
+    def test_bad_k_rejected(self):
+        rng = np.random.default_rng(1)
+        with pytest.raises(KuantValueError):
+            knnlyapunov(rng.normal(size=400), tau=1, m=3, k_neighbors=0)
+
+    def test_too_short_rejected(self):
+        with pytest.raises(KuantValueError, match=r"finite values"):
+            knnlyapunov(np.arange(50.0))
+
+    def test_summary(self):
+        rng = np.random.default_rng(2)
+        r = knnlyapunov(rng.normal(size=400), tau=1, m=3)
+        assert "KnnLyapunovResult" in r.summary()

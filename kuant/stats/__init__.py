@@ -1,4 +1,4 @@
-"""kuant.stats — rolling and windowed statistical primitives."""
+"""kuant.stats: rolling and windowed statistical primitives."""
 
 from .dfa import DFAResult, dfa
 from .hurstrs import HurstResult, hurstrs
@@ -38,6 +38,40 @@ from .stationarity import (
     kpsstest,
     phillipsperrontest,
     varianceratiotest,
+)
+
+# v0.6.0 batch 2: HAC standard errors + autocorr / normality / iid diagnostic tests.
+from .autocorrtests import (
+    DurbinWatsonResult,
+    PortmanteauResult,
+    boxpierce,
+    durbinwatson,
+    ljungbox,
+)
+from .bdstest import BdsResult, bdstest
+from .hac import HacResult, andrewsse, neweywestse
+from .normalitytests import (
+    NormalityResult,
+    andersondarling,
+    jarquebera,
+    shapirowilk,
+)
+from .spectralentropy import SpectralEntropyResult, spectralentropy
+
+# v0.6.0 batch 4: Hurst family variants.
+from .higuchihurst import HiguchiHurstResult, higuchihurst
+from .localwhittle import LocalWhittleResult, localwhittle
+from .mfdfa import MfdfaResult, mfdfa
+from .wavelethurst import WaveletHurstResult, wavelethurst
+
+# v0.6.0 batch 5: correlation variants.
+from .correlations import (
+    CorrelationResult,
+    chatterjeexi,
+    distancecorr,
+    downsidecorr,
+    kendalltau,
+    spearmanrank,
 )
 
 __all__ = [
@@ -86,4 +120,37 @@ __all__ = [
     "kpsstest",
     "phillipsperrontest",
     "varianceratiotest",
+    # v0.6.0 batch 2.
+    "HacResult",
+    "neweywestse",
+    "andrewsse",
+    "PortmanteauResult",
+    "DurbinWatsonResult",
+    "ljungbox",
+    "boxpierce",
+    "durbinwatson",
+    "NormalityResult",
+    "jarquebera",
+    "andersondarling",
+    "shapirowilk",
+    "BdsResult",
+    "bdstest",
+    "SpectralEntropyResult",
+    "spectralentropy",
+    # v0.6.0 batch 4: Hurst family variants.
+    "HiguchiHurstResult",
+    "higuchihurst",
+    "WaveletHurstResult",
+    "wavelethurst",
+    "MfdfaResult",
+    "mfdfa",
+    "LocalWhittleResult",
+    "localwhittle",
+    # v0.6.0 batch 5: correlation variants.
+    "CorrelationResult",
+    "kendalltau",
+    "spearmanrank",
+    "distancecorr",
+    "chatterjeexi",
+    "downsidecorr",
 ]

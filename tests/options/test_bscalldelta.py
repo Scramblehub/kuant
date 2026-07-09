@@ -4,6 +4,7 @@ Includes the strongest cross-checks:
   - FD vs bscall
   - Put-call parity for delta: delta_call - delta_put = exp(-q*T)
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -52,7 +53,8 @@ def test_matches_reference_uniform(rng):
     np.testing.assert_allclose(
         bscalldelta(S, K, T, r, sigma, q),
         _reference_delta(S, K, T, r, sigma, q),
-        atol=1e-12, rtol=1e-12,
+        atol=1e-12,
+        rtol=1e-12,
     )
 
 
@@ -106,9 +108,16 @@ def test_delta_matches_finite_difference(rng):
 
 
 # Edge cases
-def test_expired_itm(): assert bscalldelta(100.0, 80.0, 0.0, 0.05, 0.20) == 1.0
-def test_expired_otm(): assert bscalldelta(80.0, 100.0, 0.0, 0.05, 0.20) == 0.0
-def test_expired_atm(): assert bscalldelta(100.0, 100.0, 0.0, 0.05, 0.20) == 0.0
+def test_expired_itm():
+    assert bscalldelta(100.0, 80.0, 0.0, 0.05, 0.20) == 1.0
+
+
+def test_expired_otm():
+    assert bscalldelta(80.0, 100.0, 0.0, 0.05, 0.20) == 0.0
+
+
+def test_expired_atm():
+    assert bscalldelta(100.0, 100.0, 0.0, 0.05, 0.20) == 0.0
 
 
 def test_zero_vol_exercise():
@@ -124,7 +133,8 @@ def test_zero_vol_no_exercise():
     assert bscalldelta(100.0, 150.0, 1.0, 0.05, 0.0) == 0.0
 
 
-def test_zero_spot(): assert bscalldelta(0.0, 100.0, 1.0, 0.05, 0.20) == 0.0
+def test_zero_spot():
+    assert bscalldelta(0.0, 100.0, 1.0, 0.05, 0.20) == 0.0
 
 
 def test_zero_strike():
@@ -132,19 +142,23 @@ def test_zero_strike():
     assert bscalldelta(100.0, 0.0, 1.0, 0.05, 0.20, 0.03) == pytest.approx(np.exp(-0.03), abs=1e-12)
 
 
-def test_nan_passthrough(): assert np.isnan(bscalldelta(float("nan"), 100.0, 1.0, 0.05, 0.20))
+def test_nan_passthrough():
+    assert np.isnan(bscalldelta(float("nan"), 100.0, 1.0, 0.05, 0.20))
 
 
 def test_dtype_preserved_float32():
-    args = [np.array([100.0], dtype=np.float32)] * 2 + [np.array([1.0], dtype=np.float32),
-                                                        np.array([0.05], dtype=np.float32),
-                                                        np.array([0.2], dtype=np.float32)]
+    args = [np.array([100.0], dtype=np.float32)] * 2 + [
+        np.array([1.0], dtype=np.float32),
+        np.array([0.05], dtype=np.float32),
+        np.array([0.2], dtype=np.float32),
+    ]
     result = bscalldelta(*args)
     assert result.dtype == np.float32
 
 
 def test_gpu_matches_cpu(skip_no_gpu, rng):
     import cupy as cp
+
     n = 500
     S = rng.uniform(50, 200, size=n)
     K = rng.uniform(50, 200, size=n)
@@ -152,5 +166,7 @@ def test_gpu_matches_cpu(skip_no_gpu, rng):
     r = rng.uniform(0.0, 0.10, size=n)
     sigma = rng.uniform(0.05, 0.60, size=n)
     r_cpu = bscalldelta(S, K, T, r, sigma)
-    r_gpu = bscalldelta(cp.asarray(S), cp.asarray(K), cp.asarray(T), cp.asarray(r), cp.asarray(sigma))
+    r_gpu = bscalldelta(
+        cp.asarray(S), cp.asarray(K), cp.asarray(T), cp.asarray(r), cp.asarray(sigma)
+    )
     np.testing.assert_allclose(r_cpu, cp.asnumpy(r_gpu), atol=1e-10)

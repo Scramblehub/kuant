@@ -12,6 +12,7 @@ real. High p ⇒ the observed signal isn't distinguishable from noise.
 Run:
     python docs/examples/permtest_your_signal.py
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -45,7 +46,8 @@ def main() -> None:
     result_real = permtest(
         real_metric_signal,
         abs_corr,
-        x, y_real,
+        x,
+        y_real,
         n_perms=1000,
         seed=0,
         higher_is_better=True,
@@ -55,17 +57,22 @@ def main() -> None:
     result_null = permtest(
         real_metric_null,
         abs_corr,
-        x, y_null,
+        x,
+        y_null,
         n_perms=1000,
         seed=1,
         higher_is_better=True,
     )
 
     print("Permutation p-values:")
-    print(f"  real signal  p = {result_real.p_value:.4f}   "
-          f"({int(result_real.at_least_as_extreme)}/{result_real.n_perms} shuffles beat real)")
-    print(f"  null case    p = {result_null.p_value:.4f}   "
-          f"({int(result_null.at_least_as_extreme)}/{result_null.n_perms} shuffles beat real)")
+    print(
+        f"  real signal  p = {result_real.p_value:.4f}   "
+        f"({int(result_real.at_least_as_extreme)}/{result_real.n_perms} shuffles beat real)"
+    )
+    print(
+        f"  null case    p = {result_null.p_value:.4f}   "
+        f"({int(result_null.at_least_as_extreme)}/{result_null.n_perms} shuffles beat real)"
+    )
     print()
 
     # 6) Sanity: distribution of null-case shuffles centered near real,
@@ -74,8 +81,12 @@ def main() -> None:
     print("  p < 0.05  ⇒  observed signal is significantly stronger than random")
     print("  p ~ 0.5   ⇒  observed signal is indistinguishable from noise")
     print()
-    print(f"  real signal verdict: {'REAL' if result_real.p_value < 0.05 else 'not distinguishable'}")
-    print(f"  null case verdict:   {'REAL' if result_null.p_value < 0.05 else 'not distinguishable'}")
+    print(
+        f"  real signal verdict: {'REAL' if result_real.p_value < 0.05 else 'not distinguishable'}"
+    )
+    print(
+        f"  null case verdict:   {'REAL' if result_null.p_value < 0.05 else 'not distinguishable'}"
+    )
 
 
 if __name__ == "__main__":

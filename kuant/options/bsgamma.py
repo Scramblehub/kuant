@@ -1,9 +1,10 @@
-'''Black-Scholes gamma, batched. Put-call symmetric — one kernel, both directions.
+"""Black-Scholes gamma, batched. Put-call symmetric — one kernel, both directions.
 
 gamma = e^(-q·T)·φ(d1) / (S·σ·√T)    range [0, +inf)
 
 Design: docs/kernels/bsgamma.md.
-'''
+"""
+
 from __future__ import annotations
 
 from ..core._bs_common import finalize, prepare_bs
@@ -11,13 +12,13 @@ from ..core.normpdf import normpdf
 
 
 def bsgamma(S, K, T, r, sigma, q=0.0):
-    '''Black-Scholes gamma. Same for calls and puts.
+    """Black-Scholes gamma. Same for calls and puts.
 
     Examples
     --------
     >>> bsgamma(100.0, 100.0, 1.0, 0.05, 0.20)
     0.018762017345846895
-    '''
+    """
     c = prepare_bs(S, K, T, r, sigma, q)
     xp = c.xp
 

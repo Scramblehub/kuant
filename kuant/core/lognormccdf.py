@@ -1,4 +1,4 @@
-'''Numerically stable log of Gaussian complementary CDF.
+"""Numerically stable log of Gaussian complementary CDF.
 
     lognormccdf(x) = log(1 - Φ(x))
                    = log(Φ(-x))
@@ -8,7 +8,8 @@ Trivial wrapper on `lognormcdf` for readability at call sites doing
 tail-probability calculations.
 
 Design: docs/kernels/core/lognormccdf.md.
-'''
+"""
+
 from __future__ import annotations
 
 from typing import Any
@@ -20,6 +21,7 @@ from .lognormcdf import lognormcdf
 cp: Any
 try:
     import cupy as cp
+
     _CUPY_NDARRAY = cp.ndarray
 except ImportError:
     cp = None
@@ -36,7 +38,7 @@ def _detect_backend(*args) -> Any:
 
 
 def lognormccdf(x):
-    '''Log of upper-tail Gaussian: `log(1 - Φ(x)) = log(Φ(-x))`.
+    """Log of upper-tail Gaussian: `log(1 - Φ(x)) = log(Φ(-x))`.
 
     Parameters
     ----------
@@ -55,7 +57,7 @@ def lognormccdf(x):
     >>> import math
     >>> math.isfinite(lognormccdf(6.0))
     True
-    '''
+    """
     xp = _detect_backend(x)
     x_arr = xp.asarray(x)
     return lognormcdf(-x_arr)

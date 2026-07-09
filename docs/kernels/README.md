@@ -7,14 +7,23 @@ One doc per kernel, organized by subpackage.
 ```
 docs/kernels/
 ├── core/       Black-Scholes family, Gaussian and Student-t primitives, GPD, logsumexp
-├── options/    Greeks, payoffs, chain filters, implied-vol solvers
-├── stats/      Rolling and windowed statistical primitives (27 kernels)
-├── qm/         HMM/GHMM inference, Baum-Welch training, regime tools
+├── options/    Greeks, payoffs, chain filters, implied-vol solvers, exotic pricers
+├── stats/      Rolling and windowed statistical primitives, HAC standard errors,
+│               Hurst family, correlations, spectral entropy
+├── qm/         HMM/GHMM inference, Baum-Welch training, quaternion regime tools
 ├── sindy/      Null-testing scans (permtest, grangerscan, sindylasso, ...)
+│               plus chaos submodule (entropy family, RQA, Lyapunov, etc.)
 ├── topology/   Persistent homology, betti series, wasserstein, dispersioncollapse
 ├── data/       align, baragg, corpaction, panelize, resample, stitch
 ├── edgecases/  NaN policies, delisted handling, outlier detection
-└── signals/    winsorize, neutralize, icdecay
+├── signals/    winsorize, neutralize, icdecay, wavelet, ICA, EMD, kernel PCA, whitening
+├── portfolio/  Sharpe/Sortino/MDD aggregates, HRP, Black-Litterman, mean-CVaR, risk parity
+├── nulltest/   Bootstrap, multiple-hypothesis correction, White/Hansen SPA
+├── text/       Ticker normalization, CUSIP, OCC option symbols, SEC form parsing
+├── backtest/   lifecycle, liquidity, fill, position, warmup, engine
+├── risk/       Cornish-Fisher VaR, EVT (POT/GPD) VaR + ES, bootstrap ES CI,
+│               CoVaR (Adrian-Brunnermeier), Marginal Expected Shortfall
+└── causal/     Synthetic control, 2SLS IV, sharp RDD, PC-algorithm skeleton
 ```
 
 See [`docs/design/`](../design/) for cross-cutting decisions and

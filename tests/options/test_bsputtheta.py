@@ -1,4 +1,4 @@
-'''Test suite for kuant.options.bsputtheta.
+"""Test suite for kuant.options.bsputtheta.
 
 Validation strategy:
   1. Match scipy analytic reference
@@ -8,7 +8,8 @@ Validation strategy:
   5. Batched input
   6. dtype preservation
   7. CPU==GPU parity
-'''
+"""
+
 from __future__ import annotations
 
 import numpy as np
@@ -20,19 +21,21 @@ from kuant.options import bsputtheta
 
 
 def _ref_put_theta(S, K, T, r, sigma, q=0.0):
-    d1 = (np.log(S/K) + (r - q + 0.5*sigma**2)*T) / (sigma * np.sqrt(T))
+    d1 = (np.log(S / K) + (r - q + 0.5 * sigma**2) * T) / (sigma * np.sqrt(T))
     d2 = d1 - sigma * np.sqrt(T)
-    return (-S*np.exp(-q*T)*norm.pdf(d1)*sigma / (2*np.sqrt(T))
-            + r*K*np.exp(-r*T)*norm.cdf(-d2)
-            - q*S*np.exp(-q*T)*norm.cdf(-d1))
+    return (
+        -S * np.exp(-q * T) * norm.pdf(d1) * sigma / (2 * np.sqrt(T))
+        + r * K * np.exp(-r * T) * norm.cdf(-d2)
+        - q * S * np.exp(-q * T) * norm.cdf(-d1)
+    )
 
 
 @pytest.mark.parametrize(
-    'S, K, T, r, sigma, q',
+    "S, K, T, r, sigma, q",
     [
         (100.0, 100.0, 1.0, 0.05, 0.20, 0.0),
-        (100.0, 120.0, 1.0, 0.05, 0.20, 0.0),   # ITM put
-        (100.0, 80.0, 1.0, 0.05, 0.20, 0.0),    # OTM put
+        (100.0, 120.0, 1.0, 0.05, 0.20, 0.0),  # ITM put
+        (100.0, 80.0, 1.0, 0.05, 0.20, 0.0),  # OTM put
         (100.0, 100.0, 0.25, 0.05, 0.20, 0.0),
         (100.0, 100.0, 2.0, 0.05, 0.30, 0.0),
         (100.0, 100.0, 1.0, 0.05, 0.20, 0.03),
@@ -44,7 +47,7 @@ def test_matches_scipy_reference(S, K, T, r, sigma, q):
 
 
 def test_finite_difference_matches():
-    '''theta = -d(price)/dT. h=1e-5 balances truncation and roundoff.'''
+    """theta = -d(price)/dT. h=1e-5 balances truncation and roundoff."""
     S, K, r, sigma, q = 100.0, 100.0, 0.05, 0.20, 0.02
     for T in [0.25, 0.5, 1.0, 2.0]:
         dt = 1e-5
@@ -58,12 +61,12 @@ def test_expired_zero():
 
 
 def test_K_zero_gives_zero():
-    '''Put with K=0 is worthless -> theta 0.'''
+    """Put with K=0 is worthless -> theta 0."""
     assert bsputtheta(100.0, 0.0, 1.0, 0.05, 0.20) == 0.0
 
 
 def test_S_zero_gives_rK_growth():
-    '''When S=0 the put is worth K·e^(-r·T); theta = r·K·e^(-r·T).'''
+    """When S=0 the put is worth K·e^(-r·T); theta = r·K·e^(-r·T)."""
     K, T, r, sigma = 100.0, 1.0, 0.05, 0.20
     expected = r * K * np.exp(-r * T)
     assert abs(bsputtheta(0.0, K, T, r, sigma) - expected) < 1e-10
@@ -74,7 +77,7 @@ def test_ATM_put_theta_negative():
 
 
 def test_deep_ITM_put_can_be_positive():
-    '''Deep-ITM European put with high rates can have positive theta.'''
+    """Deep-ITM European put with high rates can have positive theta."""
     result = bsputtheta(60.0, 100.0, 1.0, 0.10, 0.20)
     assert result > 0
 
@@ -98,12 +101,14 @@ def test_dtype_float32_preserved():
 
 def test_gpu_matches_cpu(skip_no_gpu, rng):
     import cupy as cp
+
     S = rng.uniform(50, 150, 100)
     K = rng.uniform(50, 150, 100)
     T = rng.uniform(0.1, 2.0, 100)
     r = rng.uniform(-0.01, 0.10, 100)
     sigma = rng.uniform(0.1, 0.6, 100)
     r_cpu = bsputtheta(S, K, T, r, sigma)
-    r_gpu = cp.asnumpy(bsputtheta(cp.asarray(S), cp.asarray(K), cp.asarray(T),
-                                   cp.asarray(r), cp.asarray(sigma)))
+    r_gpu = cp.asnumpy(
+        bsputtheta(cp.asarray(S), cp.asarray(K), cp.asarray(T), cp.asarray(r), cp.asarray(sigma))
+    )
     np.testing.assert_allclose(r_cpu, r_gpu, atol=1e-10)

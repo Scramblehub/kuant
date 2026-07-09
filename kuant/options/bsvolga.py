@@ -1,4 +1,4 @@
-'''Black-Scholes volga (vomma), batched. Put-call symmetric.
+"""Black-Scholes volga (vomma), batched. Put-call symmetric.
 
 volga = ∂²Price/∂σ² = ∂Vega/∂σ
       = Vega · d1·d2 / σ
@@ -12,7 +12,8 @@ exposure and pricing volatility products.
 Put-call symmetric because the put-call parity difference is σ-independent.
 
 Design: docs/kernels/options/bsvolga.md.
-'''
+"""
+
 from __future__ import annotations
 
 from ..core._bs_common import finalize, prepare_bs
@@ -20,13 +21,13 @@ from ..core.normpdf import normpdf
 
 
 def bsvolga(S, K, T, r, sigma, q=0.0):
-    '''Black-Scholes volga (vomma). Same for calls and puts.
+    """Black-Scholes volga (vomma). Same for calls and puts.
 
     Examples
     --------
     >>> bsvolga(100.0, 100.0, 1.0, 0.05, 0.20)
     8.130197126032013
-    '''
+    """
     c = prepare_bs(S, K, T, r, sigma, q)
     xp = c.xp
 

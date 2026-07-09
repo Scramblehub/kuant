@@ -1,4 +1,4 @@
-'''Standard normal cumulative distribution function, batched.
+"""Standard normal cumulative distribution function, batched.
 
 Φ(x) = P[Z ≤ x] where Z ~ N(0,1). Math: Φ(x) = (1 + erf(x/√2)) / 2.
 
@@ -9,7 +9,8 @@ Foundation kernel. Three implementation paths:
      enable if profiling shows normcdf is a bottleneck.
 
 Full design: docs/kernels/normcdf.md.
-'''
+"""
+
 from __future__ import annotations
 
 import time
@@ -27,6 +28,7 @@ _cp_erf: Any
 try:
     import cupy as cp
     from cupyx.scipy.special import erf as _cp_erf
+
     _HAS_CUPY = True
     _CUPY_NDARRAY = cp.ndarray
 except ImportError:
@@ -44,33 +46,33 @@ _SATURATION_THRESHOLD = 8.0  # |x| > this → 0 or 1 exactly
 
 
 def _prepare_input(x):
-    '''Coerce input into (backend, arr, was_scalar, orig_dtype).
+    """Coerce input into (backend, arr, was_scalar, orig_dtype).
 
     Handles scalar/list/tuple/numpy/cupy inputs uniformly. Int arrays
     promote to float64 (numpy convention for CDF). np.float64 is portable
     across numpy and cupy.
-    '''
+    """
     if isinstance(x, _CUPY_NDARRAY):
         arr = x
         was_scalar = arr.ndim == 0
-        if arr.dtype.kind in 'iub':
+        if arr.dtype.kind in "iub":
             arr = arr.astype(np.float64)
         return cp, arr, was_scalar, arr.dtype
 
     was_scalar = np.isscalar(x)
     arr = np.asarray(x)
-    if arr.dtype.kind in 'iub':
+    if arr.dtype.kind in "iub":
         arr = arr.astype(np.float64)
     return np, arr, was_scalar, arr.dtype
 
 
 def _normcdf_cpu(arr: np.ndarray) -> np.ndarray:
-    '''CPU path — thin wrapper over scipy.special.ndtr (the reference).'''
+    """CPU path — thin wrapper over scipy.special.ndtr (the reference)."""
     return ndtr(arr)
 
 
 def _normcdf_gpu_libraryerf(arr):
-    '''GPU path via cupyx.scipy.special.erf. Preserves dtype.'''
+    """GPU path via cupyx.scipy.special.erf. Preserves dtype."""
     # Multiply-first ordering lets hardware fuse the trailing multiply (FMA).
     return 0.5 + 0.5 * _cp_erf(arr * _INV_SQRT_2)
 
@@ -114,7 +116,7 @@ def _normcdf_gpu_libraryerf(arr):
 
 
 def normcdf(x):
-    '''Standard normal CDF, Φ(x) = P[Z ≤ x].
+    """Standard normal CDF, Φ(x) = P[Z ≤ x].
 
     Preserves backend (numpy/cupy), dtype (int → float64), shape, and
     scalar/array status. NaN → NaN; ±inf → 0/1.
@@ -125,7 +127,7 @@ def normcdf(x):
     0.5
     >>> normcdf(1.96)  # 97.5th percentile
     0.9750021048517795
-    '''
+    """
     backend, arr, was_scalar, orig_dtype = _prepare_input(x)
 
     if arr.size == 0:
@@ -137,14 +139,16 @@ def normcdf(x):
     # GPU path — respect the throttle even though cupy erf handles any size.
     bytes_per_elem = 2 * arr.dtype.itemsize  # input + output
     chunk_size = THROTTLE.suggest_chunk_size(
-        'normcdf', total_elems=arr.size, bytes_per_elem=bytes_per_elem,
+        "normcdf",
+        total_elems=arr.size,
+        bytes_per_elem=bytes_per_elem,
     )
 
     if chunk_size >= arr.size:
         t0 = time.perf_counter()
         result = _normcdf_gpu_libraryerf(arr)
         cp.cuda.Stream.null.synchronize()  # sync for accurate timing
-        THROTTLE.record('normcdf', arr.size, (time.perf_counter() - t0) * 1000)
+        THROTTLE.record("normcdf", arr.size, (time.perf_counter() - t0) * 1000)
         return _restore_scalar(result, was_scalar)
 
     # Chunked path — pre-allocate output ONCE; slices are views, not copies.
@@ -156,11 +160,11 @@ def normcdf(x):
         t0 = time.perf_counter()
         output[start:end] = _normcdf_gpu_libraryerf(flat[start:end])
         cp.cuda.Stream.null.synchronize()
-        THROTTLE.record('normcdf', end - start, (time.perf_counter() - t0) * 1000)
+        THROTTLE.record("normcdf", end - start, (time.perf_counter() - t0) * 1000)
 
     return _restore_scalar(output.reshape(arr.shape), was_scalar)
 
 
 def _restore_scalar(result, was_scalar):
-    '''Scalar in → scalar out (numpy convention). For cupy 0-d, .item() syncs.'''
+    """Scalar in → scalar out (numpy convention). For cupy 0-d, .item() syncs."""
     return float(result) if was_scalar else result

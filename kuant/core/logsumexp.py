@@ -1,4 +1,4 @@
-'''Numerically stable log-sum-exp, batched.
+"""Numerically stable log-sum-exp, batched.
 
     logsumexp(x) = log(sum(exp(x)))
 
@@ -13,7 +13,8 @@ Used by: HMM forward-backward (kuant.qm), log-probability aggregation,
 Bayesian model averaging, information-theoretic tests.
 
 Design: docs/kernels/core/logsumexp.md.
-'''
+"""
+
 from __future__ import annotations
 
 from typing import Any
@@ -23,6 +24,7 @@ import numpy as np
 cp: Any
 try:
     import cupy as cp
+
     _CUPY_NDARRAY = cp.ndarray
 except ImportError:
     cp = None
@@ -39,7 +41,7 @@ def _detect_backend(*args) -> Any:
 
 
 def logsumexp(x, axis=None, keepdims=False):
-    '''Numerically stable log(sum(exp(x))).
+    """Numerically stable log(sum(exp(x))).
 
     Parameters
     ----------
@@ -63,11 +65,11 @@ def logsumexp(x, axis=None, keepdims=False):
     True
     >>> logsumexp(np.array([-np.inf, -np.inf]))
     -inf
-    '''
+    """
     xp = _detect_backend(x)
     x_arr = xp.asarray(x)
 
-    if x_arr.dtype.kind in 'iub':
+    if x_arr.dtype.kind in "iub":
         x_arr = x_arr.astype(xp.float64)
 
     m = xp.max(x_arr, axis=axis, keepdims=True)
@@ -78,7 +80,7 @@ def logsumexp(x, axis=None, keepdims=False):
     sum_exp = xp.sum(xp.exp(shifted), axis=axis, keepdims=True)
     # log(sum_exp) may be log(0) = -inf when all input is -inf. That is the
     # correct result (m is also -inf), but numpy raises a divide warning.
-    with np.errstate(divide='ignore'):
+    with np.errstate(divide="ignore"):
         result = m + xp.log(sum_exp)
 
     # For elements where m was -inf, m + log(sum_exp) is -inf + (finite or nan) = -inf.

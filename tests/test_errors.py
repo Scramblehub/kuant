@@ -1,4 +1,5 @@
 """Test suite for kuant.errors — the custom exception hierarchy."""
+
 from __future__ import annotations
 
 import pytest
@@ -49,8 +50,13 @@ def test_dependency_error_dual_inheritance():
 
 def test_catch_all_via_kuant_error():
     """A user should be able to catch any kuant exception with KuantError alone."""
-    for exc_cls in (KuantValueError, KuantShapeError, KuantConvergenceError,
-                    KuantBackendError, KuantDependencyError):
+    for exc_cls in (
+        KuantValueError,
+        KuantShapeError,
+        KuantConvergenceError,
+        KuantBackendError,
+        KuantDependencyError,
+    ):
         with pytest.raises(KuantError):
             raise exc_cls("test")
 

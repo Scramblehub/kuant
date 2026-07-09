@@ -1,4 +1,4 @@
-'''HMM state posteriors (γ) and joint posteriors (ξ).
+"""HMM state posteriors (γ) and joint posteriors (ξ).
 
     γ[t, i]     = P(s_t = i | O, model)                = α[t, i] · β[t, i] / P(O)
     ξ[t, i, j]  = P(s_t = i, s_{t+1} = j | O, model)
@@ -7,7 +7,8 @@
 Log-space throughout. Uses forward and backward internally.
 
 Design: docs/kernels/hmm_posterior.md.
-'''
+"""
+
 from __future__ import annotations
 
 
@@ -16,7 +17,7 @@ from .forward import _prepare_hmm_inputs, forward
 
 
 def posterior(obs, pi, A, B):
-    '''State posteriors γ and joint state posteriors ξ.
+    """State posteriors γ and joint state posteriors ξ.
 
     Returns
     -------
@@ -26,7 +27,7 @@ def posterior(obs, pi, A, B):
         ξ[t, i, j] = P(s_t = i, s_{t+1} = j | O, model). Sums to 1 per t.
     log_likelihood : float
         log P(O | model). Same as the value returned by forward().
-    '''
+    """
     xp, obs_arr, log_pi, log_A, log_B = _prepare_hmm_inputs(obs, pi, A, B)
 
     log_alpha, log_lik = forward(obs, pi, A, B)
@@ -42,10 +43,10 @@ def posterior(obs, pi, A, B):
     # ξ[t, i, j] for t = 0..T-2
     # log_xi[t, i, j] = log_alpha[t, i] + log_A[i, j] + log_B[j, o_{t+1}] + log_beta[t+1, j] - log_lik
     log_xi = (
-        log_alpha[:-1, :, None]                              # (T-1, N, 1)
-        + log_A[None, :, :]                                   # (1, N, N)
-        + log_B[:, obs_arr[1:]].T[:, None, :]                 # (T-1, 1, N)
-        + log_beta[1:, None, :]                               # (T-1, 1, N)
+        log_alpha[:-1, :, None]  # (T-1, N, 1)
+        + log_A[None, :, :]  # (1, N, N)
+        + log_B[:, obs_arr[1:]].T[:, None, :]  # (T-1, 1, N)
+        + log_beta[1:, None, :]  # (T-1, 1, N)
         - log_lik
     )
     xi = xp.exp(log_xi)

@@ -1,4 +1,4 @@
-'''European put expiry payoff, batched.
+"""European put expiry payoff, batched.
 
     payoff = max(K - S, 0)
 
@@ -9,7 +9,8 @@ exercise value at T.
 Broadcasts S and K; backend detected from either input.
 
 Design: docs/kernels/options/putpayoff.md.
-'''
+"""
+
 from __future__ import annotations
 
 from typing import Any
@@ -19,6 +20,7 @@ import numpy as np
 cp: Any
 try:
     import cupy as cp
+
     _CUPY_NDARRAY = cp.ndarray
 except ImportError:
     cp = None
@@ -33,7 +35,7 @@ def _detect_backend(*args) -> Any:
 
 
 def putpayoff(S, K):
-    '''European put payoff at expiry: max(K - S, 0).
+    """European put payoff at expiry: max(K - S, 0).
 
     Parameters
     ----------
@@ -54,13 +56,13 @@ def putpayoff(S, K):
     20.0
     >>> putpayoff(120.0, 100.0)
     0.0
-    '''
+    """
     xp = _detect_backend(S, K)
     S_arr = xp.asarray(S)
     K_arr = xp.asarray(K)
 
     out_dtype = xp.result_type(S_arr.dtype, K_arr.dtype)
-    if out_dtype.kind in 'iub':
+    if out_dtype.kind in "iub":
         out_dtype = xp.dtype(xp.float64)
 
     S_arr = S_arr.astype(out_dtype, copy=False)

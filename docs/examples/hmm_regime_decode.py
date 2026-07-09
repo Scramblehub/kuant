@@ -12,6 +12,7 @@ regime sequence, generate returns from it, then recover the sequence.
 Run:
     python docs/examples/hmm_regime_decode.py
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -23,11 +24,15 @@ def main() -> None:
     rng = np.random.default_rng(0)
 
     # 1) Model (known to us — the whole point is to see if we recover it).
-    pi = np.array([0.9, 0.1])                         # start in quiet 90%
-    A = np.array([[0.98, 0.02],                       # sticky quiet
-                  [0.10, 0.90]])                      # stress persists too
-    mu = np.array([0.0005, -0.001])                   # small pos drift / neg drift
-    sigma = np.array([0.008, 0.025])                  # quiet vol / stress vol
+    pi = np.array([0.9, 0.1])  # start in quiet 90%
+    A = np.array(
+        [
+            [0.98, 0.02],  # sticky quiet
+            [0.10, 0.90],
+        ]
+    )  # stress persists too
+    mu = np.array([0.0005, -0.001])  # small pos drift / neg drift
+    sigma = np.array([0.008, 0.025])  # quiet vol / stress vol
 
     # 2) Simulate hidden state sequence + observed returns.
     n = 800

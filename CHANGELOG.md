@@ -4,6 +4,125 @@ All notable changes to `kuant` are tracked here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); dates are release dates
 on PyPI.
 
+## v0.6.0
+
+The v0.6.0 release adds two entirely new subpackages (`kuant.risk`,
+`kuant.causal`) and expands `kuant.stats`, `kuant.portfolio`,
+`kuant.signals`, `kuant.sindy.chaos`, and `kuant.options` with ~30
+new kernels across ten batches. All new kernels follow the
+concatenated-lowercase naming convention (no separators), are
+validated on real Quant Lab data before ship, and gated by KE-*/KW-*
+codes.
+
+### `kuant.stats` (batches 2, 4, 5)
+
+- **HAC + specification tests (batch 2):**
+  - `neweywestse(y, X, *, bandwidth=None)` and
+    `andrewsse(y, X, *, bandwidth=None)`: HAC OLS standard errors with
+    Newey-West Bartlett kernel or Andrews quadratic-spectral kernel
+    with the AR(1) plug-in bandwidth per Andrews 1991 Table 1.
+  - `ljungbox`, `boxpierce`, `durbinwatson`: portmanteau /
+    residual-autocorrelation tests.
+  - `jarquebera`, `shapirowilk`, `andersondarling`: normality tests.
+- **Hurst family (batch 4):** `higuchihurst`, `wavelethurst`
+  (Abry-Veitch), `localwhittle` (Robinson 1995), `mfdfa`
+  (Kantelhardt 2002 multifractal DFA).
+- **Correlations + spectral (batch 5):** `kendalltau`,
+  `spearmanrank`, `distancecorr` (Szekely-Rizzo 2007),
+  `chatterjeexi` (Chatterjee 2021), `downsidecorr`,
+  `bdstest` (Brock-Dechert-Scheinkman 1996),
+  `spectralentropy` (Shannon entropy of the power spectrum).
+
+### `kuant.portfolio` (batch 3)
+
+- `hrp(cov, corr=None)`: Hierarchical Risk Parity (Lopez de Prado 2016).
+- `blacklitterman(prior_mean, prior_cov, P, Q, Omega=None, ...)`:
+  Black-Litterman posterior (1990/92).
+- `meancvar(returns, alpha=0.95, ...)`: mean-CVaR portfolio LP
+  (Rockafellar-Uryasev 2000).
+- `mintorsion(cov, weights=None)`: principal-components torsion
+  decomposition for effective number of bets (Meucci 2009).
+- `riskparity(cov, budgets=None)`: equal-risk-contribution / risk
+  parity via coordinate descent (Maillard-Roncalli-Teiletche 2010).
+
+### `kuant.signals` (batch 6)
+
+- `wavelet(x, family='db4', ...)`: discrete wavelet decomposition +
+  reconstruction identity (Mallat 1989 / Daubechies 1988).
+- `ica(X, n_components=None, ...)`: FastICA (Hyvarinen-Oja 2000).
+- `emd(x, ...)`: empirical mode decomposition (Huang 1998).
+- `kernelpca(X, kernel='rbf', ...)`: kernel PCA (Scholkopf 1998).
+- `whitening(X, method='zca', ridge=1e-8)`: ZCA / PCA whitening.
+
+### `kuant.sindy.chaos` (batch 7 additions)
+
+- `crossrecurrence(x, y, ...)`, `jointrecurrence(x, y, ...)`:
+  cross- and joint-recurrence plots + RQA metrics
+  (Marwan-Romano-Thiel-Kurths 2007). Diagonal-line scan covers both
+  sub- and super-diagonals so RQA for the asymmetric CRP matrix is
+  unbiased.
+- `permutationentropy`, `sampleentropy`, `approximateentropy`,
+  `dispersionentropy`, `transferentropy`, `knnlyapunov`.
+
+### `kuant.options` (batch 8) - exotic pricers
+
+- `digitalprice(S, K, T, r, sigma, q=0.0, *, cash=1.0, is_call=True)`:
+  cash-or-nothing digital call/put. Put-call parity holds at machine
+  precision. Reiner-Rubinstein 1991.
+- `gapprice(S, K_trigger, K_payoff, T, r, sigma, q=0.0, *, is_call=True)`:
+  reduces to vanilla when `K_trigger == K_payoff`. Reiner-Rubinstein 1991,
+  Haug 2007 ch. 4.17.
+- `lookbackprice(S, S_extreme, T, r, sigma, q=0.0, *, is_call=True)`:
+  floating-strike lookback via Haug 2007 ch. 5.13; Monte Carlo agreement
+  within 3-6% at 50k paths.
+- `chooserprice(S, K, T, t_choose, r, sigma, q=0.0)`: Rubinstein 1991
+  simple chooser = call(T) + put with shifted strike.
+- `powerprice(S, K, T, r, sigma, q=0.0, *, n=2.0, is_call=True)`:
+  payoff `max(S^n - K, 0)`. Heynen-Kat 1996. `n=0` now raises
+  KE-VAL-RANGE.
+
+### `kuant.risk` (batch 9)
+
+- `cornishfishervar(returns, *, alpha=0.95)`: Cornish-Fisher 1937
+  skew/kurt-adjusted VaR. Emits KW-CF-EXPANSION-INVALID when
+  `|skew| > 1` or `|excess kurt| > 7` (expansion breaks down).
+- `evtvar(returns, *, alpha=0.99, threshold_pct=0.90)`: POT + GPD via
+  method-of-moments (Hosking-Wallis 1987); returns VaR and ES.
+  Pickands 1975; McNeil-Frey-Embrechts 2015. Warns via
+  KW-EVT-MOM-INVALID when xi_hat is near 0.5.
+- `esbootstrap(returns, *, conf_alpha=0.95, ci_alpha=0.95, n_boot=500,
+  block_size=21, seed=0)`: moving-block bootstrap CI on Expected
+  Shortfall (Kunsch 1989 / Politis-Romano 1994).
+- `covar(returns_x, returns_y, *, alpha=0.95)`: Adrian-Brunnermeier
+  2016 CoVaR via quantile regression + delta-CoVaR.
+- `mes(returns_asset, returns_system, *, tau=0.05)`: Acharya-Pedersen-
+  Philippon-Richardson 2017 Marginal Expected Shortfall.
+
+### `kuant.causal` (batch 10)
+
+- `synthcontrol(treated, donors, t_treat, *, n_iter=2000, tol=1e-8)`:
+  Abadie-Diamond-Hainmueller 2010 synthetic control via projected
+  gradient descent on the simplex.
+- `iv(y, x_endog, z_instr, *, add_intercept=True)`: 2SLS instrumental
+  variables. `sigma^2` is computed against ORIGINAL X (not `X_hat`)
+  for correct 2SLS standard errors. Warns via
+  KW-IV-WEAK-INSTRUMENT when the stage-1 F falls below the
+  Staiger-Stock 10 threshold.
+- `rdd(x, y, cutoff, *, bandwidth=None)`: sharp regression
+  discontinuity, local linear regression with triangular kernel.
+  Imbens-Lemieux 2008; Imbens-Kalyanaraman 2012.
+- `pcalgo(data, *, alpha=0.05, max_order=3)`: PC-algorithm skeleton
+  via Fisher-Z partial-correlation CI test. Spirtes-Glymour-Scheines
+  2000; Kalisch-Buhlmann 2007.
+
+### Tests / regression
+
+- +204 new tests across the ten batches
+- 1994 -> 2261 total pass, 3 skipped (arch optional), 0 failed
+- Real-data validators under `scratch/v0_6_*batch*.py`
+
+### No breaking changes.
+
 ## v0.5.2
 
 - **`kuant.backtest.engine.run`**: new `terminal_actions: bool = False`

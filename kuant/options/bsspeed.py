@@ -1,4 +1,4 @@
-'''Black-Scholes speed, batched. Put-call symmetric.
+"""Black-Scholes speed, batched. Put-call symmetric.
 
 speed = ∂Gamma/∂S = ∂³Price/∂S³
       = -Gamma / S · (d1 / (σ√T) + 1)
@@ -10,7 +10,8 @@ important for hedging near strikes and for pin-risk near expiry.
 Put-call symmetric because gamma is put-call symmetric.
 
 Design: docs/kernels/options/bsspeed.md.
-'''
+"""
+
 from __future__ import annotations
 
 from ..core._bs_common import finalize, prepare_bs
@@ -18,13 +19,13 @@ from ..core.normpdf import normpdf
 
 
 def bsspeed(S, K, T, r, sigma, q=0.0):
-    '''Black-Scholes speed. Same for calls and puts.
+    """Black-Scholes speed. Same for calls and puts.
 
     Examples
     --------
     >>> bsspeed(100.0, 100.0, 1.0, 0.05, 0.20)
     -0.0002187519921867094
-    '''
+    """
     c = prepare_bs(S, K, T, r, sigma, q)
     xp = c.xp
 

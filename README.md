@@ -12,12 +12,12 @@ Works on numpy, dispatches transparently to cupy when available.
 
 ## What's in the box
 
-Fifteen subpackages, 1994 tests, ~90 benchmarks. Alpha stability.
+Seventeen subpackages, 2261 tests, ~90 benchmarks. Alpha stability.
 
 | Subpackage | Kernels | Contents |
 |---|---|---|
 | `kuant.core` | 16 | Black-Scholes pricing, Gaussian family (cdf/pdf/ppf plus log-tails), Student-t family, Generalized Pareto family, logsumexp. |
-| `kuant.options` | 21 | First- and second-order Greeks, payoffs, chain filters, implied-vol via Newton or bisection. |
+| `kuant.options` | 26 | First- and second-order Greeks, payoffs, chain filters, implied-vol via Newton or bisection, plus exotic pricers (digital, gap, lookback, chooser, power). |
 | `kuant.stats` | 29 | Rolling primitives with strict-window NaN semantics, Hurst R/S, rolling Hurst, risk metrics (Sharpe, Sortino, MDD, Calmar), realized volatility, stationarity tests, tail cluster (Hill tail index, rolling variant, DFA, rollcoherence). |
 | `kuant.qm` | 5 plus `hmm`/`ghmm`/`quaternion` submodules | HMM and Gaussian-HMM inference (forward, backward, viterbi, posterior) plus Baum-Welch EM training. Also belltest, zenoscan, posteriorentropy, nocloningscan, decoherencescan. Quaternion algebra (Quaternion + array ops + slerp + quaternion_distance + composerotations + rollholonomy) for regime-drift signals. |
 | `kuant.sindy` | 6 plus `chaos` submodule | permtest, grangerscan, sindylasso, pinnscan, symbolicscan, accelerationscan. Chaos-theory diagnostics: mutualinfo, falsenearest, lyapunov, corrdim, rqa, ccm, chaosscan (composer + regime classifier). |
@@ -30,6 +30,8 @@ Fifteen subpackages, 1994 tests, ~90 benchmarks. Alpha stability.
 | `kuant.nulltest` | 3 | bootstrap, multiple-hypothesis correction, White/Hansen SPA test. |
 | `kuant.queueing` | 2 | hardware throttle, request-coordination layer. |
 | `kuant.backtest` | 6 subpackages | `lifecycle` (SecurityLifecycle + TerminalAction + apply_lifecycle + tradeable_mask + lifecycle_returns + detect_delistings); `liquidity` (LiquidityProfile + FlatSlippage / LinearImpact / SquareRootImpact + execute_fill + liquidity_mask); `fill` (Order + OrderSide/Type/Status + FillReport + submit_order); `position` (Position + PortfolioState + EquitySnapshot); `warmup` (Warmup + WarmupCache + WarmupMode with eager/lazy/off + per-indicator cache override); `engine` (run + BacktestResult reference orchestrator). |
+| `kuant.risk` | 5 | Cornish-Fisher VaR, POT/GPD EVT VaR + ES, bootstrap ES CI, Adrian-Brunnermeier CoVaR, Marginal Expected Shortfall. |
+| `kuant.causal` | 4 | Synthetic control (ADH 2010), 2SLS IV with weak-instrument warning, sharp RDD (local linear + triangular kernel), PC-algorithm skeleton (Fisher-Z). |
 
 Each kernel has: an API doc in [`docs/kernels/`](docs/kernels/), a numpy
 implementation, a cupy path where the math is batched, and a test suite
@@ -203,7 +205,7 @@ docs/
 ├── design/       Cross-cutting design decisions
 └── examples/     Worked examples
 
-tests/            1:1 with kernel files; 1994 tests total
+tests/            1:1 with kernel files; 2261 tests total
 ```
 
 ## Contributing

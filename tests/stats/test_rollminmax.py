@@ -1,4 +1,5 @@
-'''Test suite for kuant.stats.rollmin and rollmax.'''
+"""Test suite for kuant.stats.rollmin and rollmax."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -78,14 +79,14 @@ def test_window_larger_than_length():
 
 
 def test_window_zero_raises():
-    with pytest.raises(ValueError, match='must be positive'):
+    with pytest.raises(ValueError, match="must be positive"):
         rollmin(np.array([1.0, 2]), 0)
-    with pytest.raises(ValueError, match='must be positive'):
+    with pytest.raises(ValueError, match="must be positive"):
         rollmax(np.array([1.0, 2]), 0)
 
 
 def test_2d_input_raises():
-    with pytest.raises(ValueError, match='1D'):
+    with pytest.raises(ValueError, match="1D"):
         rollmin(np.array([[1.0, 2], [3, 4]]), 2)
 
 
@@ -128,7 +129,7 @@ def test_min_leq_max(rng):
 
 
 def test_min_neg_max_neg(rng):
-    '''min(-x) == -max(x).'''
+    """min(-x) == -max(x)."""
     x = rng.uniform(-1, 1, size=100)
     r_min_neg = rollmin(-x, 10)
     r_max = rollmax(x, 10)
@@ -138,17 +139,17 @@ def test_min_neg_max_neg(rng):
 def test_first_w_minus_1_nan():
     x = np.arange(20, dtype=np.float64)
     for w in [3, 10]:
-        assert np.all(np.isnan(rollmin(x, w)[:w-1]))
-        assert np.all(np.isnan(rollmax(x, w)[:w-1]))
+        assert np.all(np.isnan(rollmin(x, w)[: w - 1]))
+        assert np.all(np.isnan(rollmax(x, w)[: w - 1]))
 
 
 def test_monotonically_increasing_input():
-    '''For a strictly increasing input, rollmax[i] = x[i], rollmin[i] = x[i-w+1].'''
+    """For a strictly increasing input, rollmax[i] = x[i], rollmin[i] = x[i-w+1]."""
     x = np.arange(20, dtype=np.float64)
     w = 5
     r_min = rollmin(x, w)
     r_max = rollmax(x, w)
-    for i in range(w-1, 20):
+    for i in range(w - 1, 20):
         assert r_max[i] == x[i]
         assert r_min[i] == x[i - w + 1]
 
@@ -160,6 +161,7 @@ def test_monotonically_increasing_input():
 
 def test_gpu_matches_cpu(skip_no_gpu, rng):
     import cupy as cp
+
     x_cpu = rng.uniform(-1, 1, size=200)
     x_gpu = cp.asarray(x_cpu)
     for w in [5, 30]:
@@ -170,5 +172,6 @@ def test_gpu_matches_cpu(skip_no_gpu, rng):
 
 def test_gpu_preserves_backend(skip_no_gpu):
     import cupy as cp
+
     assert isinstance(rollmin(cp.asarray([1.0, 2, 3]), 2), cp.ndarray)
     assert isinstance(rollmax(cp.asarray([1.0, 2, 3]), 2), cp.ndarray)

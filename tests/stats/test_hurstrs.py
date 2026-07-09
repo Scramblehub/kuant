@@ -1,4 +1,4 @@
-'''Test suite for kuant.stats.hurstrs.
+"""Test suite for kuant.stats.hurstrs.
 
 Validation strategy:
   1. Golden values      — H ~ 0.5 on Brownian noise (known-answer)
@@ -8,7 +8,8 @@ Validation strategy:
   4. Property tests     — result reproducible across shuffled but seeded inputs;
                           intercept has expected sign
   5. Backend            — accepts numpy in, returns HurstResult with numpy arrays
-'''
+"""
+
 from __future__ import annotations
 
 import numpy as np
@@ -23,10 +24,10 @@ from kuant.stats import HurstResult, hurstrs
 
 
 def test_brownian_noise_near_half(rng):
-    '''iid normal returns produce H near 0.5.'''
+    """iid normal returns produce H near 0.5."""
     r = rng.standard_normal(4000)
     result = hurstrs(r)
-    assert 0.40 < result.H < 0.60, f'expected H near 0.5, got {result.H:.3f}'
+    assert 0.40 < result.H < 0.60, f"expected H near 0.5, got {result.H:.3f}"
 
 
 def test_returns_hurstresult():
@@ -44,10 +45,10 @@ def test_returns_hurstresult():
 
 
 def _fbm_approx(n, H, rng):
-    '''Approximate fractional Brownian motion via random midpoint displacement.
+    """Approximate fractional Brownian motion via random midpoint displacement.
 
     Not a true fBM but sufficient for detecting H > 0.5 signature.
-    '''
+    """
     x = np.cumsum(rng.standard_normal(n))
     # Emphasize persistence: smooth incrementally to inject autocorrelation
     if H > 0.5:
@@ -58,38 +59,40 @@ def _fbm_approx(n, H, rng):
 
 
 def test_persistent_series_h_above_half(rng):
-    '''AR(1) with strong positive autocorrelation → persistent (H > 0.5).'''
+    """AR(1) with strong positive autocorrelation → persistent (H > 0.5)."""
     n = 4000
     phi = 0.7
     e = rng.standard_normal(n)
     r = np.zeros(n)
     for t in range(1, n):
-        r[t] = phi * r[t-1] + e[t]
+        r[t] = phi * r[t - 1] + e[t]
     result = hurstrs(r)
-    assert result.H > 0.55, f'expected H > 0.55 for AR(1) phi=0.7, got {result.H:.3f}'
+    assert result.H > 0.55, f"expected H > 0.55 for AR(1) phi=0.7, got {result.H:.3f}"
 
 
 def test_antipersistent_series_h_below_half(rng):
-    '''Strong mean-reverting process → antipersistent (H < 0.5).
+    """Strong mean-reverting process → antipersistent (H < 0.5).
 
     R/S has a well-known small-window bias that pulls H toward and
     above 0.5. To detect antipersistence reliably we use strong
     negative autocorrelation and skip the smallest windows.
-    '''
+    """
     n = 8000
     phi = -0.9
     e = rng.standard_normal(n)
     r = np.zeros(n)
     for t in range(1, n):
-        r[t] = phi * r[t-1] + e[t]
+        r[t] = phi * r[t - 1] + e[t]
     result = hurstrs(r, min_w=25)
-    assert result.H < 0.55, f'expected H clearly < persistent for AR(1) phi=-0.9, got {result.H:.3f}'
+    assert (
+        result.H < 0.55
+    ), f"expected H clearly < persistent for AR(1) phi=-0.9, got {result.H:.3f}"
     # Also demand it be less than a same-length Brownian control.
     control = rng.standard_normal(n)
     control_H = hurstrs(control, min_w=25).H
-    assert result.H < control_H, (
-        f'expected antipersistent H ({result.H:.3f}) < Brownian control H ({control_H:.3f})'
-    )
+    assert (
+        result.H < control_H
+    ), f"expected antipersistent H ({result.H:.3f}) < Brownian control H ({control_H:.3f})"
 
 
 # ---------------------------------------------------------------------------
@@ -98,17 +101,17 @@ def test_antipersistent_series_h_below_half(rng):
 
 
 def test_short_series_raises():
-    with pytest.raises(ValueError, match='too short'):
+    with pytest.raises(ValueError, match="too short"):
         hurstrs(np.zeros(30), min_w=10)
 
 
 def test_max_w_le_min_w_raises():
-    with pytest.raises(ValueError, match='max_w'):
+    with pytest.raises(ValueError, match="max_w"):
         hurstrs(np.random.default_rng(0).standard_normal(200), min_w=10, max_w=10)
 
 
 def test_2d_input_raises():
-    with pytest.raises(ValueError, match='1D'):
+    with pytest.raises(ValueError, match="1D"):
         hurstrs(np.zeros((100, 5)))
 
 
@@ -120,9 +123,9 @@ def test_nans_in_input_survive(rng):
 
 
 def test_constant_series_raises(rng):
-    '''All-constant returns → std = 0 everywhere → no valid R/S.'''
+    """All-constant returns → std = 0 everywhere → no valid R/S."""
     r = np.zeros(1000)
-    with pytest.raises(ValueError, match='fewer than 3 windows'):
+    with pytest.raises(ValueError, match="fewer than 3 windows"):
         hurstrs(r)
 
 
@@ -143,7 +146,7 @@ def test_summary_returns_string():
     r = np.random.default_rng(0).standard_normal(2000)
     s = hurstrs(r).summary()
     assert isinstance(s, str)
-    assert 'H' in s
+    assert "H" in s
 
 
 def test_windows_are_monotone_increasing():
@@ -153,7 +156,7 @@ def test_windows_are_monotone_increasing():
 
 
 def test_scale_invariance(rng):
-    '''H should be invariant under scaling the input.'''
+    """H should be invariant under scaling the input."""
     r = rng.standard_normal(2000)
     H1 = hurstrs(r).H
     H2 = hurstrs(r * 100).H

@@ -1,4 +1,5 @@
-'''Test suite for kuant.options.deltabucket.'''
+"""Test suite for kuant.options.deltabucket."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -48,7 +49,7 @@ def test_target_outside_range_picks_boundary():
 
 
 def test_put_deltas_negative():
-    '''Put deltas are negative; passing negative target works.'''
+    """Put deltas are negative; passing negative target works."""
     put_deltas = np.array([-0.95, -0.75, -0.50, -0.25, -0.10, -0.05])
     # "25-delta put" means delta = -0.25
     assert deltabucket(put_deltas, -0.25) == 3
@@ -61,7 +62,7 @@ def test_put_deltas_negative():
 
 
 def test_2d_deltas_raises():
-    with pytest.raises(ValueError, match='1D'):
+    with pytest.raises(ValueError, match="1D"):
         deltabucket(np.zeros((3, 3)), 0.25)
 
 
@@ -88,6 +89,7 @@ def test_many_targets_at_once(rng):
 
 def test_gpu_matches_cpu(skip_no_gpu, rng):
     import cupy as cp
+
     deltas = np.sort(rng.uniform(0, 1, 50))
     targets = rng.uniform(0, 1, 10)
     r_cpu = deltabucket(deltas, targets)
@@ -97,6 +99,7 @@ def test_gpu_matches_cpu(skip_no_gpu, rng):
 
 def test_gpu_preserves_backend(skip_no_gpu):
     import cupy as cp
+
     deltas = cp.asarray([0.10, 0.25, 0.50])
     result = deltabucket(deltas, cp.asarray([0.20]))
     assert isinstance(result, cp.ndarray)

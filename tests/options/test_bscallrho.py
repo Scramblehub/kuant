@@ -2,6 +2,7 @@
 
 Includes put-call parity for rho: rho_call - rho_put = T * K * exp(-r*T).
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -31,7 +32,7 @@ def _reference_rho(S, K, T, r, sigma, q=0.0):
         (100.0, 80.0, 1.0, 0.05, 0.20, 0.0, 68.27490482256506),
         (100.0, 120.0, 1.0, 0.05, 0.20, 0.0, 25.4716863739519),
         (100.0, 100.0, 1.0, 0.05, 0.20, 0.03, 47.5614712250357),
-        (150.0, 100.0, 0.5, 0.05, 0.30, 0.0, 47.437630409043166),   # deep ITM
+        (150.0, 100.0, 0.5, 0.05, 0.30, 0.0, 47.437630409043166),  # deep ITM
         (50.0, 100.0, 0.5, 0.05, 0.30, 0.0, 0.027576023913668958),  # deep OTM
     ],
 )
@@ -51,7 +52,8 @@ def test_matches_reference_uniform(rng):
     np.testing.assert_allclose(
         bscallrho(S, K, T, r, sigma, q),
         _reference_rho(S, K, T, r, sigma, q),
-        atol=1e-10, rtol=1e-12,
+        atol=1e-10,
+        rtol=1e-12,
     )
 
 
@@ -107,7 +109,8 @@ def test_rho_matches_finite_difference_of_price(rng):
 
 
 # Edge cases
-def test_expired(): assert bscallrho(100.0, 100.0, 0.0, 0.05, 0.20) == 0.0
+def test_expired():
+    assert bscallrho(100.0, 100.0, 0.0, 0.05, 0.20) == 0.0
 
 
 def test_zero_vol_exercise():
@@ -123,21 +126,31 @@ def test_zero_vol_no_exercise():
     assert bscallrho(100.0, 150.0, 1.0, 0.05, 0.0) == 0.0
 
 
-def test_zero_spot(): assert bscallrho(0.0, 100.0, 1.0, 0.05, 0.20) == 0.0
-def test_zero_strike(): assert bscallrho(100.0, 0.0, 1.0, 0.05, 0.20) == 0.0
-def test_nan_passthrough(): assert np.isnan(bscallrho(float("nan"), 100.0, 1.0, 0.05, 0.20))
+def test_zero_spot():
+    assert bscallrho(0.0, 100.0, 1.0, 0.05, 0.20) == 0.0
+
+
+def test_zero_strike():
+    assert bscallrho(100.0, 0.0, 1.0, 0.05, 0.20) == 0.0
+
+
+def test_nan_passthrough():
+    assert np.isnan(bscallrho(float("nan"), 100.0, 1.0, 0.05, 0.20))
 
 
 def test_dtype_preserved_float32():
-    args = [np.array([100.0], dtype=np.float32)] * 2 + [np.array([1.0], dtype=np.float32),
-                                                        np.array([0.05], dtype=np.float32),
-                                                        np.array([0.2], dtype=np.float32)]
+    args = [np.array([100.0], dtype=np.float32)] * 2 + [
+        np.array([1.0], dtype=np.float32),
+        np.array([0.05], dtype=np.float32),
+        np.array([0.2], dtype=np.float32),
+    ]
     result = bscallrho(*args)
     assert result.dtype == np.float32
 
 
 def test_gpu_matches_cpu(skip_no_gpu, rng):
     import cupy as cp
+
     n = 500
     S = rng.uniform(50, 200, size=n)
     K = rng.uniform(50, 200, size=n)

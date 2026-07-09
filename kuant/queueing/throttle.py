@@ -1,4 +1,4 @@
-'''Chunk sizer — decides how to slice large batches to fit VRAM safely.
+"""Chunk sizer — decides how to slice large batches to fit VRAM safely.
 
 DESIGN INVARIANTS (leak-safety):
   1. State is ONLY primitives (dict[str, list[tuple[int, float]]]).
@@ -10,7 +10,8 @@ DESIGN INVARIANTS (leak-safety):
 The throttle is deliberately DUMB in v1: static heuristics only. Timing
 recording exists so we can add adaptation later, without changing the
 kernel-side API.
-'''
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -21,33 +22,33 @@ from .hardware import DEVICE
 # Tier → default VRAM budget per call (fraction of free memory).
 # Conservative because: concurrent kernels, pool fragmentation, OS/display overhead.
 _VRAM_SAFETY_BY_TIER: dict[str, float] = {
-    'cpu': 1.0,
-    'consumer_low': 0.5,   # 3060 users often share GPU with display
-    'consumer_mid': 0.6,
-    'consumer_high': 0.7,
-    'workstation': 0.75,
-    'datacenter': 0.8,     # typically dedicated
+    "cpu": 1.0,
+    "consumer_low": 0.5,  # 3060 users often share GPU with display
+    "consumer_mid": 0.6,
+    "consumer_high": 0.7,
+    "workstation": 0.75,
+    "datacenter": 0.8,  # typically dedicated
 }
 
 
 @dataclass
 class ChunkSizer:
-    '''Decides chunk sizes for kernels that split large batches.
+    """Decides chunk sizes for kernels that split large batches.
 
     Holds NO references to arrays — only primitive timing metadata.
-    '''
+    """
 
     max_history: int = 20
-    '''Timing samples kept per kernel_id. Bounded so long-running processes
-    can't grow the dict indefinitely.'''
+    """Timing samples kept per kernel_id. Bounded so long-running processes
+    can't grow the dict indefinitely."""
 
     _timings: dict[str, list[tuple[int, float]]] = field(default_factory=dict)
-    '''Per-kernel history: {kernel_id: [(n_elems, elapsed_ms), ...]}.
+    """Per-kernel history: {kernel_id: [(n_elems, elapsed_ms), ...]}.
     Primitives only — this is the invariant that makes bugs here incapable
-    of leaking GPU memory.'''
+    of leaking GPU memory."""
 
     def record(self, kernel_id: str, n_elems: int, elapsed_ms: float) -> None:
-        '''Log one completed kernel call. Numbers only, never arrays.'''
+        """Log one completed kernel call. Numbers only, never arrays."""
         buf = self._timings.setdefault(kernel_id, [])
         buf.append((int(n_elems), float(elapsed_ms)))
         if len(buf) > self.max_history:
@@ -60,7 +61,7 @@ class ChunkSizer:
         bytes_per_elem: int,
         target_ms: float = 50.0,
     ) -> int:
-        '''Return elements per chunk. No allocation happens here.
+        """Return elements per chunk. No allocation happens here.
 
         Heuristic:
           1. VRAM ceiling: free * safety_fraction / bytes_per_elem
@@ -79,7 +80,7 @@ class ChunkSizer:
         target_ms : float, default 50
             Target wall-clock per chunk. Kept short so the GPU stays
             responsive for other jobs.
-        '''
+        """
         if not DEVICE.has_gpu:
             return int(total_elems)
 

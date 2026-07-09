@@ -1,4 +1,5 @@
-'''Test suite for kuant.core.tpdf.'''
+"""Test suite for kuant.core.tpdf."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -9,12 +10,16 @@ from kuant.core import tpdf
 
 
 @pytest.mark.parametrize(
-    'x, df',
+    "x, df",
     [
-        (0.0, 3.0), (1.0, 5.0), (-1.5, 10.0),
-        (3.0, 30.0), (0.5, 100.0), (2.0, 2.0),
-        (-5.0, 1.0),   # Cauchy limit (df=1)
-        (0.0, 1e6),    # near-Gaussian limit
+        (0.0, 3.0),
+        (1.0, 5.0),
+        (-1.5, 10.0),
+        (3.0, 30.0),
+        (0.5, 100.0),
+        (2.0, 2.0),
+        (-5.0, 1.0),  # Cauchy limit (df=1)
+        (0.0, 1e6),  # near-Gaussian limit
     ],
 )
 def test_matches_scipy(x, df):
@@ -42,8 +47,8 @@ def test_broadcast_scalar_df():
 
 
 def test_broadcast_2d():
-    xs = np.array([[-1.0, 0.0, 1.0]])           # (1, 3)
-    dfs = np.array([[3.0], [10.0]])              # (2, 1)
+    xs = np.array([[-1.0, 0.0, 1.0]])  # (1, 3)
+    dfs = np.array([[3.0], [10.0]])  # (2, 1)
     result = tpdf(xs, dfs)
     assert result.shape == (2, 3)
 
@@ -61,6 +66,7 @@ def test_int_promoted_to_float64():
 
 def test_gpu_matches_cpu(skip_no_gpu, rng):
     import cupy as cp
+
     xs = rng.uniform(-3, 3, 50)
     dfs = rng.uniform(2, 30, 50)
     r_cpu = tpdf(xs, dfs)

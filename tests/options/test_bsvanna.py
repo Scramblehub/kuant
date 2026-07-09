@@ -1,4 +1,4 @@
-'''Test suite for kuant.options.bsvanna.
+"""Test suite for kuant.options.bsvanna.
 
 Validation strategy:
   1. Match scipy analytic reference
@@ -9,7 +9,8 @@ Validation strategy:
   6. Batched
   7. dtype preservation
   8. CPU==GPU parity
-'''
+"""
+
 from __future__ import annotations
 
 import numpy as np
@@ -20,13 +21,13 @@ from kuant.options import bscalldelta, bsputdelta, bsvanna, bsvega
 
 
 def _ref_vanna(S, K, T, r, sigma, q=0.0):
-    d1 = (np.log(S/K) + (r-q+0.5*sigma**2)*T) / (sigma*np.sqrt(T))
-    d2 = d1 - sigma*np.sqrt(T)
-    return -np.exp(-q*T)*norm.pdf(d1)*d2/sigma
+    d1 = (np.log(S / K) + (r - q + 0.5 * sigma**2) * T) / (sigma * np.sqrt(T))
+    d2 = d1 - sigma * np.sqrt(T)
+    return -np.exp(-q * T) * norm.pdf(d1) * d2 / sigma
 
 
 @pytest.mark.parametrize(
-    'S, K, T, r, sigma, q',
+    "S, K, T, r, sigma, q",
     [
         (100.0, 100.0, 1.0, 0.05, 0.20, 0.0),
         (100.0, 120.0, 1.0, 0.05, 0.20, 0.0),
@@ -40,15 +41,17 @@ def test_matches_scipy_reference(S, K, T, r, sigma, q):
 
 
 def test_fd_dDelta_dSigma():
-    '''vanna = d(delta_call)/d(sigma). Step chosen for O(1e-11) truncation.'''
+    """vanna = d(delta_call)/d(sigma). Step chosen for O(1e-11) truncation."""
     S, K, T, r, sigma, q = 100.0, 105.0, 1.0, 0.05, 0.20, 0.02
     ds = 1e-6
-    fd = (bscalldelta(S, K, T, r, sigma + ds, q) - bscalldelta(S, K, T, r, sigma - ds, q)) / (2 * ds)
+    fd = (bscalldelta(S, K, T, r, sigma + ds, q) - bscalldelta(S, K, T, r, sigma - ds, q)) / (
+        2 * ds
+    )
     assert abs(bsvanna(S, K, T, r, sigma, q) - fd) < 1e-9
 
 
 def test_fd_dVega_dSpot():
-    '''vanna = d(vega)/d(spot). h=1e-4 balances truncation and roundoff.'''
+    """vanna = d(vega)/d(spot). h=1e-4 balances truncation and roundoff."""
     S, K, T, r, sigma, q = 100.0, 105.0, 1.0, 0.05, 0.20, 0.02
     ds = 1e-4
     fd = (bsvega(S + ds, K, T, r, sigma, q) - bsvega(S - ds, K, T, r, sigma, q)) / (2 * ds)
@@ -56,11 +59,15 @@ def test_fd_dVega_dSpot():
 
 
 def test_put_call_symmetry():
-    '''Vanna is put-call symmetric: dp/dsigma = dc/dsigma - d(e^(-qT))/dsigma = dc/dsigma.'''
+    """Vanna is put-call symmetric: dp/dsigma = dc/dsigma - d(e^(-qT))/dsigma = dc/dsigma."""
     S, K, T, r, sigma, q = 100.0, 105.0, 1.0, 0.05, 0.20, 0.02
     ds = 1e-6
-    vanna_call = (bscalldelta(S, K, T, r, sigma + ds, q) - bscalldelta(S, K, T, r, sigma - ds, q)) / (2 * ds)
-    vanna_put = (bsputdelta(S, K, T, r, sigma + ds, q) - bsputdelta(S, K, T, r, sigma - ds, q)) / (2 * ds)
+    vanna_call = (
+        bscalldelta(S, K, T, r, sigma + ds, q) - bscalldelta(S, K, T, r, sigma - ds, q)
+    ) / (2 * ds)
+    vanna_put = (bsputdelta(S, K, T, r, sigma + ds, q) - bsputdelta(S, K, T, r, sigma - ds, q)) / (
+        2 * ds
+    )
     assert abs(vanna_call - vanna_put) < 1e-6
 
 
@@ -94,12 +101,14 @@ def test_dtype_float32_preserved():
 
 def test_gpu_matches_cpu(skip_no_gpu, rng):
     import cupy as cp
+
     S = rng.uniform(50, 150, 100)
     K = rng.uniform(50, 150, 100)
     T = rng.uniform(0.1, 2.0, 100)
     r = rng.uniform(-0.01, 0.10, 100)
     sigma = rng.uniform(0.1, 0.6, 100)
     r_cpu = bsvanna(S, K, T, r, sigma)
-    r_gpu = cp.asnumpy(bsvanna(cp.asarray(S), cp.asarray(K), cp.asarray(T),
-                                cp.asarray(r), cp.asarray(sigma)))
+    r_gpu = cp.asnumpy(
+        bsvanna(cp.asarray(S), cp.asarray(K), cp.asarray(T), cp.asarray(r), cp.asarray(sigma))
+    )
     np.testing.assert_allclose(r_cpu, r_gpu, atol=1e-10)

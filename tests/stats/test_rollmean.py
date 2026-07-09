@@ -1,4 +1,4 @@
-'''Test suite for kuant.stats.rollmean.
+"""Test suite for kuant.stats.rollmean.
 
 Validation strategy:
   1. Golden values      — hand-computed small examples
@@ -8,7 +8,8 @@ Validation strategy:
   4. Property tests     — first w-1 always NaN; result monotonic w.r.t. window
                            on strictly-increasing input
   5. CPU==GPU parity
-'''
+"""
+
 from __future__ import annotations
 
 import numpy as np
@@ -24,7 +25,7 @@ from kuant.stats import rollmean
 
 
 @pytest.mark.parametrize(
-    'x, w, expected',
+    "x, w, expected",
     [
         # Basic 1-2-3-4-5 window=3
         ([1.0, 2, 3, 4, 5], 3, [np.nan, np.nan, 2.0, 3.0, 4.0]),
@@ -47,7 +48,7 @@ def test_golden_values(x, w, expected):
 
 
 def _pandas_ref(x, w):
-    '''Reference: pandas rolling mean with min_periods=w (strict window).'''
+    """Reference: pandas rolling mean with min_periods=w (strict window)."""
     return pd.Series(x).rolling(w, min_periods=w).mean().values
 
 
@@ -95,22 +96,22 @@ def test_window_larger_than_length_all_nan():
 
 
 def test_window_zero_raises():
-    with pytest.raises(ValueError, match='must be positive'):
+    with pytest.raises(ValueError, match="must be positive"):
         rollmean(np.array([1.0, 2, 3]), 0)
 
 
 def test_window_negative_raises():
-    with pytest.raises(ValueError, match='must be positive'):
+    with pytest.raises(ValueError, match="must be positive"):
         rollmean(np.array([1.0, 2, 3]), -1)
 
 
 def test_2d_input_raises():
-    with pytest.raises(ValueError, match='1D'):
+    with pytest.raises(ValueError, match="1D"):
         rollmean(np.array([[1.0, 2], [3, 4]]), 2)
 
 
 def test_single_nan_isolates():
-    '''NaN at index 5 poisons windows overlapping it, then normal resumes.'''
+    """NaN at index 5 poisons windows overlapping it, then normal resumes."""
     x = np.arange(10, dtype=np.float64)
     x[5] = np.nan
     result = rollmean(x, 3)
@@ -163,9 +164,9 @@ def test_first_w_minus_1_always_nan(rng):
     for w in [1, 2, 5, 20, 50]:
         result = rollmean(x, w)
         # First w-1 entries are NaN by convention
-        assert np.all(np.isnan(result[:w-1]))
+        assert np.all(np.isnan(result[: w - 1]))
         # Position w-1 and beyond should be finite (no NaN in clean input)
-        assert np.all(~np.isnan(result[w-1:]))
+        assert np.all(~np.isnan(result[w - 1 :]))
 
 
 def test_result_length_equals_input(rng):
@@ -176,7 +177,7 @@ def test_result_length_equals_input(rng):
 
 
 def test_matches_naive_loop(rng):
-    '''Sanity check: cumsum trick matches O(n*w) naive computation.'''
+    """Sanity check: cumsum trick matches O(n*w) naive computation."""
     x = rng.uniform(-10, 10, size=100)
     w = 7
     result = rollmean(x, w)
@@ -193,6 +194,7 @@ def test_matches_naive_loop(rng):
 
 def test_gpu_matches_cpu(skip_no_gpu, rng):
     import cupy as cp
+
     x_cpu = rng.uniform(-10, 10, size=1000)
     x_gpu = cp.asarray(x_cpu)
     for w in [3, 10, 50]:
@@ -203,12 +205,14 @@ def test_gpu_matches_cpu(skip_no_gpu, rng):
 
 def test_gpu_preserves_backend(skip_no_gpu):
     import cupy as cp
+
     result = rollmean(cp.asarray([1.0, 2, 3, 4, 5]), 3)
     assert isinstance(result, cp.ndarray)
 
 
 def test_gpu_with_nans(skip_no_gpu, rng):
     import cupy as cp
+
     x_cpu = rng.uniform(-10, 10, size=200)
     x_cpu[[10, 50, 100, 150]] = np.nan
     x_gpu = cp.asarray(x_cpu)

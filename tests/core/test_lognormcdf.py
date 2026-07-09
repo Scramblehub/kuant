@@ -1,4 +1,5 @@
-'''Test suite for kuant.core.lognormcdf.'''
+"""Test suite for kuant.core.lognormcdf."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -14,7 +15,7 @@ from kuant.core import lognormcdf
 
 
 @pytest.mark.parametrize(
-    'x', [-40.0, -20.0, -10.0, -6.0, -3.0, -1.0, 0.0, 1.0, 3.0, 6.0, 10.0, 20.0, 40.0]
+    "x", [-40.0, -20.0, -10.0, -6.0, -3.0, -1.0, 0.0, 1.0, 3.0, 6.0, 10.0, 20.0, 40.0]
 )
 def test_matches_scipy(x):
     ours = lognormcdf(x)
@@ -43,12 +44,12 @@ def test_extreme_negative_still_finite():
         result = lognormcdf(x)
         assert np.isfinite(result)
         # Should be approximately -x²/2
-        assert result < -x*x / 2 * 0.99
-        assert result > -x*x / 2 * 1.01
+        assert result < -x * x / 2 * 0.99
+        assert result > -x * x / 2 * 1.01
 
 
 def test_extreme_positive_approaches_zero():
-    '''log(Φ(x)) → 0 as x → ∞.'''
+    """log(Φ(x)) → 0 as x → ∞."""
     assert lognormcdf(10.0) > -1e-20
     assert lognormcdf(20.0) > -1e-80
 
@@ -92,8 +93,9 @@ def test_batched(rng):
 
 def test_no_warnings_across_range():
     import warnings
+
     with warnings.catch_warnings():
-        warnings.simplefilter('error')
+        warnings.simplefilter("error")
         for x in [-100.0, -40.0, -10.0, 0.0, 10.0, 40.0, 100.0]:
             _ = lognormcdf(x)
 
@@ -105,6 +107,7 @@ def test_no_warnings_across_range():
 
 def test_gpu_matches_cpu(skip_no_gpu, rng):
     import cupy as cp
+
     # Restrict to |x| < 6 for the strict-tol check. cupy's log1p rounds
     # tail values to 0 at slightly different points than numpy, causing
     # cosmetic divergence at |x| ~ 8+. Both results are correct to
@@ -117,5 +120,6 @@ def test_gpu_matches_cpu(skip_no_gpu, rng):
 
 def test_gpu_preserves_backend(skip_no_gpu):
     import cupy as cp
+
     result = lognormcdf(cp.asarray([-3.0, 0.0, 3.0]))
     assert isinstance(result, cp.ndarray)

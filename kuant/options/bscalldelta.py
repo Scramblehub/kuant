@@ -1,10 +1,11 @@
-'''Black-Scholes European call delta, batched.
+"""Black-Scholes European call delta, batched.
 
 delta = e^(-q·T)·Φ(d1)    range [0, 1]
 
 Related to put delta: delta_call - delta_put = e^(-q·T) (parity identity).
 Design: docs/kernels/bscalldelta.md.
-'''
+"""
+
 from __future__ import annotations
 
 from ..core._bs_common import finalize, prepare_bs
@@ -12,7 +13,7 @@ from ..core.normcdf import normcdf
 
 
 def bscalldelta(S, K, T, r, sigma, q=0.0):
-    '''Black-Scholes European call delta. Range [0, 1].
+    """Black-Scholes European call delta. Range [0, 1].
 
     Examples
     --------
@@ -20,7 +21,7 @@ def bscalldelta(S, K, T, r, sigma, q=0.0):
     0.6368306511756191
     >>> bscalldelta(100.0, 120.0, 1.0, 0.05, 0.20)  # OTM
     0.28719163790512714
-    '''
+    """
     c = prepare_bs(S, K, T, r, sigma, q)
     xp = c.xp
 

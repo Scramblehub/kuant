@@ -1,4 +1,5 @@
-'''Gaussian HMM forward algorithm (log-space).'''
+"""Gaussian HMM forward algorithm (log-space)."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -7,7 +8,7 @@ from .common import _logsumexp_axis, _prepare_ghmm_inputs
 
 
 def forward(obs, pi, A, mu, sigma):
-    '''Log-space forward for a Gaussian HMM.
+    """Log-space forward for a Gaussian HMM.
 
     obs   : (T,) continuous observations
     pi    : (N,) initial state distribution
@@ -16,7 +17,7 @@ def forward(obs, pi, A, mu, sigma):
     sigma : (N,) per-state emission std (> 0)
 
     Returns (log_alpha (T, N), log_likelihood).
-    '''
+    """
     xp, obs_arr, log_pi, log_A, log_B = _prepare_ghmm_inputs(obs, pi, A, mu, sigma)
     T = obs_arr.size
     N = log_pi.size

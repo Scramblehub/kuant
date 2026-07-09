@@ -1,9 +1,10 @@
-'''Black-Scholes European put pricer, batched.
+"""Black-Scholes European put pricer, batched.
 
 put = K·e^(-r·T)·Φ(-d2) - S·e^(-q·T)·Φ(-d1)
 
 First composed kernel in kuant — calls normcdf twice. Design: docs/kernels/bsput.md.
-'''
+"""
+
 from __future__ import annotations
 
 from ._bs_common import finalize, prepare_bs
@@ -11,7 +12,7 @@ from .normcdf import normcdf
 
 
 def bsput(S, K, T, r, sigma, q=0.0):
-    '''Black-Scholes European put price.
+    """Black-Scholes European put price.
 
     Parameters
     ----------
@@ -24,7 +25,7 @@ def bsput(S, K, T, r, sigma, q=0.0):
     --------
     >>> bsput(100.0, 100.0, 1.0, 0.05, 0.2)  # ATM 1y
     5.573526022256971
-    '''
+    """
     c = prepare_bs(S, K, T, r, sigma, q)
     xp = c.xp
 

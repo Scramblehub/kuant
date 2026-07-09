@@ -1,4 +1,4 @@
-'''Rolling window z-score, batched.
+"""Rolling window z-score, batched.
 
 zscore(x, w)[i] = (x[i] - rollmean(x, w)[i]) / rollstd(x, w)[i]
 
@@ -11,7 +11,8 @@ NaN. Natural division-by-zero behavior; downstream code decides whether
 to substitute (e.g. `np.where(np.isnan(z), 0, z)`).
 
 Design: docs/kernels/zscore.md.
-'''
+"""
+
 from __future__ import annotations
 
 from typing import Any
@@ -24,6 +25,7 @@ from .rollstd import rollstd
 cp: Any
 try:
     import cupy as cp
+
     _CUPY_NDARRAY = cp.ndarray
 except ImportError:
     cp = None
@@ -31,7 +33,7 @@ except ImportError:
 
 
 def zscore(x, window, ddof=1):
-    '''Rolling window z-score.
+    """Rolling window z-score.
 
     Parameters
     ----------
@@ -57,7 +59,7 @@ def zscore(x, window, ddof=1):
     array([nan, nan,  0.,  0.,  0.])
     >>> # Each 3-element window is arithmetically increasing;
     >>> # its center is at the mean → z = 0.
-    '''
+    """
     # Delegate input validation to rollmean/rollstd; both raise on 2D/bad window.
     rmean = rollmean(x, window)
     rstd = rollstd(x, window, ddof=ddof)
@@ -73,7 +75,7 @@ def zscore(x, window, ddof=1):
         arr = x
     else:
         arr = np.asarray(x)
-    if arr.dtype.kind in 'iub':
+    if arr.dtype.kind in "iub":
         arr = arr.astype(np.float64)
 
     # Substitute 1.0 as denominator in zero-std cells to avoid RuntimeWarning

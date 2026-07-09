@@ -1,4 +1,5 @@
-'''Test suite for kuant.core.gpdcdf.'''
+"""Test suite for kuant.core.gpdcdf."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -9,7 +10,7 @@ from kuant.core import gpdcdf
 
 
 @pytest.mark.parametrize(
-    'x, xi, scale',
+    "x, xi, scale",
     [
         (0.5, 0.2, 1.0),
         (0.5, 0.0, 1.0),
@@ -68,6 +69,7 @@ def test_batched(rng):
 
 def test_gpu_matches_cpu(skip_no_gpu, rng):
     import cupy as cp
+
     xs = rng.uniform(0, 3, 50)
     xis = rng.uniform(-0.3, 0.5, 50)
     scales = rng.uniform(0.5, 2.0, 50)

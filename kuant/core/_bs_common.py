@@ -1,4 +1,4 @@
-'''Shared setup for Black-Scholes kernels — private, not exported.
+"""Shared setup for Black-Scholes kernels — private, not exported.
 
 Every BS kernel does the same setup:
   1. Detect backend (numpy/cupy)
@@ -11,7 +11,8 @@ Every BS kernel does the same setup:
 
 prepare_bs() returns a BSContext; each kernel writes ~20 lines of formula
 on top. finalize() converts 0-d output to Python float.
-'''
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -22,6 +23,7 @@ import numpy as np
 cp: Any
 try:
     import cupy as cp
+
     _HAS_CUPY = True
     _CUPY_NDARRAY = cp.ndarray
 except ImportError:
@@ -31,7 +33,7 @@ except ImportError:
 
 
 def _detect_backend(*args) -> Any:
-    '''Pick numpy or cupy — any cupy input routes the call to GPU.'''
+    """Pick numpy or cupy — any cupy input routes the call to GPU."""
     for a in args:
         if isinstance(a, _CUPY_NDARRAY):
             return cp
@@ -40,13 +42,14 @@ def _detect_backend(*args) -> Any:
 
 @dataclass
 class BSContext:
-    '''Prepared context for a BS kernel call.
+    """Prepared context for a BS kernel call.
 
     Fields with `_safe` suffix have edge cells replaced with 1.0 (safe
     placeholders for the uniform analytic pass). Fields without the suffix
     are the original broadcast arrays — use those for edge-case masks
     (S > 0, K > 0, etc.).
-    '''
+    """
+
     xp: Any
     out_dtype: Any
     S: Any
@@ -67,7 +70,7 @@ class BSContext:
 
 
 def prepare_bs(S, K, T, r, sigma, q=0.0) -> BSContext:
-    '''One-shot BS input preparation. See module docstring for the flow.'''
+    """One-shot BS input preparation. See module docstring for the flow."""
     xp = _detect_backend(S, K, T, r, sigma, q)
 
     # Coerce required args; derive out_dtype from them ONLY so q's
@@ -79,7 +82,7 @@ def prepare_bs(S, K, T, r, sigma, q=0.0) -> BSContext:
     sigma = xp.asarray(sigma)
 
     out_dtype = xp.result_type(S.dtype, K.dtype, T.dtype, r.dtype, sigma.dtype)
-    if out_dtype.kind in 'iub':
+    if out_dtype.kind in "iub":
         out_dtype = xp.dtype(xp.float64)
 
     q = xp.asarray(q, dtype=out_dtype)
@@ -91,7 +94,7 @@ def prepare_bs(S, K, T, r, sigma, q=0.0) -> BSContext:
     r = r.astype(out_dtype, copy=False)
     sigma = sigma.astype(out_dtype, copy=False)
 
-    nan_val = xp.asarray(float('nan'), dtype=out_dtype)
+    nan_val = xp.asarray(float("nan"), dtype=out_dtype)
     out = xp.full_like(S, nan_val)
 
     normal = (T > 0) & (sigma > 0) & (S > 0) & (K > 0)
@@ -110,14 +113,26 @@ def prepare_bs(S, K, T, r, sigma, q=0.0) -> BSContext:
     d2 = d1 - sigma_sqrt_T
 
     return BSContext(
-        xp=xp, out_dtype=out_dtype,
-        S=S, K=K, T=T, r=r, sigma=sigma, q=q,
-        S_safe=S_safe, K_safe=K_safe, T_safe=T_safe, sigma_safe=sigma_safe,
-        sqrt_T=sqrt_T, d1=d1, d2=d2,
-        normal=normal, out=out,
+        xp=xp,
+        out_dtype=out_dtype,
+        S=S,
+        K=K,
+        T=T,
+        r=r,
+        sigma=sigma,
+        q=q,
+        S_safe=S_safe,
+        K_safe=K_safe,
+        T_safe=T_safe,
+        sigma_safe=sigma_safe,
+        sqrt_T=sqrt_T,
+        d1=d1,
+        d2=d2,
+        normal=normal,
+        out=out,
     )
 
 
 def finalize(out):
-    '''Scalar in → scalar out. Matches numpy convention.'''
+    """Scalar in → scalar out. Matches numpy convention."""
     return float(out) if out.ndim == 0 else out

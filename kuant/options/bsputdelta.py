@@ -1,9 +1,10 @@
-'''Black-Scholes European put delta, batched.
+"""Black-Scholes European put delta, batched.
 
 delta = -e^(-q·T)·Φ(-d1)    range [-1, 0]
 
 Directly powers M9 TP monitor's D70 rule. Design: docs/kernels/bsputdelta.md.
-'''
+"""
+
 from __future__ import annotations
 
 from ..core._bs_common import finalize, prepare_bs
@@ -11,7 +12,7 @@ from ..core.normcdf import normcdf
 
 
 def bsputdelta(S, K, T, r, sigma, q=0.0):
-    '''Black-Scholes European put delta. Range [-1, 0].
+    """Black-Scholes European put delta. Range [-1, 0].
 
     Examples
     --------
@@ -19,7 +20,7 @@ def bsputdelta(S, K, T, r, sigma, q=0.0):
     -0.3631693488243809
     >>> bsputdelta(100.0, 120.0, 1.0, 0.05, 0.2)  # deep ITM
     -0.7128083620948729
-    '''
+    """
     c = prepare_bs(S, K, T, r, sigma, q)
     xp = c.xp
 

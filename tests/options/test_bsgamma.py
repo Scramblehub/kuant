@@ -1,4 +1,5 @@
 """Test suite for kuant.core.bsgamma."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -45,7 +46,8 @@ def test_matches_reference_uniform(rng):
     np.testing.assert_allclose(
         bsgamma(S, K, T, r, sigma, q),
         _reference_gamma(S, K, T, r, sigma, q),
-        atol=1e-12, rtol=1e-12,
+        atol=1e-12,
+        rtol=1e-12,
     )
 
 
@@ -95,28 +97,46 @@ def test_gamma_matches_second_derivative_of_price(rng):
     r, sigma = 0.05, 0.25
     h = 1e-2
     analytic = bsgamma(S, K, T, r, sigma)
-    fd = (bsput(S + h, K, T, r, sigma) - 2 * bsput(S, K, T, r, sigma) + bsput(S - h, K, T, r, sigma)) / (h * h)
+    fd = (
+        bsput(S + h, K, T, r, sigma) - 2 * bsput(S, K, T, r, sigma) + bsput(S - h, K, T, r, sigma)
+    ) / (h * h)
     np.testing.assert_allclose(analytic, fd, atol=1e-4)
 
 
 # Edge cases
-def test_expired(): assert bsgamma(100.0, 100.0, 0.0, 0.05, 0.20) == 0.0
-def test_zero_vol(): assert bsgamma(100.0, 100.0, 1.0, 0.05, 0.0) == 0.0
-def test_zero_spot(): assert bsgamma(0.0, 100.0, 1.0, 0.05, 0.20) == 0.0
-def test_zero_strike(): assert bsgamma(100.0, 0.0, 1.0, 0.05, 0.20) == 0.0
-def test_nan_passthrough(): assert np.isnan(bsgamma(float("nan"), 100.0, 1.0, 0.05, 0.20))
+def test_expired():
+    assert bsgamma(100.0, 100.0, 0.0, 0.05, 0.20) == 0.0
+
+
+def test_zero_vol():
+    assert bsgamma(100.0, 100.0, 1.0, 0.05, 0.0) == 0.0
+
+
+def test_zero_spot():
+    assert bsgamma(0.0, 100.0, 1.0, 0.05, 0.20) == 0.0
+
+
+def test_zero_strike():
+    assert bsgamma(100.0, 0.0, 1.0, 0.05, 0.20) == 0.0
+
+
+def test_nan_passthrough():
+    assert np.isnan(bsgamma(float("nan"), 100.0, 1.0, 0.05, 0.20))
 
 
 def test_dtype_preserved_float32():
-    args = [np.array([100.0], dtype=np.float32)] * 2 + [np.array([1.0], dtype=np.float32),
-                                                        np.array([0.05], dtype=np.float32),
-                                                        np.array([0.2], dtype=np.float32)]
+    args = [np.array([100.0], dtype=np.float32)] * 2 + [
+        np.array([1.0], dtype=np.float32),
+        np.array([0.05], dtype=np.float32),
+        np.array([0.2], dtype=np.float32),
+    ]
     result = bsgamma(*args)
     assert result.dtype == np.float32
 
 
 def test_gpu_matches_cpu(skip_no_gpu, rng):
     import cupy as cp
+
     n = 500
     S = rng.uniform(50, 200, size=n)
     K = rng.uniform(50, 200, size=n)

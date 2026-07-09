@@ -1,4 +1,4 @@
-"""kuant.portfolio — P&L, risk-adjusted returns, and contribution analysis.
+"""kuant.portfolio: P&L, risk-adjusted returns, and contribution analysis.
 
 Full-history scalar counterparts to the rolling versions in
 `kuant.stats` (`rollsharpe`, `rollsortino`, `rollmdd`), plus a
@@ -33,6 +33,13 @@ from kuant.portfolio.riskmetrics import (
 from kuant.portfolio.sharperatio import SharpeResult, sharperatio
 from kuant.portfolio.sortinoratio import SortinoResult, sortinoratio
 
+# v0.6.0 batch 6: portfolio construction.
+from kuant.portfolio.blacklitterman import BlackLittermanResult, blacklitterman
+from kuant.portfolio.hrp import HrpResult, hrp
+from kuant.portfolio.meancvar import MeanCvarResult, meancvar
+from kuant.portfolio.mintorsion import MinTorsionResult, mintorsion
+from kuant.portfolio.riskparity import RiskParityResult, riskparity
+
 __all__ = [
     "CaptureResult",
     "ContributionResult",
@@ -53,4 +60,15 @@ __all__ = [
     "sortinoratio",
     "ulcer_index",
     "up_capture",
+    # v0.6.0 batch 6: portfolio construction.
+    "BlackLittermanResult",
+    "blacklitterman",
+    "HrpResult",
+    "hrp",
+    "MeanCvarResult",
+    "meancvar",
+    "MinTorsionResult",
+    "mintorsion",
+    "RiskParityResult",
+    "riskparity",
 ]

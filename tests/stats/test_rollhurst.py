@@ -1,4 +1,5 @@
-'''Test suite for kuant.stats.rollhurst.'''
+"""Test suite for kuant.stats.rollhurst."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -34,12 +35,12 @@ def test_brownian_noise_median_near_half(rng):
 
 
 def test_2d_input_raises():
-    with pytest.raises(ValueError, match='1D'):
+    with pytest.raises(ValueError, match="1D"):
         rollhurst(np.zeros((100, 5)))
 
 
 def test_window_below_floor_raises():
-    with pytest.raises(ValueError, match='window'):
+    with pytest.raises(ValueError, match="window"):
         rollhurst(np.zeros(300), window=10, min_w=8)
 
 

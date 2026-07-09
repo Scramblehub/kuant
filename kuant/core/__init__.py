@@ -14,6 +14,7 @@ Contains:
 Greeks (delta, gamma, vega, rho, theta, charm) live in kuant.options
 because they are option-specific quantities rather than general math.
 """
+
 from .bscall import bscall
 from .bsput import bsput
 from .gpdcdf import gpdcdf
@@ -33,15 +34,24 @@ from .tppf import tppf
 
 __all__ = [
     # Black-Scholes primitives
-    "bscall", "bsput",
+    "bscall",
+    "bsput",
     # Gaussian family
-    "normcdf", "normpdf", "normppf",
-    "lognormcdf", "lognormccdf",
+    "normcdf",
+    "normpdf",
+    "normppf",
+    "lognormcdf",
+    "lognormccdf",
     # Student-t family (fat-tail)
-    "tcdf", "tpdf", "tppf",
-    "logtcdf", "logtccdf",
+    "tcdf",
+    "tpdf",
+    "tppf",
+    "logtcdf",
+    "logtccdf",
     # Generalized Pareto (POT / EVT)
-    "gpdcdf", "gpdpdf", "gpdppf",
+    "gpdcdf",
+    "gpdpdf",
+    "gpdppf",
     # log-space arithmetic
     "logsumexp",
 ]

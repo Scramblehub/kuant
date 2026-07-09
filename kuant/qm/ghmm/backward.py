@@ -1,4 +1,5 @@
-'''Gaussian HMM backward algorithm (log-space).'''
+"""Gaussian HMM backward algorithm (log-space)."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -7,10 +8,10 @@ from .common import _logsumexp_axis, _prepare_ghmm_inputs
 
 
 def backward(obs, pi, A, mu, sigma):
-    '''Log-space backward for a Gaussian HMM.
+    """Log-space backward for a Gaussian HMM.
 
     Returns log_beta (T, N).
-    '''
+    """
     xp, obs_arr, _log_pi, log_A, log_B = _prepare_ghmm_inputs(obs, pi, A, mu, sigma)
     T = obs_arr.size
     N = log_A.shape[0]

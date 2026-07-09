@@ -1,4 +1,5 @@
-'''Test suite for kuant.core.logtccdf.'''
+"""Test suite for kuant.core.logtccdf."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -9,11 +10,17 @@ from kuant.core import logtccdf, logtcdf
 
 
 @pytest.mark.parametrize(
-    'x, df',
+    "x, df",
     [
-        (-5.0, 3.0), (-1.0, 10.0), (0.0, 5.0),
-        (1.0, 10.0), (3.0, 5.0), (5.0, 3.0),
-        (100.0, 3.0), (300.0, 10.0), (1000.0, 3.0),
+        (-5.0, 3.0),
+        (-1.0, 10.0),
+        (0.0, 5.0),
+        (1.0, 10.0),
+        (3.0, 5.0),
+        (5.0, 3.0),
+        (100.0, 3.0),
+        (300.0, 10.0),
+        (1000.0, 3.0),
     ],
 )
 def test_matches_scipy_logsf(x, df):
@@ -23,7 +30,7 @@ def test_matches_scipy_logsf(x, df):
 
 
 def test_symmetry_with_logtcdf():
-    '''logtccdf(x) = logtcdf(-x) by construction.'''
+    """logtccdf(x) = logtcdf(-x) by construction."""
     for x in [-3.0, 0.0, 3.0, 10.0]:
         for df in [3.0, 5.0, 10.0]:
             assert abs(logtccdf(x, df) - logtcdf(-x, df)) < 1e-14
@@ -50,6 +57,7 @@ def test_batched(rng):
 
 def test_gpu_matches_cpu(skip_no_gpu, rng):
     import cupy as cp
+
     xs = rng.uniform(-5, 5, 30)
     dfs = rng.uniform(2, 30, 30)
     r_cpu = logtccdf(xs, dfs)

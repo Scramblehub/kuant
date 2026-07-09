@@ -1,4 +1,4 @@
-'''Numerically stable log of Student-t complementary CDF.
+"""Numerically stable log of Student-t complementary CDF.
 
     logtccdf(x, df) = log(1 - tcdf(x, df))
                     = log(tcdf(-x, df))
@@ -8,7 +8,8 @@ Trivial wrapper on `logtcdf` for readability at call sites doing
 upper-tail probability calculations (fat-tail VaR, tail-loss, etc.).
 
 Design: docs/kernels/core/logtccdf.md.
-'''
+"""
+
 from __future__ import annotations
 
 from typing import Any
@@ -20,6 +21,7 @@ from .logtcdf import logtcdf
 cp: Any
 try:
     import cupy as cp
+
     _CUPY_NDARRAY = cp.ndarray
 except ImportError:
     cp = None
@@ -36,7 +38,7 @@ def _detect_backend(*args) -> Any:
 
 
 def logtccdf(x, df):
-    '''Log of upper-tail Student-t: `log(1 - tcdf(x, df)) = log(tcdf(-x, df))`.
+    """Log of upper-tail Student-t: `log(1 - tcdf(x, df)) = log(tcdf(-x, df))`.
 
     Parameters
     ----------
@@ -56,7 +58,7 @@ def logtccdf(x, df):
     >>> import math
     >>> math.isfinite(logtccdf(1000.0, 3.0))
     True
-    '''
+    """
     xp = _detect_backend(x, df)
     x_arr = xp.asarray(x)
     df_arr = xp.asarray(df)

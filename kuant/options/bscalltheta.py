@@ -1,4 +1,4 @@
-'''Black-Scholes European call theta, batched.
+"""Black-Scholes European call theta, batched.
 
 theta_call = -[ S·e^(-q·T)·φ(d1)·σ / (2·√T) ]
              - r·K·e^(-r·T)·Φ(d2)
@@ -12,7 +12,8 @@ time), but can be positive for deep ITM European calls with high
 dividends.
 
 Design: docs/kernels/options/bscalltheta.md.
-'''
+"""
+
 from __future__ import annotations
 
 from ..core._bs_common import finalize, prepare_bs
@@ -21,7 +22,7 @@ from ..core.normpdf import normpdf
 
 
 def bscalltheta(S, K, T, r, sigma, q=0.0):
-    '''Black-Scholes European call theta.
+    """Black-Scholes European call theta.
 
     Per year. For per-trading-day theta divide by 252; for per-
     calendar-day theta divide by 365.
@@ -30,7 +31,7 @@ def bscalltheta(S, K, T, r, sigma, q=0.0):
     --------
     >>> bscalltheta(100.0, 100.0, 1.0, 0.05, 0.20)
     -6.414027546438197
-    '''
+    """
     c = prepare_bs(S, K, T, r, sigma, q)
     xp = c.xp
 
@@ -51,8 +52,7 @@ def bscalltheta(S, K, T, r, sigma, q=0.0):
     # the growth of the exercise cost.
     zero_vol = (c.sigma <= 0) & (c.T > 0) & (c.S > 0) & (c.K > 0)
     always_exercise = c.S * xp.exp(-c.q * c.T) > c.K * xp.exp(-c.r * c.T)
-    theta_zv_exercise = (-c.r * c.K * xp.exp(-c.r * c.T)
-                         + c.q * c.S * xp.exp(-c.q * c.T))
+    theta_zv_exercise = -c.r * c.K * xp.exp(-c.r * c.T) + c.q * c.S * xp.exp(-c.q * c.T)
     theta_zero_vol = xp.where(always_exercise, theta_zv_exercise, zero)
     out = xp.where(zero_vol, theta_zero_vol, out)
 

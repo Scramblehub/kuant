@@ -1,4 +1,5 @@
-'''Test suite for kuant.stats.rollsum.'''
+"""Test suite for kuant.stats.rollsum."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -37,7 +38,7 @@ def test_equals_rollmean_times_w():
 
 
 def test_window_zero_raises():
-    with pytest.raises(ValueError, match='must be positive'):
+    with pytest.raises(ValueError, match="must be positive"):
         rollsum(np.array([1.0, 2]), 0)
 
 
@@ -46,7 +47,7 @@ def test_window_larger_than_length():
 
 
 def test_2d_input_raises():
-    with pytest.raises(ValueError, match='1D'):
+    with pytest.raises(ValueError, match="1D"):
         rollsum(np.array([[1.0, 2], [3, 4]]), 2)
 
 
@@ -62,8 +63,11 @@ def test_int_input_promoted():
 
 def test_gpu_matches_cpu(skip_no_gpu, rng):
     import cupy as cp
+
     x = rng.uniform(-1, 1, size=200)
     np.testing.assert_allclose(
-        rollsum(x, 10), cp.asnumpy(rollsum(cp.asarray(x), 10)),
-        atol=1e-12, equal_nan=True,
+        rollsum(x, 10),
+        cp.asnumpy(rollsum(cp.asarray(x), 10)),
+        atol=1e-12,
+        equal_nan=True,
     )

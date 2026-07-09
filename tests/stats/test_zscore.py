@@ -1,4 +1,4 @@
-'''Test suite for kuant.stats.zscore.
+"""Test suite for kuant.stats.zscore.
 
 Since zscore composes rollmean and rollstd, tests focus on:
   1. Golden values — small hand-computed cases
@@ -6,7 +6,8 @@ Since zscore composes rollmean and rollstd, tests focus on:
   3. Zero-std policy — constant windows produce NaN
   4. Composition invariants — inherited from rollmean/rollstd
   5. CPU==GPU parity
-'''
+"""
+
 from __future__ import annotations
 
 import numpy as np
@@ -22,14 +23,19 @@ from kuant.stats import zscore
 
 
 @pytest.mark.parametrize(
-    'x, w, ddof, expected',
+    "x, w, ddof, expected",
     [
         # Arithmetic progression: trailing window means x[i] is always
         # one std above the window mean, so z = 1.0.
         ([1.0, 2, 3, 4, 5], 3, 1, [np.nan, np.nan, 1.0, 1.0, 1.0]),
         # Single spike: last value = 100 in [1,2,100], mean=34.33, std=~56.87
         # z = (100 - 34.33) / 56.87 = ~1.155
-        ([1.0, 2, 100], 3, 1, [np.nan, np.nan, (100 - (1+2+100)/3) / np.std([1, 2, 100], ddof=1)]),
+        (
+            [1.0, 2, 100],
+            3,
+            1,
+            [np.nan, np.nan, (100 - (1 + 2 + 100) / 3) / np.std([1, 2, 100], ddof=1)],
+        ),
     ],
 )
 def test_golden_values(x, w, ddof, expected):
@@ -43,7 +49,7 @@ def test_golden_values(x, w, ddof, expected):
 
 
 def _pandas_zscore(x, w, ddof=1):
-    '''Reference: (x - rollmean) / rollstd via pandas.'''
+    """Reference: (x - rollmean) / rollstd via pandas."""
     s = pd.Series(x)
     rmean = s.rolling(w, min_periods=w).mean()
     rstd = s.rolling(w, min_periods=w).std(ddof=ddof)
@@ -69,8 +75,8 @@ def test_matches_pandas_with_nans(rng):
 
 
 def test_matches_pandas_price_scale(rng):
-    '''Large-magnitude inputs. Tighter than rollstd's tolerance because
-    the numerator and denominator both scale similarly.'''
+    """Large-magnitude inputs. Tighter than rollstd's tolerance because
+    the numerator and denominator both scale similarly."""
     x = rng.uniform(3900, 4100, size=300)
     for w in [5, 20]:
         result = zscore(x, w)
@@ -84,7 +90,7 @@ def test_matches_pandas_price_scale(rng):
 
 
 def test_constant_window_is_nan():
-    '''Constant windows have std=0 → z=NaN by convention.'''
+    """Constant windows have std=0 → z=NaN by convention."""
     x = np.array([5.0, 5, 5, 5, 5, 6])
     result = zscore(x, 3)
     # Windows [5,5,5] all have std=0 → NaN
@@ -111,7 +117,7 @@ def test_first_w_minus_1_nan(rng):
     x = rng.uniform(-1, 1, size=100)
     for w in [2, 5, 20]:
         result = zscore(x, w)
-        assert np.all(np.isnan(result[:w-1]))
+        assert np.all(np.isnan(result[: w - 1]))
 
 
 def test_result_length_equals_input(rng):
@@ -121,7 +127,7 @@ def test_result_length_equals_input(rng):
 
 
 def test_shift_invariance(rng):
-    '''Adding a constant should not change zscore.'''
+    """Adding a constant should not change zscore."""
     x = rng.uniform(-1, 1, size=100)
     r1 = zscore(x, 10)
     r2 = zscore(x + 1000, 10)
@@ -129,7 +135,7 @@ def test_shift_invariance(rng):
 
 
 def test_scale_invariance(rng):
-    '''Scaling by a positive constant should not change zscore.'''
+    """Scaling by a positive constant should not change zscore."""
     x = rng.uniform(0.1, 1.0, size=100)  # avoid crossing 0
     r1 = zscore(x, 10)
     r2 = zscore(x * 7.0, 10)
@@ -149,12 +155,12 @@ def test_dtype_preserved_float32():
 
 
 def test_2d_input_raises():
-    with pytest.raises(ValueError, match='1D'):
+    with pytest.raises(ValueError, match="1D"):
         zscore(np.array([[1.0, 2], [3, 4]]), 2)
 
 
 def test_window_zero_raises():
-    with pytest.raises(ValueError, match='must be positive'):
+    with pytest.raises(ValueError, match="must be positive"):
         zscore(np.array([1.0, 2, 3]), 0)
 
 
@@ -170,6 +176,7 @@ def test_python_list_input():
 
 def test_gpu_matches_cpu(skip_no_gpu, rng):
     import cupy as cp
+
     x_cpu = rng.uniform(-1, 1, size=500)
     x_gpu = cp.asarray(x_cpu)
     for w in [3, 20, 50]:
@@ -180,12 +187,14 @@ def test_gpu_matches_cpu(skip_no_gpu, rng):
 
 def test_gpu_preserves_backend(skip_no_gpu):
     import cupy as cp
+
     result = zscore(cp.asarray([1.0, 2, 3, 4, 5]), 3)
     assert isinstance(result, cp.ndarray)
 
 
 def test_gpu_constant_window(skip_no_gpu):
     import cupy as cp
+
     x = cp.array([5.0, 5, 5, 5, 5])
     result = zscore(x, 3)
     # All windows constant → all NaN

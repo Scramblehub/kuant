@@ -1,4 +1,5 @@
-'''Test suite for kuant.options.callpayoff.'''
+"""Test suite for kuant.options.callpayoff."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -13,13 +14,13 @@ from kuant.options import callpayoff
 
 
 @pytest.mark.parametrize(
-    'S, K, expected',
+    "S, K, expected",
     [
         (120.0, 100.0, 20.0),
         (100.0, 100.0, 0.0),
         (80.0, 100.0, 0.0),
-        (0.0, 100.0, 0.0),      # far OTM
-        (200.0, 0.0, 200.0),    # zero strike
+        (0.0, 100.0, 0.0),  # far OTM
+        (200.0, 0.0, 200.0),  # zero strike
     ],
 )
 def test_golden(S, K, expected):
@@ -60,12 +61,11 @@ def test_both_arrays_same_shape():
 
 
 def test_broadcast_2d():
-    S = np.array([[80.0, 100.0, 120.0]])       # (1, 3)
-    K = np.array([[90.0], [110.0]])            # (2, 1)
+    S = np.array([[80.0, 100.0, 120.0]])  # (1, 3)
+    K = np.array([[90.0], [110.0]])  # (2, 1)
     result = callpayoff(S, K)
     assert result.shape == (2, 3)
-    np.testing.assert_array_equal(result, [[0.0, 10.0, 30.0],
-                                            [0.0,  0.0, 10.0]])
+    np.testing.assert_array_equal(result, [[0.0, 10.0, 30.0], [0.0, 0.0, 10.0]])
 
 
 # ---------------------------------------------------------------------------
@@ -98,14 +98,14 @@ def test_python_scalars():
 
 
 def test_non_negative(rng):
-    '''Payoff never < 0.'''
+    """Payoff never < 0."""
     S = rng.uniform(0, 200, 100)
     K = rng.uniform(0, 200, 100)
     assert np.all(callpayoff(S, K) >= 0)
 
 
 def test_matches_naive_max():
-    '''Semantic sanity — same as np.maximum.'''
+    """Semantic sanity — same as np.maximum."""
     S = np.array([80.0, 100.0, 120.0, 150.0])
     K = 100.0
     np.testing.assert_array_equal(callpayoff(S, K), np.maximum(S - K, 0.0))
@@ -118,6 +118,7 @@ def test_matches_naive_max():
 
 def test_gpu_matches_cpu(skip_no_gpu, rng):
     import cupy as cp
+
     S = rng.uniform(0, 200, 100)
     K = rng.uniform(0, 200, 100)
     r_cpu = callpayoff(S, K)
@@ -127,5 +128,6 @@ def test_gpu_matches_cpu(skip_no_gpu, rng):
 
 def test_gpu_preserves_backend(skip_no_gpu):
     import cupy as cp
+
     result = callpayoff(cp.asarray([100.0, 120.0]), cp.asarray([100.0, 100.0]))
     assert isinstance(result, cp.ndarray)

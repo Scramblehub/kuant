@@ -12,6 +12,7 @@ Validation strategy mirrors normcdf's five-layer approach:
 The reference in test 2 uses scipy.stats.norm.cdf DIRECTLY (not our normcdf),
 so if normcdf has a bug the bsput tests will catch it via composition.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -106,8 +107,8 @@ def test_broadcasting_strike_curve():
 
 def test_broadcasting_full_grid():
     """(N, M) strike x tenor grid via broadcasting."""
-    strikes = np.array([90.0, 100.0, 110.0])[:, None]     # column
-    tenors = np.array([0.25, 0.5, 1.0, 2.0])[None, :]     # row
+    strikes = np.array([90.0, 100.0, 110.0])[:, None]  # column
+    tenors = np.array([0.25, 0.5, 1.0, 2.0])[None, :]  # row
     result = bsput(100.0, strikes, tenors, 0.05, 0.20)
 
     assert result.shape == (3, 4)

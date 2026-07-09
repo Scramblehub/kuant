@@ -1,4 +1,4 @@
-'''Black-Scholes European call charm, batched.
+"""Black-Scholes European call charm, batched.
 
 charm_call = -∂Delta/∂T                      (delta decay per year of
                                               calendar time passing)
@@ -12,7 +12,8 @@ hedge-drift over holding periods, weekend gap risk on delta-neutral
 portfolios, and pin-risk near expiry.
 
 Design: docs/kernels/options/bscallcharm.md.
-'''
+"""
+
 from __future__ import annotations
 
 from ..core._bs_common import finalize, prepare_bs
@@ -21,7 +22,7 @@ from ..core.normpdf import normpdf
 
 
 def bscallcharm(S, K, T, r, sigma, q=0.0):
-    '''Black-Scholes European call charm = -dDelta/dT.
+    """Black-Scholes European call charm = -dDelta/dT.
 
     Sign convention: charm = -∂Delta/∂T, i.e. the RATE OF DELTA BLEED
     as calendar time passes forward. A negative value for a long call
@@ -34,7 +35,7 @@ def bscallcharm(S, K, T, r, sigma, q=0.0):
     --------
     >>> bscallcharm(100.0, 100.0, 1.0, 0.05, 0.20)
     -0.11060933183045406
-    '''
+    """
     c = prepare_bs(S, K, T, r, sigma, q)
     xp = c.xp
 
